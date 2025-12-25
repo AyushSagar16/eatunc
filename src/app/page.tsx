@@ -1,65 +1,110 @@
-import Image from "next/image";
+import { getAvailableDates, getFullMenusByDate } from "@/lib/api";
+import DateSelector from "@/components/DateSelector";
+import MenuContainer from "@/components/MenuContainer";
+import { normalizeMealPeriod } from "@/lib/utils";
 
-export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+export const runtime = 'edge';
+export const revalidate = 3600; // Cache the page for 1 hour
+
+interface PageProps {
+  searchParams: Promise<{ date?: string }>;
+}
+
+export default async function Home({ searchParams }: PageProps) {
+  const params = await searchParams;
+
+  // Start fetching available dates
+  const dateDataPromise = getAvailableDates();
+
+  // If we have a date in params, fetch menu data in parallel
+  let menuDataPromise = null;
+  if (params.date) {
+    menuDataPromise = getFullMenusByDate(params.date);
+  }
+
+  const { data: dateData } = await dateDataPromise;
+
+  // Get unique dates
+  const availableDates = Array.from(new Set(dateData?.map(d => d.menu_date) || []));
+  const selectedDate = params.date || availableDates[0];
+
+  if (!selectedDate) {
+    return (
+      <main className="min-h-screen bg-zinc-50 dark:bg-black py-12 px-6">
+        <div className="max-w-7xl mx-auto text-center py-20">
+          <p className="text-zinc-500">No menus available yet.</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
+      </main>
+    );
+  }
+
+  // Use parallel promise or fetch now if selectedDate was just determined
+  const { data: menus, error: menuError } = menuDataPromise && params.date === selectedDate
+    ? await menuDataPromise
+    : await getFullMenusByDate(selectedDate);
+
+  if (menuError) {
+    return (
+      <main className="min-h-screen bg-transparent py-24 px-6 flex items-center justify-center">
+        <div className="max-w-sm w-full text-center p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50 mb-2">Failed to load menus</h2>
+          <p className="text-zinc-500 mb-8 text-sm">{menuError.message}</p>
           <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            href={`/?date=${selectedDate}`}
+            className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors w-full"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
+            Retry Connection
           </a>
         </div>
       </main>
-    </div>
+    );
+  }
+
+  // Extract all unique meal periods and entries for this date
+  const allEntries = (menus || []).flatMap(menu => (menu.menu_entries || []).map(entry => ({
+    ...entry,
+    meal_period_raw: entry.meal_period,
+    meal_period: normalizeMealPeriod(entry.meal_period)
+  })));
+
+  const availablePeriods = Array.from(new Set(allEntries.map(e => e.meal_period)));
+
+  // Sort periods logically
+  const periodOrder = ['breakfast', 'lunch', 'lite-lunch', 'dinner'];
+  availablePeriods.sort((a, b) => {
+    const indexA = periodOrder.indexOf(a);
+    const indexB = periodOrder.indexOf(b);
+    return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
+  });
+
+  return (
+    <main className="min-h-screen bg-transparent py-12 px-6 relative overflow-hidden">
+      {/* Background Glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-blue-500/10 blur-[120px] pointer-events-none -z-10 dark:bg-blue-600/5" />
+
+      <div className="max-w-7xl mx-auto relative">
+        <header className="mb-12 relative">
+          <h1 className="text-4xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-6xl mb-4 relative">
+            UNC Dining <span className="text-blue-600">Menu</span>
+          </h1>
+          <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mb-8">
+            Explore daily specials and nutritional information for all UNC dining halls.
+          </p>
+
+          <DateSelector dates={availableDates} selectedDate={selectedDate} />
+        </header>
+
+        <MenuContainer
+          key={selectedDate}
+          allEntries={allEntries}
+          availablePeriods={availablePeriods}
+        />
+      </div>
+    </main>
   );
 }
