@@ -83,26 +83,17 @@ export default async function Home({ searchParams }: PageProps) {
   });
 
   return (
-    <main className="min-h-screen bg-transparent py-12 px-6 relative overflow-hidden">
+    <main className="min-h-screen bg-transparent relative overflow-hidden">
       {/* Background Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-blue-500/10 blur-[120px] pointer-events-none -z-10 dark:bg-blue-600/5" />
 
-      <div className="max-w-7xl mx-auto relative">
-        <header className="mb-12 relative">
-          <h1 className="text-4xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-6xl mb-4 relative">
-            UNC Dining <span className="text-blue-600">Menu</span>
-          </h1>
-          <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mb-8">
-            Explore daily specials and nutritional information for all UNC dining halls.
-          </p>
-
-          <DateSelector dates={availableDates} selectedDate={selectedDate} />
-        </header>
-
+      <div className="relative">
         <MenuContainer
           key={selectedDate}
           allEntries={allEntries}
           availablePeriods={availablePeriods}
+          availableDates={availableDates}
+          selectedDate={selectedDate}
         />
       </div>
     </main>

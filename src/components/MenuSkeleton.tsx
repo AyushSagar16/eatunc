@@ -3,14 +3,13 @@
 export default function MenuSkeleton() {
     return (
         <div className="flex flex-col gap-8 animate-pulse">
-            {/* Meal Selector Skeleton */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div className="flex bg-zinc-100 dark:bg-zinc-900 rounded-2xl p-1.5 w-fit">
-                    {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="h-10 w-24 bg-zinc-200 dark:bg-zinc-800 rounded-xl mx-0.5" />
-                    ))}
+            {/* Sticky Header Skeleton */}
+            <div className="sticky top-0 z-[60] w-full bg-white/80 dark:bg-black/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800 shadow-sm py-4">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col lg:flex-row gap-4">
+                    <div className="h-10 w-48 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
+                    <div className="h-10 w-full lg:flex-1 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
+                    <div className="h-10 w-64 bg-zinc-200 dark:bg-zinc-800 rounded-xl ml-auto" />
                 </div>
-                <div className="h-6 w-48 bg-zinc-200 dark:bg-zinc-800 rounded-full" />
             </div>
 
             {/* Healthy Picks Selector Skeleton */}
