@@ -2,6 +2,7 @@
 
 import { getMealPeriodLabel } from '@/lib/utils'
 import { useRouter, useSearchParams } from 'next/navigation'
+import DiningHallSelector from './DiningHallSelector'
 
 interface MenuHeaderProps {
     // Date props
@@ -11,6 +12,10 @@ interface MenuHeaderProps {
     periods: string[]
     selectedPeriod: string
     onPeriodChange: (period: string) => void
+    // Dining Hall Props
+    diningHalls: string[]
+    selectedHall: string
+    onHallChange?: (hall: string) => void
     // Search & Sort props
     searchQuery: string
     onSearchChange: (query: string) => void
@@ -21,12 +26,20 @@ interface MenuHeaderProps {
     onToggleCondiments: (hide: boolean) => void
 }
 
+const HALL_SLUGS: Record<string, string> = {
+    'Chase': 'chase',
+    'Top of Lenoir': 'lenoir',
+}
+
 export default function MenuHeader({
     dates,
     selectedDate,
     periods,
     selectedPeriod,
     onPeriodChange,
+    diningHalls,
+    selectedHall,
+    onHallChange,
     searchQuery,
     onSearchChange,
     sortBy,
@@ -40,6 +53,13 @@ export default function MenuHeader({
     const handleDateChange = (date: string) => {
         const params = new URLSearchParams(searchParams.toString())
         params.set('date', date)
+        router.push(`/?${params.toString()}`)
+    }
+
+    const handleHallChange = (hall: string) => {
+        const params = new URLSearchParams(searchParams.toString())
+        const slug = HALL_SLUGS[hall] || 'chase'
+        params.set('hall', slug)
         router.push(`/?${params.toString()}`)
     }
 
@@ -74,26 +94,37 @@ export default function MenuHeader({
 
                         <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800 mx-1 hidden sm:block" />
 
-                        <div className="flex p-1 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50">
-                            {periods.map((period) => {
-                                const isActive = period === selectedPeriod
-                                return (
-                                    <button
-                                        key={period}
-                                        onClick={() => onPeriodChange(period)}
-                                        className={`
-                                            px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all
-                                            ${isActive
-                                                ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-sm'
-                                                : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-                                            }
-                                        `}
-                                    >
-                                        {getMealPeriodLabel(period).replace('Lunch', 'L')}
-                                    </button>
-                                )
-                            })}
+                        <div className="relative group">
+                            <select
+                                value={selectedPeriod}
+                                onChange={(e) => onPeriodChange(e.target.value)}
+                                className="pl-4 pr-10 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 text-sm font-bold text-zinc-900 dark:text-zinc-50 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            >
+                                {periods.map((period) => {
+                                    // Helper to capitalize the first letter of each word
+                                    const capitalizeWords = (str: string) => {
+                                        return str.replace(/\b\w/g, l => l.toUpperCase());
+                                    };
+
+                                    return (
+                                        <option key={period} value={period}>
+                                            {capitalizeWords(period)}
+                                        </option>
+                                    );
+                                })}
+                            </select>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                            </div>
                         </div>
+
+                        <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800 mx-1 hidden sm:block" />
+
+                        <DiningHallSelector
+                            halls={diningHalls}
+                            selectedHall={selectedHall}
+                            onHallChange={onHallChange || handleHallChange}
+                        />
                     </div>
 
                     {/* Middle: Search bar */}

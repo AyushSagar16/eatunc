@@ -13,6 +13,7 @@ interface MenuEntry {
     meal_station: string | null
     recipe_number: number
     master_food_items: MasterFoodItem | null
+    dining_hall?: string | null
 }
 
 interface MenuContainerProps {
@@ -20,13 +21,15 @@ interface MenuContainerProps {
     availablePeriods: string[]
     availableDates: string[]
     selectedDate: string
+    selectedHall: string
 }
 
 export default function MenuContainer({
     allEntries,
     availablePeriods,
     availableDates,
-    selectedDate
+    selectedDate,
+    selectedHall
 }: MenuContainerProps) {
     // Initialize selectedPeriod default
     const [selectedPeriod, setSelectedPeriod] = useState(availablePeriods[0] || '')
@@ -229,6 +232,24 @@ export default function MenuContainer({
 
     const sortedStations = useMemo(() => {
         return Object.keys(stationsMap).sort((a, b) => {
+            // Priority stations in order
+            const priorityStations = [
+                'The Kitchen Table',
+                'Simply Prepared',
+                'The Grill',
+                'The Griddle'
+            ];
+
+            const indexA = priorityStations.findIndex(s => s.toLowerCase() === a.toLowerCase());
+            const indexB = priorityStations.findIndex(s => s.toLowerCase() === b.toLowerCase());
+
+            // If both are in priority list, sort by their order in that list
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+            // If only A is in priority list, it comes first
+            if (indexA !== -1) return -1;
+            // If only B is in priority list, it comes first
+            if (indexB !== -1) return 1;
+
             const bottomStations = ['beverages', 'condiments', 'spreads', 'cereal', 'breads', 'bakery', 'dessert']
             const isABottom = bottomStations.some(s => a.toLowerCase().includes(s))
             const isBBottom = bottomStations.some(s => b.toLowerCase().includes(s))
@@ -247,6 +268,8 @@ export default function MenuContainer({
                 periods={availablePeriods}
                 selectedPeriod={selectedPeriod}
                 onPeriodChange={setSelectedPeriod}
+                diningHalls={['Chase', 'Top of Lenoir']}
+                selectedHall={selectedHall}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 sortBy={sortBy}

@@ -16,8 +16,6 @@ export default function FoodCard({ item, station, reason, mealPeriod, onClick }:
     const {
         food_name,
         calories_kcal,
-        protein_g,
-        fat_g,
     } = item
 
     return (
@@ -48,18 +46,7 @@ export default function FoodCard({ item, station, reason, mealPeriod, onClick }:
                         </span>
                     </div>
 
-                    <div className="flex flex-col gap-1.5 items-end mb-1">
-                        {protein_g !== null && (
-                            <div className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 shadow-sm">
-                                <span className="text-[10px] font-black text-zinc-600 dark:text-zinc-400 whitespace-nowrap">P: {protein_g}g</span>
-                            </div>
-                        )}
-                        {fat_g !== null && (
-                            <div className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 shadow-sm">
-                                <span className="text-[10px] font-black text-zinc-600 dark:text-zinc-400 whitespace-nowrap">F: {fat_g}g</span>
-                            </div>
-                        )}
-                    </div>
+
                 </div>
             </div>
         </div>

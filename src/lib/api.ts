@@ -66,6 +66,24 @@ export async function getMenuByDateAndHall(date: string, diningHall: string) {
 }
 
 /**
+ * Cached version of getMenuByDateAndHall for optimized page rendering.
+ */
+export const getFullMenuByDateAndHall = cache(async (date: string, diningHall: string) => {
+    return await supabase
+        .from('menus')
+        .select(`
+            *,
+            menu_entries (
+                *,
+                master_food_items (*)
+            )
+        `)
+        .eq('menu_date', date)
+        .eq('dining_hall', diningHall)
+        .maybeSingle()
+})
+
+/**
  * Fetch all food items.
  */
 export async function getAllFoodItems() {
