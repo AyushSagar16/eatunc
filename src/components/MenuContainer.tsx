@@ -61,7 +61,7 @@ export default function MenuContainer({
         )
     }
 
-    const [isAllItemsOpen, setIsAllItemsOpen] = useState(false)
+    const [isAllItemsOpen, setIsAllItemsOpen] = useState(true)
     const [selectedItemForModal, setSelectedItemForModal] = useState<MasterFoodItem | null>(null)
     const [selectedItemStation, setSelectedItemStation] = useState<string>('')
 

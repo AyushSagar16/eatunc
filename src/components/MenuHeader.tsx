@@ -70,26 +70,38 @@ export default function MenuHeader({
 
                     {/* Left: Date & Meal Selectors */}
                     <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
-                        <div className="relative group">
-                            <select
-                                value={selectedDate}
-                                onChange={(e) => handleDateChange(e.target.value)}
-                                className="pl-4 pr-10 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 text-sm font-bold text-zinc-900 dark:text-zinc-50 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        {/* Date Stepper */}
+                        <div className="flex items-center p-1 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50">
+                            <button
+                                onClick={() => {
+                                    const currIdx = dates.indexOf(selectedDate);
+                                    if (currIdx > 0) handleDateChange(dates[currIdx - 1]);
+                                }}
+                                disabled={dates.indexOf(selectedDate) <= 0}
+                                className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-white dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 disabled:opacity-30 disabled:pointer-events-none transition-all"
                             >
-                                {dates.map((date) => (
-                                    <option key={date} value={date}>
-                                        {new Date(date).toLocaleDateString('en-US', {
-                                            weekday: 'short',
-                                            month: 'short',
-                                            day: 'numeric',
-                                            timeZone: 'UTC',
-                                        })}
-                                    </option>
-                                ))}
-                            </select>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+                            </button>
+
+                            <div className="px-3 min-w-[120px] text-center font-bold text-sm text-zinc-900 dark:text-zinc-50">
+                                {new Date(selectedDate).toLocaleDateString('en-US', {
+                                    weekday: 'short',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    timeZone: 'UTC',
+                                })}
                             </div>
+
+                            <button
+                                onClick={() => {
+                                    const currIdx = dates.indexOf(selectedDate);
+                                    if (currIdx < dates.length - 1) handleDateChange(dates[currIdx + 1]);
+                                }}
+                                disabled={dates.indexOf(selectedDate) >= dates.length - 1}
+                                className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-white dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 disabled:opacity-30 disabled:pointer-events-none transition-all"
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+                            </button>
                         </div>
 
                         <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800 mx-1 hidden sm:block" />

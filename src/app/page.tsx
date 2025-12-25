@@ -30,9 +30,27 @@ async function MenuContent({ date, hallSlug }: { date?: string, hallSlug: string
 
   const { data: dateData } = await dateDataPromise;
 
-  // Get unique dates
-  const availableDates = Array.from(new Set(dateData?.map(d => d.menu_date) || []));
-  const selectedDate = date || availableDates[0];
+  // Get unique dates and sort them
+  const availableDates = Array.from(new Set(dateData?.map(d => d.menu_date) || [])).sort();
+
+  // Default date logic: Try to find today, otherwise find closest
+  let defaultDate = availableDates[0];
+  if (availableDates.length > 0) {
+    const today = new Date().toISOString().split('T')[0];
+    if (availableDates.includes(today)) {
+      defaultDate = today;
+    } else {
+      // Find closest date
+      const todayTime = new Date(today).getTime();
+      defaultDate = availableDates.reduce((prev, curr) => {
+        const prevDiff = Math.abs(new Date(prev).getTime() - todayTime);
+        const currDiff = Math.abs(new Date(curr).getTime() - todayTime);
+        return currDiff < prevDiff ? curr : prev;
+      });
+    }
+  }
+
+  const selectedDate = date || defaultDate;
 
   if (!selectedDate) {
     return (
