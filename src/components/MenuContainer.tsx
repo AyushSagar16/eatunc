@@ -191,14 +191,8 @@ export default function MenuContainer({
                     return
                 }
 
-                // Nutrition Filters (Intersection)
-                if (activeFilters.length > 0) {
-                    for (const filter of activeFilters) {
-                        if (filter === 'protein' && (item.protein_g ?? 0) < 20) return
-                        if (filter === 'calories' && ((item.calories_kcal ?? 0) > 350 || (item.calories_kcal ?? 0) === 0)) return
-                        if (filter === 'fat' && ((item.fat_g ?? 0) > 8 || (item.calories_kcal ?? 0) === 0)) return
-                    }
-                }
+                // Nutrition Filters (Intersection) - REMOVED for All Items
+                // Filters now only apply to "Top Picks" section
 
                 if (hideCondiments) {
                     const stationMatch = beverageKeywords.some(kw => station.toLowerCase().includes(kw))

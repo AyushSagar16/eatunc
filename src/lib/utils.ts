@@ -34,3 +34,20 @@ export function calculateHealthyScore(item: any, preset: string): number {
             return protein * 1.5 - cal / 70 - fat * 1.2 - carbs / 80;
     }
 }
+
+export function getClosestDate(availableDates: string[]): string {
+    if (availableDates.length === 0) return new Date().toISOString().split('T')[0];
+
+    const today = new Date().toISOString().split('T')[0];
+    if (availableDates.includes(today)) {
+        return today;
+    }
+
+    // Find closest date
+    const todayTime = new Date(today).getTime();
+    return availableDates.reduce((prev, curr) => {
+        const prevDiff = Math.abs(new Date(prev).getTime() - todayTime);
+        const currDiff = Math.abs(new Date(curr).getTime() - todayTime);
+        return currDiff < prevDiff ? curr : prev;
+    });
+}
