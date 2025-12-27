@@ -1,4 +1,5 @@
 import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
 import { supabase } from './supabase'
 import { Database } from '@/lib/database.types'
 
@@ -66,22 +67,43 @@ export async function getMenuByDateAndHall(date: string, diningHall: string) {
 }
 
 /**
- * Cached version of getMenuByDateAndHall for optimized page rendering.
+ * Optimized: Cached version with Next.js unstable_cache for persistent caching.
+ * Uses selective field fetching to reduce payload size.
  */
-export const getFullMenuByDateAndHall = cache(async (date: string, diningHall: string) => {
-    return await supabase
-        .from('menus')
-        .select(`
-            *,
-            menu_entries (
-                *,
-                master_food_items (*)
-            )
-        `)
-        .eq('menu_date', date)
-        .eq('dining_hall', diningHall)
-        .maybeSingle()
-})
+export const getFullMenuByDateAndHall = unstable_cache(
+    async (date: string, diningHall: string) => {
+        // Only select fields we actually use to reduce payload size
+        return await supabase
+            .from('menus')
+            .select(`
+                id,
+                menu_date,
+                dining_hall,
+                menu_entries (
+                    meal_period,
+                    meal_station,
+                    recipe_number,
+                    master_food_items (
+                        recipe_number,
+                        food_name,
+                        calories_kcal,
+                        protein_g,
+                        fat_g,
+                        carbohydrates_g,
+                        amount_per_serving
+                    )
+                )
+            `)
+            .eq('menu_date', date)
+            .eq('dining_hall', diningHall)
+            .maybeSingle()
+    },
+    ['menu-by-date-hall'],
+    {
+        revalidate: 3600, // Cache for 1 hour
+        tags: ['menus']
+    }
+)
 
 /**
  * Fetch all food items.
@@ -91,26 +113,45 @@ export async function getAllFoodItems() {
 }
 
 /**
- * Fetch all unique dates from the menus table.
+ * Optimized: Fetch unique dates with persistent caching.
  */
-export const getAvailableDates = cache(async () => {
-    return await supabase
-        .from('menus')
-        .select('menu_date')
-        .order('menu_date', { ascending: false })
-})
+export const getAvailableDates = unstable_cache(
+    async () => {
+        return await supabase
+            .from('menus')
+            .select('menu_date')
+            .order('menu_date', { ascending: false })
+    },
+    ['available-dates'],
+    {
+        revalidate: 1800, // Cache for 30 minutes
+        tags: ['menus', 'dates']
+    }
+)
 
 /**
- * Optimized: Fetch all menus for a date including entries and food items in one query.
+ * Optimized: Fetch all menus for a date with field selection.
  */
 export const getFullMenusByDate = cache(async (date: string) => {
     return await supabase
         .from('menus')
         .select(`
-            *,
+            id,
+            menu_date,
+            dining_hall,
             menu_entries (
-                *,
-                master_food_items (*)
+                meal_period,
+                meal_station,
+                recipe_number,
+                master_food_items (
+                    recipe_number,
+                    food_name,
+                    calories_kcal,
+                    protein_g,
+                    fat_g,
+                    carbohydrates_g,
+                    amount_per_serving
+                )
             )
         `)
         .eq('menu_date', date)

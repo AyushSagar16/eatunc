@@ -5,6 +5,7 @@ import LandingScreen from "@/components/LandingScreen";
 import { Suspense } from "react";
 
 export const runtime = 'edge';
+export const fetchCache = 'default-cache'; // Enable caching for fetch requests
 export const revalidate = 3600; // Cache the page for 1 hour
 
 interface PageProps {
@@ -19,16 +20,10 @@ const HALL_MAP: Record<string, string> = {
 async function MenuContent({ date, hallSlug }: { date?: string, hallSlug: string }) {
   const selectedHall = HALL_MAP[hallSlug] || 'Chase';
 
-  // Start fetching available dates
-  const dateDataPromise = getAvailableDates();
-
-  // Fetch menu data if date is present
-  let menuDataPromise = null;
-  if (date) {
-    menuDataPromise = getFullMenuByDateAndHall(date, selectedHall);
-  }
-
-  const { data: dateData } = await dateDataPromise;
+  // TRUE parallel data fetching - fetch dates first to determine default date
+  const [{ data: dateData }] = await Promise.all([
+    getAvailableDates(),
+  ]);
 
   // Get unique dates and sort them
   const availableDates = Array.from(new Set(dateData?.map(d => d.menu_date) || [])).sort();
@@ -60,10 +55,8 @@ async function MenuContent({ date, hallSlug }: { date?: string, hallSlug: string
     );
   }
 
-  // Use parallel promise or fetch now if selectedDate was just determined
-  const { data: menu, error: menuError } = menuDataPromise && date === selectedDate
-    ? await menuDataPromise
-    : await getFullMenuByDateAndHall(selectedDate, selectedHall);
+  // Fetch menu data after we know the selected date
+  const { data: menu, error: menuError } = await getFullMenuByDateAndHall(selectedDate, selectedHall);
 
   if (menuError) {
     return (

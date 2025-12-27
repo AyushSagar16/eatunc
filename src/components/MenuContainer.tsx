@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { MasterFoodItem } from '@/lib/api'
 import FoodCard from '@/components/FoodCard'
 import FoodModal from '@/components/FoodModal'
@@ -66,7 +66,16 @@ export default function MenuContainer({
     const [selectedItemStation, setSelectedItemStation] = useState<string>('')
 
     const [searchQuery, setSearchQuery] = useState('')
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
     const [sortBy, setSortBy] = useState<'recommended' | 'calories' | 'protein' | 'fat' | 'alphabetical'>('recommended')
+
+    // Debounce search input to prevent excessive re-renders
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery)
+        }, 300) // 300ms debounce
+        return () => clearTimeout(timer)
+    }, [searchQuery])
 
     const baseFilteredItems = useMemo(() => {
         const items: { item: MasterFoodItem; station: string }[] = []
@@ -79,8 +88,8 @@ export default function MenuContainer({
                 const item = entry.master_food_items
                 const station = entry.meal_station || 'Other'
 
-                // Search Filter
-                if (searchQuery && !item.food_name?.toLowerCase().includes(searchQuery.toLowerCase())) {
+                // Search Filter (using debounced query)
+                if (debouncedSearchQuery && !item.food_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) {
                     return
                 }
 
@@ -104,7 +113,7 @@ export default function MenuContainer({
             }
         })
         return items
-    }, [allEntries, selectedPeriod, hideCondiments, searchQuery])
+    }, [allEntries, selectedPeriod, hideCondiments, debouncedSearchQuery])
 
     const applyGlobalSort = (items: any[]) => {
         if (sortBy === 'recommended') return items;
@@ -186,8 +195,8 @@ export default function MenuContainer({
                 const item = entry.master_food_items
                 const station = entry.meal_station || 'Other'
 
-                // Search Filter
-                if (searchQuery && !item.food_name?.toLowerCase().includes(searchQuery.toLowerCase())) {
+                // Search Filter (using debounced query)
+                if (debouncedSearchQuery && !item.food_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) {
                     return
                 }
 
@@ -222,10 +231,21 @@ export default function MenuContainer({
         });
 
         return map
-    }, [allEntries, selectedPeriod, hideCondiments, searchQuery, sortBy, activeFilters])
+    }, [allEntries, selectedPeriod, hideCondiments, debouncedSearchQuery, sortBy])
+
+    // Initial visibility for stations (show first 3 immediately)
+    const [visibleStationsCount, setVisibleStationsCount] = useState(3)
+
+    useEffect(() => {
+        // Stagger loading: Show remaining stations after initial render
+        const timer = setTimeout(() => {
+            setVisibleStationsCount(100) // Show all
+        }, 50) // Reduced to 50ms for faster perceived performance
+        return () => clearTimeout(timer)
+    }, [selectedPeriod]) // Reset when meal period changes
 
     const sortedStations = useMemo(() => {
-        return Object.keys(stationsMap).sort((a, b) => {
+        const allSorted = Object.keys(stationsMap).sort((a, b) => {
             // Priority stations in order
             const priorityStations = [
                 'The Kitchen Table',
@@ -252,7 +272,13 @@ export default function MenuContainer({
             if (!isABottom && isBBottom) return -1
             return a.localeCompare(b)
         })
+
+        return allSorted;
     }, [stationsMap])
+
+    const visibleStations = useMemo(() => {
+        return sortedStations.slice(0, visibleStationsCount);
+    }, [sortedStations, visibleStationsCount]);
 
     return (
         <div className="flex flex-col gap-8">
@@ -339,7 +365,7 @@ export default function MenuContainer({
                         </div>
                     </button>
 
-                    {isAllItemsOpen && sortedStations.map((station) => (
+                    {isAllItemsOpen && visibleStations.map((station) => (
                         <section key={station} className="flex flex-col gap-6">
                             <div className="flex items-center gap-4">
                                 <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />

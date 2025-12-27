@@ -1,10 +1,32 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import DitherShader from './ui/dither-shader'
 
 export default function LandingScreen() {
     const router = useRouter()
+
+    // Prefetch menus for both halls in the background
+    useEffect(() => {
+        const prefetchMenus = async () => {
+            // Don't pass a date - let the API route find the closest available date
+            // This ensures we only prefetch if there's actually menu data available
+            try {
+                await Promise.all([
+                    fetch(`/api/prefetch?hall=Chase`),
+                    fetch(`/api/prefetch?hall=Top of Lenoir`)
+                ])
+            } catch (error) {
+                // Silently fail - prefetch is an optimization, not critical
+                console.log('Prefetch skipped:', error)
+            }
+        }
+
+        // Small delay to not block initial page render
+        const timer = setTimeout(prefetchMenus, 100)
+        return () => clearTimeout(timer)
+    }, [])
 
     const handleSelect = (hall: string) => {
         router.push(`/?hall=${hall}`)

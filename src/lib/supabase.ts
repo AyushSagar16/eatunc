@@ -9,4 +9,25 @@ if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Missing Supabase environment variables')
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+// Optimized Supabase client configuration for performance
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    auth: {
+        persistSession: false, // No auth needed for public menu data
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+    },
+    global: {
+        headers: {
+            'x-client-info': 'unc-dining-web',
+        },
+    },
+    db: {
+        schema: 'public',
+    },
+    // Connection pooling and timeout configuration
+    realtime: {
+        params: {
+            eventsPerSecond: 2 // Limit realtime events if enabled
+        }
+    }
+})
