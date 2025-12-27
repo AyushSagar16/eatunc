@@ -3,6 +3,7 @@
 import { MasterFoodItem } from '@/lib/api'
 import { getMealPeriodLabel } from '@/lib/utils'
 import { useEffect } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 
 interface FoodModalProps {
     item: MasterFoodItem
@@ -49,92 +50,159 @@ export default function FoodModal({
     const isLowFat = (fat_g ?? 0) <= 8 && (calories_kcal ?? 0) > 0
 
     return (
-        <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="modal-title"
-        >
-            <div
-                className="absolute inset-0 bg-black/80 backdrop-blur-xl transition-opacity"
-                onClick={onClose}
-            />
-
-            <div className="relative w-full max-w-lg transform overflow-hidden rounded-3xl bg-white p-8 shadow-2xl transition-all dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                <button
-                    onClick={onClose}
-                    className="absolute right-6 top-6 rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 transition-colors z-10"
+        <AnimatePresence>
+            {isOpen && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="modal-title"
                 >
-                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute inset-0 bg-black/80 backdrop-blur-xl"
+                        onClick={onClose}
+                    />
 
-                <div className="flex flex-col gap-6">
-                    <div>
-                        <div className="flex flex-wrap gap-2 mb-3">
-                            <span className="rounded-full bg-blue-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                                Nutritional Details
-                            </span>
-                            {isHighProtein && (
-                                <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                    High Protein
-                                </span>
-                            )}
-                            {isLowCal && (
-                                <span className="rounded-full bg-amber-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
-                                    Low Cal
-                                </span>
-                            )}
-                            {isLowFat && (
-                                <span className="rounded-full bg-rose-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
-                                    Low Fat
-                                </span>
-                            )}
-                        </div>
-                        <h2 id="modal-title" className="text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">
-                            {food_name || 'Unknown Item'}
-                        </h2>
-                        <p className="mt-2 text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.1em]">
-                            {getMealPeriodLabel(mealPeriod)} • {station}
-                        </p>
-                    </div>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                        transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30
+                        }}
+                        className="relative w-full max-w-lg transform overflow-hidden rounded-3xl bg-white p-8 shadow-2xl dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
+                    >
+                        <motion.button
+                            onClick={onClose}
+                            whileHover={{ scale: 1.1, rotate: 90 }}
+                            whileTap={{ scale: 0.9 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                            className="absolute right-6 top-6 rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 transition-colors z-10"
+                        >
+                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </motion.button>
 
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 py-6 border-y border-zinc-100 dark:border-zinc-800">
-                        <div className="flex flex-col">
-                            <span className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-1">Total Calories</span>
-                            <span className="text-5xl font-black text-blue-600 dark:text-blue-400">
-                                {calories_kcal ?? 0}
-                                <span className="ml-2 text-lg font-normal text-zinc-400">kcal</span>
-                            </span>
-                        </div>
-                        {amount_per_serving && (
-                            <div className="flex flex-col justify-end">
-                                <span className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-1">Serving Size</span>
-                                <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{amount_per_serving}</span>
-                            </div>
-                        )}
-                    </div>
+                        <motion.div
+                            initial="hidden"
+                            animate="visible"
+                            variants={{
+                                hidden: { opacity: 0 },
+                                visible: {
+                                    opacity: 1,
+                                    transition: {
+                                        staggerChildren: 0.1,
+                                        delayChildren: 0.1
+                                    }
+                                }
+                            }}
+                            className="flex flex-col gap-6"
+                        >
+                            <motion.div variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    <span className="rounded-full bg-blue-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                                        Nutritional Details
+                                    </span>
+                                    {isHighProtein && (
+                                        <motion.span
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            transition={{ delay: 0.2, type: "spring", stiffness: 500 }}
+                                            className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                        >
+                                            High Protein
+                                        </motion.span>
+                                    )}
+                                    {isLowCal && (
+                                        <motion.span
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            transition={{ delay: 0.25, type: "spring", stiffness: 500 }}
+                                            className="rounded-full bg-amber-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
+                                        >
+                                            Low Cal
+                                        </motion.span>
+                                    )}
+                                    {isLowFat && (
+                                        <motion.span
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            transition={{ delay: 0.3, type: "spring", stiffness: 500 }}
+                                            className="rounded-full bg-rose-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"
+                                        >
+                                            Low Fat
+                                        </motion.span>
+                                    )}
+                                </div>
+                                <h2 id="modal-title" className="text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">
+                                    {food_name || 'Unknown Item'}
+                                </h2>
+                                <p className="mt-2 text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.1em]">
+                                    {getMealPeriodLabel(mealPeriod)} • {station}
+                                </p>
+                            </motion.div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                        <NutrientHighlight label="Protein" value={protein_g} unit="g" color="text-emerald-600 dark:text-emerald-400" bgColor="bg-emerald-500/10" />
-                        <NutrientHighlight label="Carbs" value={carbohydrates_g} unit="g" color="text-amber-600 dark:text-amber-400" bgColor="bg-amber-500/10" />
-                        <NutrientHighlight label="Fat" value={fat_g} unit="g" color="text-rose-600 dark:text-rose-400" bgColor="bg-rose-500/10" />
-                    </div>
+                            <motion.div
+                                variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                                className="grid grid-cols-1 gap-6 sm:grid-cols-2 py-6 border-y border-zinc-100 dark:border-zinc-800"
+                            >
+                                <div className="flex flex-col">
+                                    <span className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-1">Total Calories</span>
+                                    <motion.span
+                                        initial={{ scale: 0.5, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                                        className="text-5xl font-black text-blue-600 dark:text-blue-400"
+                                    >
+                                        {calories_kcal ?? 0}
+                                        <span className="ml-2 text-lg font-normal text-zinc-400">kcal</span>
+                                    </motion.span>
+                                </div>
+                                {amount_per_serving && (
+                                    <div className="flex flex-col justify-end">
+                                        <span className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-1">Serving Size</span>
+                                        <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{amount_per_serving}</span>
+                                    </div>
+                                )}
+                            </motion.div>
+
+                            <motion.div
+                                variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+                                className="grid grid-cols-3 gap-4"
+                            >
+                                <NutrientHighlight label="Protein" value={protein_g} unit="g" color="text-emerald-600 dark:text-emerald-400" bgColor="bg-emerald-500/10" delay={0.4} />
+                                <NutrientHighlight label="Carbs" value={carbohydrates_g} unit="g" color="text-amber-600 dark:text-amber-400" bgColor="bg-amber-500/10" delay={0.45} />
+                                <NutrientHighlight label="Fat" value={fat_g} unit="g" color="text-rose-600 dark:text-rose-400" bgColor="bg-rose-500/10" delay={0.5} />
+                            </motion.div>
+                        </motion.div>
+                    </motion.div>
                 </div>
-            </div>
-        </div>
+            )}
+        </AnimatePresence>
     )
 }
 
-function NutrientHighlight({ label, value, unit, color, bgColor }: { label: string, value: number | null, unit: string, color: string, bgColor: string }) {
+function NutrientHighlight({ label, value, unit, color, bgColor, delay = 0 }: { label: string, value: number | null, unit: string, color: string, bgColor: string, delay?: number }) {
     return (
-        <div className={`flex flex-col items-center gap-1 rounded-2xl p-4 ${bgColor}`}>
+        <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ delay, type: "spring", stiffness: 300, damping: 20 }}
+            whileHover={{ scale: 1.05, y: -2 }}
+            className={`flex flex-col items-center gap-1 rounded-2xl p-4 ${bgColor}`}
+        >
             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{label}</span>
             <div className={`flex items-baseline gap-0.5 ${color}`}>
                 <span className="text-xl font-black">{value ?? 0}</span>
                 <span className="text-xs font-bold opacity-70">{unit}</span>
             </div>
-        </div>
+        </motion.div>
     )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { motion } from 'motion/react'
 
 export type FilterOption = 'protein' | 'calories' | 'fat' | 'balanced'
 
@@ -18,26 +19,55 @@ export default function FilterPills({ activeFilters, onToggleFilter }: FilterPil
     ]
 
     return (
-        <div className="flex flex-wrap gap-2 py-4">
+        <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                    opacity: 1,
+                    transition: {
+                        staggerChildren: 0.05
+                    }
+                }
+            }}
+            className="flex flex-wrap gap-2 py-4"
+        >
             {filters.map((f) => {
                 const isActive = activeFilters.includes(f.id)
                 return (
-                    <button
+                    <motion.button
                         key={f.id}
+                        variants={{
+                            hidden: { opacity: 0, scale: 0.8 },
+                            visible: { opacity: 1, scale: 1 }
+                        }}
                         onClick={() => onToggleFilter(f.id)}
                         title={f.description}
+                        whileHover={{ y: -2 }}
+                        whileTap={{ scale: 0.97 }}
+                        animate={{
+                            backgroundColor: isActive ? 'rgb(37, 99, 235)' : 'transparent',
+                            borderColor: isActive ? 'rgb(37, 99, 235)' : 'rgb(228, 228, 231)',
+                            color: isActive ? 'rgb(255, 255, 255)' : 'rgb(113, 113, 122)'
+                        }}
+                        transition={{
+                            type: "spring",
+                            stiffness: 500,
+                            damping: 30
+                        }}
                         className={`
-                            px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 border
+                            px-5 py-2 rounded-full text-sm font-bold border
                             ${isActive
-                                ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20'
-                                : 'bg-transparent border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:text-zinc-800 dark:border-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-300'
+                                ? 'shadow-md shadow-blue-500/20'
+                                : 'dark:border-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-300'
                             }
                         `}
                     >
                         {f.label}
-                    </button>
+                    </motion.button>
                 )
             })}
-        </div>
+        </motion.div>
     )
 }

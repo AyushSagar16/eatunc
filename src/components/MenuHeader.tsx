@@ -3,6 +3,7 @@
 import { getMealPeriodLabel } from '@/lib/utils'
 import { useRouter, useSearchParams } from 'next/navigation'
 import DiningHallSelector from './DiningHallSelector'
+import { motion } from 'motion/react'
 
 interface MenuHeaderProps {
     // Date props
@@ -72,16 +73,18 @@ export default function MenuHeader({
                     <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
                         {/* Date Stepper */}
                         <div className="flex items-center p-1 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50">
-                            <button
+                            <motion.button
                                 onClick={() => {
                                     const currIdx = dates.indexOf(selectedDate);
                                     if (currIdx > 0) handleDateChange(dates[currIdx - 1]);
                                 }}
                                 disabled={dates.indexOf(selectedDate) <= 0}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
                                 className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-white dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 disabled:opacity-30 disabled:pointer-events-none transition-all"
                             >
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
-                            </button>
+                            </motion.button>
 
                             <div className="px-3 min-w-[120px] text-center font-bold text-sm text-zinc-900 dark:text-zinc-50">
                                 {new Date(selectedDate).toLocaleDateString('en-US', {
@@ -92,16 +95,18 @@ export default function MenuHeader({
                                 })}
                             </div>
 
-                            <button
+                            <motion.button
                                 onClick={() => {
                                     const currIdx = dates.indexOf(selectedDate);
                                     if (currIdx < dates.length - 1) handleDateChange(dates[currIdx + 1]);
                                 }}
                                 disabled={dates.indexOf(selectedDate) >= dates.length - 1}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
                                 className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-white dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 disabled:opacity-30 disabled:pointer-events-none transition-all"
                             >
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-                            </button>
+                            </motion.button>
                         </div>
 
                         <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800 mx-1 hidden sm:block" />
@@ -165,8 +170,20 @@ export default function MenuHeader({
                                     onChange={(e) => onToggleCondiments(e.target.checked)}
                                     className="sr-only"
                                 />
-                                <div className={`w-9 h-5 transition-colors rounded-full border border-zinc-200 dark:border-zinc-800 ${hideCondiments ? 'bg-blue-600' : 'bg-zinc-200 dark:bg-zinc-900'}`} />
-                                <div className={`absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-transform ${hideCondiments ? 'translate-x-4' : 'translate-x-0'} shadow-sm`} />
+                                <motion.div
+                                    animate={{
+                                        backgroundColor: hideCondiments ? 'rgb(37, 99, 235)' : 'rgb(228, 228, 231)'
+                                    }}
+                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                    className="w-9 h-5 rounded-full border border-zinc-200 dark:border-zinc-800"
+                                />
+                                <motion.div
+                                    animate={{
+                                        x: hideCondiments ? 16 : 0
+                                    }}
+                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                    className="absolute top-1 left-1 w-3 h-3 bg-white rounded-full shadow-sm"
+                                />
                             </div>
                             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors whitespace-nowrap">
                                 Hide Extras

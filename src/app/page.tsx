@@ -5,6 +5,7 @@ import LandingScreen from "@/components/LandingScreen";
 import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import BackButton from "@/components/BackButton";
 
 export const runtime = 'edge';
 export const fetchCache = 'default-cache'; // Enable caching for fetch requests
@@ -111,16 +112,7 @@ async function MenuContent({ date, hallSlug }: { date?: string, hallSlug: string
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-6">
 
         <div className="flex flex-col gap-6">
-          <Link
-            href="/"
-            className="self-start inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-sm font-medium transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Main
-          </Link>
-
+          <BackButton />
           <div className="flex items-center gap-4">
             <div className="relative w-12 h-12 md:w-16 md:h-16 shrink-0 rounded-xl overflow-hidden shadow-lg border border-zinc-200 dark:border-zinc-800">
               <Image
