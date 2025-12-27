@@ -22,6 +22,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "UNC Dining Menu",
   description: "A premium dashboard for UNC dining menus and nutrition.",
+  icons: {
+    icon: '/unc-food-logo.png',
+  },
 };
 
 export default function RootLayout({

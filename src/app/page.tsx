@@ -3,6 +3,8 @@ import MenuContainer from "@/components/MenuContainer";
 import MenuSkeleton from "@/components/MenuSkeleton";
 import LandingScreen from "@/components/LandingScreen";
 import { Suspense } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 export const runtime = 'edge';
 export const fetchCache = 'default-cache'; // Enable caching for fetch requests
@@ -107,13 +109,37 @@ async function MenuContent({ date, hallSlug }: { date?: string, hallSlug: string
     <div className="relative">
       {/* Prominent Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-6">
-        <div className="space-y-1">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 opacity-80">
-            Eat UNC
-          </p>
-          <h1 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
-            {selectedHall}
-          </h1>
+
+        <div className="flex flex-col gap-6">
+          <Link
+            href="/"
+            className="self-start inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-sm font-medium transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Main
+          </Link>
+
+          <div className="flex items-center gap-4">
+            <div className="relative w-12 h-12 md:w-16 md:h-16 shrink-0 rounded-xl overflow-hidden shadow-lg border border-zinc-200 dark:border-zinc-800">
+              <Image
+                src="/unc-food-logo.png"
+                alt="UNC Food Logo"
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 opacity-80">
+                Eat UNC
+              </p>
+              <h1 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
+                {selectedHall}
+              </h1>
+            </div>
+          </div>
         </div>
       </div>
 
