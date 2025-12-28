@@ -24,6 +24,79 @@ interface MenuContainerProps {
     selectedHall: string
 }
 
+interface StationSectionProps {
+    station: string
+    items: MasterFoodItem[]
+    selectedHall: string
+    selectedPeriod: string
+    onItemClick: (item: MasterFoodItem, station: string) => void
+}
+
+const StationSection = ({
+    station,
+    items,
+    selectedHall,
+    selectedPeriod,
+    onItemClick
+}: StationSectionProps) => {
+    const [isCollapsed, setIsCollapsed] = useState(false)
+
+    // Load saved state
+    useEffect(() => {
+        // Sanitize station name for key
+        const safeStation = station.replace(/[^a-zA-Z0-9]/g, '_')
+        const key = `collapsed_${selectedHall}_${safeStation}`
+        const saved = localStorage.getItem(key)
+        if (saved !== null) {
+            setIsCollapsed(saved === 'true')
+        }
+    }, [selectedHall, station])
+
+    const toggle = () => {
+        const safeStation = station.replace(/[^a-zA-Z0-9]/g, '_')
+        const key = `collapsed_${selectedHall}_${safeStation}`
+        const newState = !isCollapsed
+        setIsCollapsed(newState)
+        localStorage.setItem(key, String(newState))
+    }
+
+    return (
+        <section className="flex flex-col gap-6">
+            <button
+                onClick={toggle}
+                className="flex items-center gap-4 group w-full outline-none"
+            >
+                <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800 group-hover:bg-zinc-300 dark:group-hover:bg-zinc-700 transition-colors" />
+                <div className="flex items-center gap-2">
+                    <h2 className="text-sm font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600 dark:group-hover:text-zinc-400 transition-colors">
+                        {station}
+                    </h2>
+                    <div className={`text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400 transition-all duration-300 ${isCollapsed ? '' : 'rotate-180'}`}>
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M5 7l5 5 5-5" />
+                        </svg>
+                    </div>
+                </div>
+                <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800 group-hover:bg-zinc-300 dark:group-hover:bg-zinc-700 transition-colors" />
+            </button>
+
+            {!isCollapsed && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in slide-in-from-top-2 duration-300 ease-out">
+                    {items.map((item) => (
+                        <FoodCard
+                            key={item.recipe_number}
+                            item={item}
+                            station={station}
+                            mealPeriod={selectedPeriod}
+                            onClick={() => onItemClick(item, station)}
+                        />
+                    ))}
+                </div>
+            )}
+        </section>
+    )
+}
+
 export default function MenuContainer({
     allEntries,
     availablePeriods,
@@ -366,30 +439,17 @@ export default function MenuContainer({
                     </button>
 
                     {isAllItemsOpen && visibleStations.map((station) => (
-                        <section key={station} className="flex flex-col gap-6">
-                            <div className="flex items-center gap-4">
-                                <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-                                <h2 className="text-sm font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
-                                    {station}
-                                </h2>
-                                <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                {stationsMap[station].map((item) => (
-                                    <FoodCard
-                                        key={item.recipe_number}
-                                        item={item}
-                                        station={station}
-                                        mealPeriod={selectedPeriod}
-                                        onClick={() => {
-                                            setSelectedItemForModal(item)
-                                            setSelectedItemStation(station)
-                                        }}
-                                    />
-                                ))}
-                            </div>
-                        </section>
+                        <StationSection
+                            key={station}
+                            station={station}
+                            items={stationsMap[station]}
+                            selectedHall={selectedHall}
+                            selectedPeriod={selectedPeriod}
+                            onItemClick={(item, stat) => {
+                                setSelectedItemForModal(item)
+                                setSelectedItemStation(stat)
+                            }}
+                        />
                     ))}
                 </div>
             </div>

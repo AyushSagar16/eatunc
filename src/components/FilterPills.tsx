@@ -45,11 +45,11 @@ export default function FilterPills({ activeFilters, onToggleFilter }: FilterPil
                         onClick={() => onToggleFilter(f.id)}
                         title={f.description}
                         whileHover={{ y: -2 }}
-                        whileTap={{ scale: 0.97 }}
                         animate={{
                             backgroundColor: isActive ? 'rgb(37, 99, 235)' : 'transparent',
                             borderColor: isActive ? 'rgb(37, 99, 235)' : 'rgb(228, 228, 231)',
-                            color: isActive ? 'rgb(255, 255, 255)' : 'rgb(113, 113, 122)'
+                            color: isActive ? 'rgb(255, 255, 255)' : 'rgb(113, 113, 122)',
+                            scale: 1
                         }}
                         transition={{
                             type: "spring",
