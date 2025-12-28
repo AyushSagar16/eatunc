@@ -38,7 +38,7 @@ export default function LandingScreen() {
             {/* Dither Background with Overlay */}
             <div className="absolute inset-0 z-0">
                 <DitherShader
-                    src="/old-well.jpg"
+                    src="/old-well-optimized.jpg"
                     ditherMode="bayer"
                     colorMode="duotone"
                     primaryColor="#13294B" // UNC Navy

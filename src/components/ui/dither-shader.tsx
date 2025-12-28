@@ -40,6 +40,8 @@ interface DitherShaderProps {
   animationSpeed?: number;
   /** Additional CSS classes for the container (use this to set size via Tailwind) */
   className?: string;
+  /** Callback fired when the image finishes loading */
+  onLoad?: () => void;
 }
 
 // 4x4 Bayer matrix for ordered dithering
@@ -111,6 +113,7 @@ export const DitherShader: React.FC<DitherShaderProps> = ({
   animated = false,
   animationSpeed = 0.02,
   className,
+  onLoad,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -249,7 +252,7 @@ export const DitherShader: React.FC<DitherShaderProps> = ({
                   luminance + (ditherThreshold - 0.5) * 0.5;
                 const paletteIndex = Math.floor(
                   clamp(adjustedLuminance, 0, 1) *
-                    (parsedCustomPalette.length - 1),
+                  (parsedCustomPalette.length - 1),
                 );
                 outputColor = parsedCustomPalette[paletteIndex];
               }
@@ -429,6 +432,7 @@ export const DitherShader: React.FC<DitherShaderProps> = ({
         if (isCancelled) return;
         imageRef.current = img;
         processImage(img);
+        onLoad?.();
       };
 
       img.onerror = () => {
