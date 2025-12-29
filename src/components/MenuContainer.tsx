@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 import { MasterFoodItem } from '@/lib/api'
 import FoodCard from '@/components/FoodCard'
 import FoodModal from '@/components/FoodModal'
-import MenuHeader from '@/components/MenuHeader'
-import FilterPills, { FilterOption } from '@/components/FilterPills'
+import FoodDisplayLayout from '@/components/FoodDisplayLayout'
+import FilterSidebar from '@/components/FilterSidebar'
+import { FoodGridSkeleton, ContentLoader } from '@/components/LoadingStates'
+import { FilterOption } from '@/lib/types'
 import { calculateHealthyScore, getMealPeriodLabel } from '@/lib/utils'
 
 interface MenuEntry {
@@ -29,6 +32,9 @@ interface StationSectionProps {
     items: MasterFoodItem[]
     selectedHall: string
     selectedPeriod: string
+    searchQuery: string
+    hasActiveFilters: boolean
+    forceState?: 'expanded' | 'collapsed' | null
     onItemClick: (item: MasterFoodItem, station: string) => void
 }
 
@@ -37,6 +43,9 @@ const StationSection = ({
     items,
     selectedHall,
     selectedPeriod,
+    searchQuery,
+    hasActiveFilters,
+    forceState,
     onItemClick
 }: StationSectionProps) => {
     const [isCollapsed, setIsCollapsed] = useState(false)
@@ -51,6 +60,22 @@ const StationSection = ({
             setIsCollapsed(saved === 'true')
         }
     }, [selectedHall, station])
+
+    // Handle forceState from expand/collapse all
+    useEffect(() => {
+        if (forceState === 'expanded') {
+            setIsCollapsed(false)
+        } else if (forceState === 'collapsed') {
+            setIsCollapsed(true)
+        }
+    }, [forceState])
+
+    // Auto-expand when filters are active
+    useEffect(() => {
+        if (hasActiveFilters && items.length > 0) {
+            setIsCollapsed(false)
+        }
+    }, [hasActiveFilters, items.length])
 
     const toggle = () => {
         const safeStation = station.replace(/[^a-zA-Z0-9]/g, '_')
@@ -71,28 +96,56 @@ const StationSection = ({
                     <h2 className="text-sm font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600 dark:group-hover:text-zinc-400 transition-colors">
                         {station}
                     </h2>
-                    <div className={`text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400 transition-all duration-300 ${isCollapsed ? '' : 'rotate-180'}`}>
+                    <span className="text-xs font-medium text-zinc-300 dark:text-zinc-600">
+                        ({items.length})
+                    </span>
+                    <motion.div
+                        animate={{ rotate: isCollapsed ? 0 : 180 }}
+                        transition={{ duration: 0.2, ease: 'easeInOut' }}
+                        className="text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400"
+                    >
                         <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M5 7l5 5 5-5" />
                         </svg>
-                    </div>
+                    </motion.div>
                 </div>
                 <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800 group-hover:bg-zinc-300 dark:group-hover:bg-zinc-700 transition-colors" />
             </button>
 
-            {!isCollapsed && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in slide-in-from-top-2 duration-300 ease-out">
-                    {items.map((item) => (
-                        <FoodCard
-                            key={item.recipe_number}
-                            item={item}
-                            station={station}
-                            mealPeriod={selectedPeriod}
-                            onClick={() => onItemClick(item, station)}
-                        />
-                    ))}
-                </div>
-            )}
+            <AnimatePresence initial={false}>
+                {!isCollapsed && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        className="overflow-hidden"
+                    >
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {items.map((item, index) => (
+                                <motion.div
+                                    key={item.recipe_number}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{
+                                        delay: Math.min(index * 0.02, 0.4),
+                                        duration: 0.2
+                                    }}
+                                    className="h-full"
+                                >
+                                    <FoodCard
+                                        item={item}
+                                        station={station}
+                                        mealPeriod={selectedPeriod}
+                                        searchQuery={searchQuery}
+                                        onClick={() => onItemClick(item, station)}
+                                    />
+                                </motion.div>
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </section>
     )
 }
@@ -134,7 +187,12 @@ export default function MenuContainer({
         )
     }
 
+    const clearAllFilters = () => {
+        setActiveFilters([])
+    }
+
     const [isAllItemsOpen, setIsAllItemsOpen] = useState(true)
+    const [forceState, setForceState] = useState<'expanded' | 'collapsed' | null>(null)
     const [selectedItemForModal, setSelectedItemForModal] = useState<MasterFoodItem | null>(null)
     const [selectedItemStation, setSelectedItemStation] = useState<string>('')
 
@@ -213,44 +271,57 @@ export default function MenuContainer({
     const healthyPicks = useMemo(() => {
         if (activeFilters.length === 0) return []
 
+        // Count how many filters each item matches
         const picks = baseFilteredItems
-            .filter(({ item }) => {
-                // Apply intersection logic
-                for (const filter of activeFilters) {
-                    if (filter === 'protein' && (item.protein_g ?? 0) < 20) return false
-                    if (filter === 'calories' && ((item.calories_kcal ?? 0) > 350 || (item.calories_kcal ?? 0) === 0)) return false
-                    if (filter === 'fat' && ((item.fat_g ?? 0) > 8 || (item.calories_kcal ?? 0) === 0)) return false
-                }
-
-                // Exclude items with missing nutrition if any filters are active
+            .map(({ item, station }) => {
+                // Exclude items with missing nutrition
                 const cal = item.calories_kcal
                 const protein = item.protein_g
                 const fat = item.fat_g
                 const carbs = item.carbohydrates_g
 
                 if (cal === null || protein === null || fat === null || carbs === null) {
-                    return false
+                    return null
                 }
 
-                return true
-            })
-            .map(({ item, station }) => {
-                // Combined score based on all active filters
-                let totalScore = 0
-                activeFilters.forEach(f => {
-                    totalScore += calculateHealthyScore(item, f)
-                })
-                const score = totalScore / activeFilters.length
+                // Count matched filters
+                let matchCount = 0
+                const matchedFilters: string[] = []
 
-                const reason = activeFilters.map(f => {
-                    if (f === 'protein') return 'High Protein'
-                    if (f === 'calories') return 'Low Calorie'
-                    if (f === 'fat') return 'Low Fat'
-                    return 'Balanced'
-                }).join(' + ')
+                for (const filter of activeFilters) {
+                    let matches = false
+                    switch (filter) {
+                        case 'protein':
+                            matches = (protein ?? 0) >= 20
+                            if (matches) matchedFilters.push('High Protein')
+                            break
+                        case 'calories':
+                            matches = (cal ?? 0) > 0 && (cal ?? 0) <= 350
+                            if (matches) matchedFilters.push('Low Calorie')
+                            break
+                        case 'fat':
+                            matches = (cal ?? 0) > 0 && (fat ?? 0) <= 8
+                            if (matches) matchedFilters.push('Low Fat')
+                            break
+                        case 'balanced':
+                            // Balanced: good macro ratios (at least 15g protein, under 400 cal, under 15g fat)
+                            matches = (protein ?? 0) >= 15 && (cal ?? 0) <= 400 && (fat ?? 0) <= 15
+                            if (matches) matchedFilters.push('Balanced')
+                            break
+                    }
+                    if (matches) matchCount++
+                }
 
-                return { item, station, score, reason }
+                // Only include items matching 2+ filters (or all if only 1 active)
+                const minMatches = activeFilters.length === 1 ? 1 : 2
+                if (matchCount < minMatches) return null
+
+                const score = matchCount + calculateHealthyScore(item, activeFilters[0]) / 100
+                const reason = matchedFilters.join(' + ')
+
+                return { item, station, score, matchCount, reason }
             })
+            .filter((pick): pick is NonNullable<typeof pick> => pick !== null)
             .sort((a, b) => b.score - a.score)
             .slice(0, 8)
 
@@ -362,25 +433,15 @@ export default function MenuContainer({
         })
 
         return (
-            <div className="flex flex-col gap-8">
-                <MenuHeader
-                    dates={availableDates}
-                    selectedDate={selectedDate}
-                    periods={[]}
-                    selectedPeriod=""
-                    onPeriodChange={() => { }}
-                    diningHalls={['Chase', 'Top of Lenoir']}
-                    selectedHall={selectedHall}
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                    sortBy={sortBy}
-                    onSortChange={setSortBy}
-                    hideCondiments={hideCondiments}
-                    onToggleCondiments={setHideCondiments}
-                    simpleMode={true}
-                />
-
-                <div className="max-w-2xl mx-auto px-6 py-20 text-center">
+            <FoodDisplayLayout
+                diningHall={selectedHall}
+                selectedDate={selectedDate}
+                availableDates={availableDates}
+                selectedPeriod=""
+                availablePeriods={[]}
+                onPeriodChange={() => { }}
+            >
+                <div className="max-w-2xl mx-auto py-12 text-center">
                     <div className="p-8 rounded-3xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
                         <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
                             <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -406,126 +467,200 @@ export default function MenuContainer({
                         </a>
                     </div>
                 </div>
-            </div>
+            </FoodDisplayLayout>
         )
     }
 
     return (
-        <div className="flex flex-col gap-8">
-            <MenuHeader
-                dates={availableDates}
-                selectedDate={selectedDate}
-                periods={availablePeriods}
-                selectedPeriod={selectedPeriod}
-                onPeriodChange={setSelectedPeriod}
-                diningHalls={['Chase', 'Top of Lenoir']}
-                selectedHall={selectedHall}
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                sortBy={sortBy}
-                onSortChange={setSortBy}
-                hideCondiments={hideCondiments}
-                onToggleCondiments={setHideCondiments}
-            />
-
-            <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 flex flex-col gap-8 transition-all duration-500 ease-in-out animate-in fade-in slide-in-from-bottom-2">
-                <FilterPills
+        <FoodDisplayLayout
+            diningHall={selectedHall}
+            selectedDate={selectedDate}
+            availableDates={availableDates}
+            selectedPeriod={selectedPeriod}
+            availablePeriods={availablePeriods}
+            onPeriodChange={setSelectedPeriod}
+            activeFilters={activeFilters}
+            onRemoveFilter={toggleFilter}
+            onClearFilters={clearAllFilters}
+            itemCount={Object.values(stationsMap).reduce((sum, items) => sum + items.length, 0)}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+        >
+            <div className="flex gap-6">
+                {/* Filter Sidebar */}
+                <FilterSidebar
                     activeFilters={activeFilters}
                     onToggleFilter={toggleFilter}
+                    onClearAll={clearAllFilters}
                 />
 
-                {activeFilters.length > 0 && healthyPicks.length > 0 && (
-                    <section className="flex flex-col gap-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                                <h2 className="text-xl font-black italic tracking-tight text-green-600 dark:text-green-500">
-                                    TOP PICKS
-                                </h2>
-                                <div className="group relative">
-                                    <div className="cursor-help text-green-600/50 dark:text-green-500/50 hover:text-green-600 dark:hover:text-green-400 transition-colors">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                            <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+                {/* Main Content */}
+                <div className="flex-1 flex flex-col gap-8 transition-all duration-500 ease-in-out animate-in fade-in slide-in-from-bottom-2 min-w-0">
+
+                    {activeFilters.length > 0 && healthyPicks.length > 0 && (
+                        <section className="flex flex-col gap-6 p-6 -mx-4 sm:-mx-6 bg-gradient-to-br from-emerald-50/80 to-teal-50/50 dark:from-emerald-950/30 dark:to-teal-950/20 border-y border-emerald-100 dark:border-emerald-900/30 rounded-none sm:rounded-2xl sm:mx-0 sm:border">
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
+                                        <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                                         </svg>
                                     </div>
-                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 rounded-xl bg-green-50 dark:bg-zinc-900 border border-green-100 dark:border-zinc-800 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 pointer-events-none">
-                                        <p className="text-[11px] font-bold text-green-800 dark:text-green-300 leading-normal">
-                                            Optimizing for {activeFilters.join(' + ')} items within the top nutritional matches.
+                                    <div>
+                                        <h2 className="text-lg font-black tracking-tight text-emerald-700 dark:text-emerald-400">
+                                            Top Picks
+                                        </h2>
+                                        <p className="text-xs text-emerald-600/70 dark:text-emerald-500/70 font-medium">
+                                            {healthyPicks.length} items matching your filters
                                         </p>
-                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-green-50 dark:border-t-zinc-900" />
                                     </div>
                                 </div>
+                                <div className="h-px flex-1 bg-emerald-200/50 dark:bg-emerald-800/30" />
                             </div>
-                            <div className="h-px flex-1 bg-green-100 dark:bg-green-900/30" />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {healthyPicks.map(({ item, station, reason }) => (
-                                <FoodCard
-                                    key={item.recipe_number}
-                                    item={item}
-                                    station={station}
-                                    reason={reason}
-                                    mealPeriod={selectedPeriod}
-                                    onClick={() => {
-                                        setSelectedItemForModal(item)
-                                        setSelectedItemStation(station)
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    </section>
-                )}
+                            <motion.div
+                                key={activeFilters.join('-') + '-picks'}
+                                className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                {healthyPicks.map(({ item, station, reason }, index) => (
+                                    <motion.div
+                                        key={item.recipe_number}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{
+                                            delay: Math.min(index * 0.03, 0.3),
+                                            duration: 0.2
+                                        }}
+                                        className="h-full"
+                                    >
+                                        <FoodCard
+                                            item={item}
+                                            station={station}
+                                            reason={reason}
+                                            mealPeriod={selectedPeriod}
+                                            searchQuery={debouncedSearchQuery}
+                                            onClick={() => {
+                                                setSelectedItemForModal(item)
+                                                setSelectedItemStation(station)
+                                            }}
+                                        />
+                                    </motion.div>
+                                ))}
+                            </motion.div>
+                        </section>
+                    )}
 
-                {/* Individual categorical sections removed in favor of global filter */}
-                {/* They can be re-added if specific un-filtered browsing of "Only Protein" is desired, but 
+                    {/* Individual categorical sections removed in favor of global filter */}
+                    {/* They can be re-added if specific un-filtered browsing of "Only Protein" is desired, but 
                     the prompt specified a row of pills that act as a global intersection filter. */}
 
-                <div className="flex flex-col gap-12">
-                    <button
-                        onClick={() => setIsAllItemsOpen(!isAllItemsOpen)}
-                        className="flex items-center gap-4 group"
-                    >
-                        <h2 className="text-xl font-black italic tracking-tight text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400 transition-colors">
-                            ALL ITEMS
-                        </h2>
-                        <div className="h-px flex-1 bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors" />
-                        <div className={`text-zinc-400 transition-transform duration-300 ${isAllItemsOpen ? 'rotate-180' : ''}`}>
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M5 7l5 5 5-5" />
-                            </svg>
-                        </div>
-                    </button>
+                    <div className="flex flex-col gap-12">
+                        <button
+                            onClick={() => setIsAllItemsOpen(!isAllItemsOpen)}
+                            className="flex items-center gap-4 group"
+                        >
+                            <h2 className="text-xl font-black italic tracking-tight text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400 transition-colors">
+                                ALL ITEMS
+                            </h2>
+                            <div className="h-px flex-1 bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors" />
+                            <div className={`text-zinc-400 transition-transform duration-300 ${isAllItemsOpen ? 'rotate-180' : ''}`}>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M5 7l5 5 5-5" />
+                                </svg>
+                            </div>
+                        </button>
 
-                    {isAllItemsOpen && visibleStations.map((station) => (
-                        <StationSection
-                            key={station}
-                            station={station}
-                            items={stationsMap[station]}
-                            selectedHall={selectedHall}
-                            selectedPeriod={selectedPeriod}
-                            onItemClick={(item, stat) => {
-                                setSelectedItemForModal(item)
-                                setSelectedItemStation(stat)
-                            }}
-                        />
-                    ))}
+                        {/* Expand/Collapse All buttons */}
+                        {isAllItemsOpen && visibleStations.length > 1 && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                        setForceState('expanded')
+                                        setTimeout(() => setForceState(null), 100)
+                                    }}
+                                    className="text-xs font-medium text-zinc-400 hover:text-blue-500 transition-colors px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                >
+                                    Expand All
+                                </button>
+                                <span className="text-zinc-300 dark:text-zinc-700">|</span>
+                                <button
+                                    onClick={() => {
+                                        setForceState('collapsed')
+                                        setTimeout(() => setForceState(null), 100)
+                                    }}
+                                    className="text-xs font-medium text-zinc-400 hover:text-blue-500 transition-colors px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                >
+                                    Collapse All
+                                </button>
+                            </div>
+                        )}
+
+                        {isAllItemsOpen && visibleStations.map((station) => (
+                            <StationSection
+                                key={station}
+                                station={station}
+                                items={stationsMap[station]}
+                                selectedHall={selectedHall}
+                                selectedPeriod={selectedPeriod}
+                                searchQuery={debouncedSearchQuery}
+                                hasActiveFilters={activeFilters.length > 0}
+                                forceState={forceState}
+                                onItemClick={(item, stat) => {
+                                    setSelectedItemForModal(item)
+                                    setSelectedItemStation(stat)
+                                }}
+                            />
+                        ))}
+                    </div>
+
+                    {sortedStations.length === 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-center py-16 px-6 rounded-3xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800"
+                        >
+                            <div className="w-16 h-16 mx-auto mb-4 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center">
+                                <svg className="w-8 h-8 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-bold text-zinc-700 dark:text-zinc-300 mb-2">
+                                No items match your filters
+                            </h3>
+                            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+                                {activeFilters.length > 0 ? (
+                                    <>Try removing some filters or adjusting your search to see more options.</>
+                                ) : (
+                                    <>No food items found for <span className="font-bold text-zinc-700 dark:text-zinc-200">{getMealPeriodLabel(selectedPeriod)}</span> on this date.</>
+                                )}
+                            </p>
+                            <div className="flex flex-wrap justify-center gap-3">
+                                {activeFilters.length > 0 && (
+                                    <button
+                                        onClick={() => activeFilters.forEach(f => toggleFilter(f))}
+                                        className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors"
+                                    >
+                                        Clear All Filters
+                                    </button>
+                                )}
+                                {hideCondiments && (
+                                    <button
+                                        onClick={() => setHideCondiments(false)}
+                                        className="px-4 py-2 rounded-xl bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-sm font-bold hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors"
+                                    >
+                                        Show Condiments & Drinks
+                                    </button>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
                 </div>
             </div>
 
-            {sortedStations.length === 0 && (
-                <div className="text-center py-20 px-6 rounded-3xl bg-zinc-100/50 dark:bg-zinc-900/30 border border-zinc-200/50 dark:border-zinc-800/50">
-                    <p className="text-zinc-500 font-medium">
-                        No food items found for <span className="text-zinc-900 dark:text-zinc-100 font-bold">{getMealPeriodLabel(selectedPeriod)}</span> on this date.
-                    </p>
-                    {hideCondiments && (
-                        <button
-                            onClick={() => setHideCondiments(false)}
-                            className="mt-4 text-blue-600 dark:text-blue-400 text-sm font-bold hover:underline"
-                        >
-                            Try showing condiments & drinks
-                        </button>
-                    )}
-                </div>
-            )}
             {selectedItemForModal && (
                 <FoodModal
                     item={selectedItemForModal}
@@ -535,6 +670,6 @@ export default function MenuContainer({
                     onClose={() => setSelectedItemForModal(null)}
                 />
             )}
-        </div>
+        </FoodDisplayLayout>
     )
 }
