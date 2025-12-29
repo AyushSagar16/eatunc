@@ -354,6 +354,13 @@ export default function MenuContainer({
     }, [sortedStations, visibleStationsCount]);
 
     if (allEntries.length === 0) {
+        const formattedDate = new Date(selectedDate).toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'short',
+            day: 'numeric',
+            timeZone: 'UTC',
+        })
+
         return (
             <div className="flex flex-col gap-8">
                 <MenuHeader
@@ -370,6 +377,7 @@ export default function MenuContainer({
                     onSortChange={setSortBy}
                     hideCondiments={hideCondiments}
                     onToggleCondiments={setHideCondiments}
+                    simpleMode={true}
                 />
 
                 <div className="max-w-2xl mx-auto px-6 py-20 text-center">
@@ -380,7 +388,7 @@ export default function MenuContainer({
                             </svg>
                         </div>
                         <h2 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 mb-3">
-                            {selectedHall} isn't open today
+                            {selectedHall} isn't open on {formattedDate}
                         </h2>
                         <p className="text-zinc-500 mb-8 leading-relaxed">
                             We couldn't find any menu items for this date. It looks like the dining hall might be closed.
