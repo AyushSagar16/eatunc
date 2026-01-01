@@ -14,7 +14,7 @@ export const fetchCache = 'default-cache'; // Enable caching for fetch requests
 export const revalidate = 3600; // Cache the page for 1 hour
 
 interface PageProps {
-  searchParams: Promise<{ date?: string, hall?: string }>;
+  searchParams: Promise<{ date?: string, hall?: string, period?: string }>;
 }
 
 const HALL_MAP: Record<string, string> = {
@@ -22,7 +22,7 @@ const HALL_MAP: Record<string, string> = {
   lenoir: 'Top of Lenoir',
 };
 
-async function MenuContent({ date, hallSlug }: { date?: string, hallSlug: string }) {
+async function MenuContent({ date, hallSlug, period }: { date?: string, hallSlug: string, period?: string }) {
   const selectedHall = HALL_MAP[hallSlug] || 'Chase';
 
   // TRUE parallel data fetching - fetch dates first to determine default date
@@ -163,6 +163,7 @@ async function MenuContent({ date, hallSlug }: { date?: string, hallSlug: string
         availableDates={availableDates}
         selectedDate={selectedDate}
         selectedHall={selectedHall}
+        initialPeriod={period}
       />
 
       {/* Prefetch next day's content in the background */}
@@ -175,6 +176,7 @@ export default async function Home({ searchParams }: PageProps) {
   const params = await searchParams;
   const hallSlug = params.hall;
   const selectedDate = params.date;
+  const period = params.period;
 
   // If no hall is selected, show the landing selection screen
   if (!hallSlug) {
@@ -198,7 +200,7 @@ export default async function Home({ searchParams }: PageProps) {
           </div>
         }
       >
-        <MenuContent date={selectedDate} hallSlug={hallSlug} />
+        <MenuContent date={selectedDate} hallSlug={hallSlug} period={period} />
       </Suspense>
     </main>
   );

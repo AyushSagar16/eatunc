@@ -25,6 +25,7 @@ interface MenuContainerProps {
     availableDates: string[]
     selectedDate: string
     selectedHall: string
+    initialPeriod?: string
 }
 
 interface StationSectionProps {
@@ -146,13 +147,38 @@ export default function MenuContainer({
     availablePeriods,
     availableDates,
     selectedDate,
-    selectedHall
+    selectedHall,
+    initialPeriod
 }: MenuContainerProps) {
-    // Initialize selectedPeriod default
-    const [selectedPeriod, setSelectedPeriod] = useState(availablePeriods[0] || '')
+    // Initialize selectedPeriod default - try initialPeriod first, then fallback
+    const [selectedPeriod, setSelectedPeriod] = useState(() => {
+        if (initialPeriod) {
+            const normalizedInitial = initialPeriod.split('(')[0].trim().toLowerCase()
+            // Find a case-insensitive match in availablePeriods after stripping parentheses
+            const match = availablePeriods.find(p => {
+                const normalizedP = p.split('(')[0].trim().toLowerCase()
+                return normalizedP === normalizedInitial
+            })
+            if (match) return match
+        }
+        return availablePeriods[0] || ''
+    })
 
     // Initialize hideCondiments from localStorage
     const [hideCondiments, setHideCondiments] = useState(true)
+
+    useEffect(() => {
+        if (initialPeriod) {
+            const normalizedInitial = initialPeriod.split('(')[0].trim().toLowerCase()
+            const match = availablePeriods.find(p => {
+                const normalizedP = p.split('(')[0].trim().toLowerCase()
+                return normalizedP === normalizedInitial
+            })
+            if (match) {
+                setSelectedPeriod(match)
+            }
+        }
+    }, [initialPeriod, availablePeriods])
 
     // Load settings from localStorage and sync URL on mount/change
     useEffect(() => {

@@ -98,7 +98,7 @@ function MealTabsWithScrollIndicators({
                             className={`
                                 px-4 sm:px-6 py-3 min-h-[44px] rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 whitespace-nowrap touch-manipulation flex-shrink-0
                                 ${isActive
-                                    ? 'bg-white text-zinc-900 shadow-md'
+                                    ? 'bg-blue-600 text-white shadow-md'
                                     : 'text-zinc-500 hover:text-zinc-700 active:bg-white/50'
                                 }
                             `}
@@ -172,6 +172,9 @@ export default function FoodDisplayLayout({
         } else {
             const params = new URLSearchParams(searchParams.toString())
             params.set('date', date)
+            if (selectedPeriod) {
+                params.set('period', selectedPeriod)
+            }
             router.push(`/?${params.toString()}`)
         }
     }
@@ -210,6 +213,9 @@ export default function FoodDisplayLayout({
         const params = new URLSearchParams(searchParams.toString())
         params.set('hall', oppositeSlug)
         params.set('date', selectedDate)
+        if (selectedPeriod) {
+            params.set('period', selectedPeriod)
+        }
         router.push(`/?${params.toString()}`)
     }
 
@@ -261,14 +267,14 @@ export default function FoodDisplayLayout({
                                 onClick={handleSwitchHall}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                className="flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-md hover:shadow-lg touch-manipulation"
+                                className="flex items-center justify-center gap-2 px-6 py-2.5 min-h-[52px] rounded-xl bg-zinc-100 text-zinc-900 border border-zinc-200/50 font-bold text-sm hover:bg-zinc-200 active:bg-zinc-300 transition-all touch-manipulation"
                             >
-                                <ArrowLeftRight className="w-4 h-4" />
+                                <ArrowLeftRight className="w-4 h-4 text-zinc-500" />
                                 <span className="whitespace-nowrap">Switch to {getOppositeDiningHall()}</span>
                             </motion.button>
 
                             {/* Date Selector */}
-                            <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200/50">
+                            <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200/50 min-h-[52px]">
                                 <motion.button
                                     onClick={handlePrevDate}
                                     disabled={!canGoBack}
