@@ -2,7 +2,7 @@ import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+    return twMerge(clsx(inputs))
 }
 
 export function normalizeMealPeriod(period: string): string {
@@ -36,9 +36,9 @@ export function calculateHealthyScore(item: any, preset: string): number {
             return -cal + protein * 10;
         case 'fat':
             return -fat * 15 - cal + protein * 8;
-        case 'balanced':
+        case 'carbs':
         default:
-            return protein * 1.5 - cal / 70 - fat * 1.2 - carbs / 80;
+            return -carbs * 5 + protein * 5 - cal / 50;
     }
 }
 

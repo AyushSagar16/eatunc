@@ -32,7 +32,7 @@ export type MealPeriod = 'Breakfast' | 'Lunch' | 'Dinner';
 /**
  * Available filter options for nutritional filtering
  */
-export type FilterOption = 'protein' | 'calories' | 'fat' | 'balanced';
+export type FilterOption = 'protein' | 'calories' | 'fat' | 'carbs';
 
 /**
  * Props for food display components

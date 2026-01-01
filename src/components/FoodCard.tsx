@@ -52,8 +52,8 @@ export default function FoodCard({ item, station, reason, mealPeriod, searchQuer
         if (lower.includes('fat')) {
             return 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400'
         }
-        if (lower.includes('balanced')) {
-            return 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
+        if (lower.includes('carbohydrate') || lower.includes('carb')) {
+            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-500'
         }
         // Default green for combined
         return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'

@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Tabs } from '@/components/ui/tabs'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ArrowLeftRight } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import ActiveFilterChips from '@/components/ActiveFilterChips'
+
 import SearchAndSort, { SortOption } from '@/components/SearchAndSort'
 import type { FilterOption } from '@/lib/types'
 
@@ -196,6 +196,23 @@ export default function FoodDisplayLayout({
             .join(' ')
     }
 
+    // Dining hall switcher logic
+    const getOppositeDiningHall = () => {
+        return diningHall === 'Chase' ? 'Top of Lenoir' : 'Chase'
+    }
+
+    const getOppositeHallSlug = () => {
+        return diningHall === 'Chase' ? 'lenoir' : 'chase'
+    }
+
+    const handleSwitchHall = () => {
+        const oppositeSlug = getOppositeHallSlug()
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('hall', oppositeSlug)
+        params.set('date', selectedDate)
+        router.push(`/?${params.toString()}`)
+    }
+
     // Meal tabs configuration for Aceternity Tabs
     const mealTabs = availablePeriods.map((period, index) => ({
         title: getMealLabel(period),
@@ -237,31 +254,45 @@ export default function FoodDisplayLayout({
                             </div>
                         </div>
 
-                        {/* Right: Date Selector */}
-                        <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200/50">
+                        {/* Right: Dining Hall Switcher & Date Selector */}
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                            {/* Dining Hall Switcher Button */}
                             <motion.button
-                                onClick={handlePrevDate}
-                                disabled={!canGoBack}
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                className="p-3 min-w-[44px] min-h-[44px] rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-white active:bg-zinc-200 disabled:opacity-30 disabled:pointer-events-none transition-all touch-manipulation flex items-center justify-center"
+                                onClick={handleSwitchHall}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-md hover:shadow-lg touch-manipulation"
                             >
-                                <ChevronLeft className="w-5 h-5" />
+                                <ArrowLeftRight className="w-4 h-4" />
+                                <span className="whitespace-nowrap">Switch to {getOppositeDiningHall()}</span>
                             </motion.button>
 
-                            <div className="px-3 sm:px-4 min-w-[100px] sm:min-w-[120px] text-center font-bold text-sm text-zinc-900">
-                                {formatDate(selectedDate)}
+                            {/* Date Selector */}
+                            <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200/50">
+                                <motion.button
+                                    onClick={handlePrevDate}
+                                    disabled={!canGoBack}
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    className="p-3 min-w-[44px] min-h-[44px] rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-white active:bg-zinc-200 disabled:opacity-30 disabled:pointer-events-none transition-all touch-manipulation flex items-center justify-center"
+                                >
+                                    <ChevronLeft className="w-5 h-5" />
+                                </motion.button>
+
+                                <div className="px-3 sm:px-4 min-w-[100px] sm:min-w-[120px] text-center font-bold text-sm text-zinc-900">
+                                    {formatDate(selectedDate)}
+                                </div>
+
+                                <motion.button
+                                    onClick={handleNextDate}
+                                    disabled={!canGoForward}
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    className="p-3 min-w-[44px] min-h-[44px] rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-white active:bg-zinc-200 disabled:opacity-30 disabled:pointer-events-none transition-all touch-manipulation flex items-center justify-center"
+                                >
+                                    <ChevronRight className="w-5 h-5" />
+                                </motion.button>
                             </div>
-
-                            <motion.button
-                                onClick={handleNextDate}
-                                disabled={!canGoForward}
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                className="p-3 min-w-[44px] min-h-[44px] rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-white active:bg-zinc-200 disabled:opacity-30 disabled:pointer-events-none transition-all touch-manipulation flex items-center justify-center"
-                            >
-                                <ChevronRight className="w-5 h-5" />
-                            </motion.button>
                         </div>
                     </div>
                 </div>
@@ -290,17 +321,7 @@ export default function FoodDisplayLayout({
                     </div>
                 )}
 
-                {/* Active Filter Chips */}
-                <AnimatePresence>
-                    {activeFilters.length > 0 && onRemoveFilter && onClearFilters && (
-                        <ActiveFilterChips
-                            activeFilters={activeFilters}
-                            onRemoveFilter={onRemoveFilter}
-                            onClearAll={onClearFilters}
-                            itemCount={itemCount}
-                        />
-                    )}
-                </AnimatePresence>
+
             </div>
 
             {/* Main Content Area */}

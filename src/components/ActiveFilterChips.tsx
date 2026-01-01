@@ -16,7 +16,7 @@ const FILTER_INFO: Record<FilterOption, { label: string; shortLabel: string; col
     protein: { label: 'High Protein', shortLabel: 'High Protein', color: 'bg-emerald-500' },
     calories: { label: 'Low Calorie', shortLabel: 'Low Cal', color: 'bg-sky-500' },
     fat: { label: 'Low Fat', shortLabel: 'Low Fat', color: 'bg-violet-500' },
-    balanced: { label: 'Balanced', shortLabel: 'Balanced', color: 'bg-amber-500' },
+    carbs: { label: 'Low Carbohydrate', shortLabel: 'Low Carb', color: 'bg-yellow-600' },
 }
 
 /**

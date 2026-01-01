@@ -53,9 +53,9 @@ const filters: FilterItem[] = [
         ),
     },
     {
-        id: 'balanced',
-        label: 'Balanced',
-        description: 'Optimal macro ratios',
+        id: 'carbs',
+        label: 'Low Carbohydrate',
+        description: 'Under 15g carbs',
         icon: (
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 3v18M3 12h18" />
@@ -79,8 +79,7 @@ export default function FilterSidebar({
     onClearAll,
     className,
 }: FilterSidebarProps) {
-    const [isOpen, setIsOpen] = useState(false)
-    const [isMobileOpen, setIsMobileOpen] = useState(false)
+    const [isModalOpen, setIsModalOpen] = useState(false)
     const [announcement, setAnnouncement] = useState('')
 
     const activeCount = activeFilters.length
@@ -103,6 +102,7 @@ export default function FilterSidebar({
         setTimeout(() => setAnnouncement(''), 1000)
         onClearAll()
     }
+
     return (
         <>
             {/* Screen reader announcements */}
@@ -115,131 +115,13 @@ export default function FilterSidebar({
                 {announcement}
             </div>
 
-            {/* Desktop Sidebar */}
-            <motion.aside
-                role="region"
-                aria-label="Nutrition filters"
-                className={cn(
-                    'hidden md:flex flex-col h-fit sticky top-24 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-lg overflow-hidden',
-                    className
-                )}
-                animate={{
-                    width: isOpen ? 280 : 60,
-                }}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                onMouseEnter={() => setIsOpen(true)}
-                onMouseLeave={() => setIsOpen(false)}
-            >
-                {/* Header */}
-                <div className="flex items-center gap-3 p-4 border-b border-zinc-200 dark:border-zinc-800">
-                    <div className="relative flex-shrink-0">
-                        <Filter className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
-                        {activeCount > 0 && (
-                            <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center"
-                            >
-                                {activeCount}
-                            </motion.div>
-                        )}
-                    </div>
-                    <AnimatePresence>
-                        {isOpen && (
-                            <motion.div
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -10 }}
-                                className="flex items-center justify-between flex-1"
-                            >
-                                <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                                    Filters
-                                </span>
-                                {activeCount > 0 && (
-                                    <button
-                                        onClick={onClearAll}
-                                        className="text-xs text-zinc-500 hover:text-red-500 transition-colors flex items-center gap-1"
-                                    >
-                                        <Trash2 className="w-3 h-3" />
-                                        Clear
-                                    </button>
-                                )}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-
-                {/* Filter List */}
-                <div className="p-2 flex flex-col gap-1">
-                    {filters.map((filter) => {
-                        const isActive = activeFilters.includes(filter.id)
-                        return (
-                            <motion.button
-                                key={filter.id}
-                                onClick={() => handleToggleFilter(filter)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault()
-                                        handleToggleFilter(filter)
-                                    }
-                                }}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                role="checkbox"
-                                aria-checked={isActive}
-                                aria-label={`${filter.label}: ${filter.description}${isActive ? ', currently selected' : ''}`}
-                                tabIndex={0}
-                                className={cn(
-                                    'flex items-center gap-3 p-3 rounded-xl transition-all',
-                                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
-                                    isActive
-                                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                                        : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-transparent'
-                                )}
-                            >
-                                <div
-                                    className={cn(
-                                        'flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center',
-                                        isActive
-                                            ? 'bg-blue-100 dark:bg-blue-800'
-                                            : 'bg-zinc-100 dark:bg-zinc-800'
-                                    )}
-                                >
-                                    {isActive ? (
-                                        <Check className="w-4 h-4 text-blue-600 dark:text-blue-300" />
-                                    ) : (
-                                        <span className="text-zinc-500 dark:text-zinc-400">
-                                            {filter.icon}
-                                        </span>
-                                    )}
-                                </div>
-                                <AnimatePresence>
-                                    {isOpen && (
-                                        <motion.div
-                                            initial={{ opacity: 0, x: -10 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -10 }}
-                                            className="flex flex-col items-start text-left"
-                                        >
-                                            <span className="text-sm font-semibold">{filter.label}</span>
-                                            <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
-                                                {filter.description}
-                                            </span>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </motion.button>
-                        )
-                    })}
-                </div>
-            </motion.aside>
-
-            {/* Mobile Floating Button */}
+            {/* Floating Filter Button - Visible on all screen sizes */}
             <motion.button
-                onClick={() => setIsMobileOpen(true)}
+                onClick={() => setIsModalOpen(true)}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 min-w-[56px] min-h-[56px] bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center active:bg-blue-700 touch-manipulation"
+                aria-label="Open filters"
+                className="fixed bottom-6 right-6 z-50 w-14 h-14 min-w-[56px] min-h-[56px] bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center hover:bg-blue-700 active:bg-blue-800 transition-all touch-manipulation"
             >
                 <Filter className="w-6 h-6" />
                 {activeCount > 0 && (
@@ -253,83 +135,84 @@ export default function FilterSidebar({
                 )}
             </motion.button>
 
-            {/* Mobile Drawer */}
+            {/* Right-Side Modal */}
             <AnimatePresence>
-                {isMobileOpen && (
+                {isModalOpen && (
                     <>
                         {/* Backdrop */}
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            onClick={() => setIsMobileOpen(false)}
-                            className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
+                            onClick={() => setIsModalOpen(false)}
+                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
                         />
 
-                        {/* Drawer */}
+                        {/* Right-Side Modal Panel */}
                         <motion.div
-                            initial={{ y: '100%' }}
-                            animate={{ y: 0 }}
-                            exit={{ y: '100%' }}
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-zinc-900 rounded-t-3xl z-[101] max-h-[80vh] overflow-auto"
+                            className="fixed top-0 right-0 bottom-0 w-full sm:w-96 sm:max-w-md bg-white dark:bg-zinc-900 z-[101] overflow-auto shadow-2xl"
                         >
-                            {/* Drawer Handle */}
-                            <div className="flex justify-center pt-3">
-                                <div className="w-10 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
-                            </div>
-
                             {/* Header */}
-                            <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800">
+                            <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 sticky top-0 z-10">
                                 <div className="flex items-center gap-3">
-                                    <Filter className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
-                                    <span className="font-bold text-lg text-zinc-900 dark:text-zinc-100">
-                                        Filters
-                                    </span>
-                                    {activeCount > 0 && (
-                                        <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-full">
-                                            {activeCount} active
-                                        </span>
-                                    )}
+                                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                                        <Filter className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <h2 className="font-bold text-xl text-zinc-900 dark:text-zinc-100">
+                                            Filters
+                                        </h2>
+                                        {activeCount > 0 && (
+                                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                                                {activeCount} active filter{activeCount !== 1 ? 's' : ''}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    {activeCount > 0 && (
-                                        <button
-                                            onClick={onClearAll}
-                                            className="min-h-[44px] min-w-[44px] px-3 text-sm text-red-500 font-medium flex items-center gap-1 rounded-lg active:bg-red-50 dark:active:bg-red-900/20 touch-manipulation"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                            Clear All
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() => setIsMobileOpen(false)}
-                                        className="min-h-[44px] min-w-[44px] p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:bg-zinc-200 dark:active:bg-zinc-700 rounded-lg transition-colors touch-manipulation"
-                                    >
-                                        <X className="w-6 h-6 text-zinc-600 dark:text-zinc-400" />
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="min-h-[44px] min-w-[44px] p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:bg-zinc-200 dark:active:bg-zinc-700 rounded-xl transition-colors touch-manipulation"
+                                    aria-label="Close filters"
+                                >
+                                    <X className="w-6 h-6 text-zinc-600 dark:text-zinc-400" />
+                                </button>
                             </div>
 
-                            {/* Filter Grid */}
-                            <div className="p-4 grid grid-cols-2 gap-3">
+                            {/* Filter List */}
+                            <div className="p-6 flex flex-col gap-3">
                                 {filters.map((filter) => {
                                     const isActive = activeFilters.includes(filter.id)
                                     return (
                                         <motion.button
                                             key={filter.id}
-                                            onClick={() => onToggleFilter(filter.id)}
-                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => handleToggleFilter(filter)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault()
+                                                    handleToggleFilter(filter)
+                                                }
+                                            }}
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            role="checkbox"
+                                            aria-checked={isActive}
+                                            aria-label={`${filter.label}: ${filter.description}${isActive ? ', currently selected' : ''}`}
+                                            tabIndex={0}
                                             className={cn(
-                                                'flex flex-col items-center gap-2 p-4 rounded-2xl transition-all',
+                                                'flex items-center gap-4 p-4 rounded-2xl transition-all min-h-[72px]',
+                                                'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
                                                 isActive
-                                                    ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500'
-                                                    : 'bg-zinc-50 dark:bg-zinc-800 border-2 border-transparent'
+                                                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-2 border-blue-500 dark:border-blue-600'
+                                                    : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-2 border-transparent hover:border-zinc-200 dark:hover:border-zinc-700'
                                             )}
                                         >
                                             <div
                                                 className={cn(
-                                                    'w-12 h-12 rounded-xl flex items-center justify-center',
+                                                    'flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center',
                                                     isActive
                                                         ? 'bg-blue-100 dark:bg-blue-800'
                                                         : 'bg-zinc-100 dark:bg-zinc-700'
@@ -343,29 +226,31 @@ export default function FilterSidebar({
                                                     </span>
                                                 )}
                                             </div>
-                                            <span
-                                                className={cn(
-                                                    'text-sm font-bold',
-                                                    isActive
-                                                        ? 'text-blue-700 dark:text-blue-300'
-                                                        : 'text-zinc-700 dark:text-zinc-300'
-                                                )}
-                                            >
-                                                {filter.label}
-                                            </span>
-                                            <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
-                                                {filter.description}
-                                            </span>
+                                            <div className="flex flex-col items-start text-left flex-1">
+                                                <span className="text-base font-bold">{filter.label}</span>
+                                                <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                                                    {filter.description}
+                                                </span>
+                                            </div>
                                         </motion.button>
                                     )
                                 })}
                             </div>
 
-                            {/* Apply Button (For UX - filters apply immediately but this closes drawer) */}
-                            <div className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t border-zinc-200 dark:border-zinc-800">
+                            {/* Footer Actions */}
+                            <div className="p-6 pt-0 pb-[calc(1.5rem+env(safe-area-inset-bottom))] flex flex-col gap-3 sticky bottom-0 bg-gradient-to-t from-white dark:from-zinc-900 via-white dark:via-zinc-900 to-transparent pt-4">
+                                {activeCount > 0 && (
+                                    <button
+                                        onClick={handleClearAll}
+                                        className="w-full py-3 min-h-[52px] bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-base rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 active:bg-zinc-300 dark:active:bg-zinc-600 transition-colors touch-manipulation flex items-center justify-center gap-2"
+                                    >
+                                        <Trash2 className="w-5 h-5" />
+                                        Clear All Filters
+                                    </button>
+                                )}
                                 <button
-                                    onClick={() => setIsMobileOpen(false)}
-                                    className="w-full py-4 min-h-[52px] bg-blue-600 text-white font-bold text-lg rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation"
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="w-full py-4 min-h-[52px] bg-blue-600 text-white font-bold text-lg rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation shadow-lg"
                                 >
                                     Apply Filters
                                 </button>
