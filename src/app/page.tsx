@@ -2,6 +2,7 @@ import { getAvailableDates, getFullMenuByDateAndHall } from "@/lib/api";
 import MenuContainer from "@/components/MenuContainer";
 import MenuSkeleton from "@/components/MenuSkeleton";
 import LandingScreen from "@/components/LandingScreen";
+import NoMenuAvailable from "@/components/NoMenuAvailable";
 import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -80,6 +81,21 @@ async function MenuContent({ date, hallSlug }: { date?: string, hallSlug: string
           </a>
         </div>
       </div>
+    );
+  }
+
+  // Handle case when no menu exists for the selected date
+  if (!menu) {
+    // Find the next available date after the selected date
+    const nextAvailableDate = availableDates.find(d => d > selectedDate);
+
+    return (
+      <NoMenuAvailable
+        selectedDate={selectedDate}
+        selectedHall={selectedHall}
+        availableDates={availableDates}
+        nextAvailableDate={nextAvailableDate}
+      />
     );
   }
 

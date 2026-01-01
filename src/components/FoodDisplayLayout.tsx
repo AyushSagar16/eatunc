@@ -153,9 +153,18 @@ export default function FoodDisplayLayout({
     }
 
     // Date navigation handlers
-    const currentDateIndex = availableDates.indexOf(selectedDate)
-    const canGoBack = currentDateIndex > 0
-    const canGoForward = currentDateIndex < availableDates.length - 1
+    const currentDate = new Date(selectedDate)
+
+    // Bounds: Stay within a reasonable range (e.g., from the first known date to 14 days in the future)
+    const minDate = availableDates.length > 0 ? new Date(availableDates[0]) : new Date()
+    const maxDate = availableDates.length > 0 ? new Date(availableDates[availableDates.length - 1]) : new Date()
+
+    // Allow going 7 days before the first menu and 14 days after the last menu
+    minDate.setUTCDate(minDate.getUTCDate() - 7)
+    maxDate.setUTCDate(maxDate.getUTCDate() + 14)
+
+    const canGoBack = currentDate > minDate
+    const canGoForward = currentDate < maxDate
 
     const handleDateChange = (date: string) => {
         if (onDateChange) {
@@ -168,15 +177,15 @@ export default function FoodDisplayLayout({
     }
 
     const handlePrevDate = () => {
-        if (canGoBack) {
-            handleDateChange(availableDates[currentDateIndex - 1])
-        }
+        const prev = new Date(selectedDate)
+        prev.setUTCDate(prev.getUTCDate() - 1)
+        handleDateChange(prev.toISOString().split('T')[0])
     }
 
     const handleNextDate = () => {
-        if (canGoForward) {
-            handleDateChange(availableDates[currentDateIndex + 1])
-        }
+        const next = new Date(selectedDate)
+        next.setUTCDate(next.getUTCDate() + 1)
+        handleDateChange(next.toISOString().split('T')[0])
     }
 
     // Capitalize first letter of each word in meal period

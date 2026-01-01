@@ -31,7 +31,9 @@ export default function LandingScreen() {
     }, [])
 
     const handleSelect = (hall: string) => {
-        router.push(`/?hall=${hall}`)
+        // Always navigate to today's date, even if the menu doesn't exist
+        const today = new Date().toISOString().split('T')[0]
+        router.push(`/?hall=${hall}&date=${today}`)
     }
 
     return (
