@@ -38,6 +38,53 @@ interface StationSectionProps {
     onItemClick: (item: MasterFoodItem, station: string) => void
 }
 
+const BEVERAGE_KEYWORDS = ['beverage', 'drink', 'coffee', 'tea', 'soda', 'juice', 'condiment', 'sauce', 'dressing', 'toppings', 'packets']
+const FOOD_KEYWORDS = ['mustard', 'ketchup', 'mayo', 'relish', 'hot sauce', 'soy sauce', 'syrup', 'salt', 'pepper', 'sugar', 'creamer', 'dressing', 'vinaigrette', 'jam', 'jelly', 'honey', 'water', 'juice', 'milk', 'coffee', 'tea', 'coke', 'sprite']
+
+const isCondimentOrDrink = (item: MasterFoodItem, station: string) => {
+    const s = station.toLowerCase()
+    const name = item.food_name?.toLowerCase() || ''
+
+    // 1. Station Match (Partial match is safer for stations)
+    const stationMatch = BEVERAGE_KEYWORDS.some(kw => s.includes(kw))
+
+    // 2. Food Name Match (Whole Word boundary to avoid false positives like "Jambalaya" matching "jam")
+    const foodMatch = FOOD_KEYWORDS.some(kw => {
+        const regex = new RegExp(`\\b${kw}\\b`, 'i')
+        return regex.test(name)
+    })
+
+    // 3. Nutrient Match (Items with virtually no nutritional value that aren't at main stations)
+    const mainFoodStations = ['kitchen table', 'grill', 'griddle', 'simply prepared', 'global']
+    const isMainFoodStation = mainFoodStations.some(mfs => s.includes(mfs))
+
+    const nutrientMatch = !isMainFoodStation &&
+        (item.calories_kcal ?? 0) <= 5 &&
+        (item.protein_g ?? 0) <= 1 &&
+        (item.fat_g ?? 0) <= 1 &&
+        (item.carbohydrates_g ?? 0) <= 2
+
+    return stationMatch || foodMatch || nutrientMatch
+}
+
+const MiniFoodCard = ({ item, onClick }: { item: MasterFoodItem; onClick: () => void }) => {
+    return (
+        <motion.div
+            onClick={onClick}
+            layout
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            whileHover={{ scale: 1.02, backgroundColor: "rgba(250, 250, 250, 1)" }}
+            whileTap={{ scale: 0.98 }}
+            className="flex items-center justify-between p-4 rounded-xl border border-zinc-200/50 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/30 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 transition-all group"
+        >
+            <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200 transition-colors">
+                {item.food_name}
+            </span>
+        </motion.div>
+    )
+}
+
 const StationSection = ({
     station,
     items,
@@ -60,8 +107,6 @@ const StationSection = ({
         }
     }, [selectedHall, station])
 
-
-
     // Auto-expand when filters are active
     useEffect(() => {
         if (hasActiveFilters && items.length > 0) {
@@ -76,6 +121,20 @@ const StationSection = ({
         setIsCollapsed(newState)
         localStorage.setItem(key, String(newState))
     }
+
+    // Sort items: Main items first, then Condiments
+    const sortedItems = useMemo(() => {
+        const main: MasterFoodItem[] = []
+        const cond: MasterFoodItem[] = []
+        items.forEach(item => {
+            if (isCondimentOrDrink(item, station)) {
+                cond.push(item)
+            } else {
+                main.push(item)
+            }
+        })
+        return [...main, ...cond]
+    }, [items, station])
 
     return (
         <section className="flex flex-col gap-6">
@@ -113,8 +172,8 @@ const StationSection = ({
                         transition={{ duration: 0.3, ease: 'easeInOut' }}
                         className="overflow-hidden"
                     >
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {items.map((item, index) => (
+                        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                            {sortedItems.map((item, index) => (
                                 <motion.div
                                     key={item.recipe_number}
                                     initial={{ opacity: 0, y: 10 }}
@@ -125,13 +184,20 @@ const StationSection = ({
                                     }}
                                     className="h-full"
                                 >
-                                    <FoodCard
-                                        item={item}
-                                        station={station}
-                                        mealPeriod={selectedPeriod}
-                                        searchQuery={searchQuery}
-                                        onClick={() => onItemClick(item, station)}
-                                    />
+                                    {isCondimentOrDrink(item, station) ? (
+                                        <MiniFoodCard
+                                            item={item}
+                                            onClick={() => onItemClick(item, station)}
+                                        />
+                                    ) : (
+                                        <FoodCard
+                                            item={item}
+                                            station={station}
+                                            mealPeriod={selectedPeriod}
+                                            searchQuery={searchQuery}
+                                            onClick={() => onItemClick(item, station)}
+                                        />
+                                    )}
                                 </motion.div>
                             ))}
                         </div>
@@ -227,9 +293,6 @@ export default function MenuContainer({
     const baseFilteredItems = useMemo(() => {
         const items: { item: MasterFoodItem; station: string }[] = []
 
-        const beverageKeywords = ['beverage', 'drink', 'coffee', 'tea', 'soda', 'juice', 'condiment', 'sauce', 'dressing', 'toppings', 'packets']
-        const foodKeywords = ['mustard', 'ketchup', 'mayo', 'relish', 'hot sauce', 'soy sauce', 'syrup', 'salt', 'pepper', 'sugar', 'creamer', 'dressing', 'vinaigrette', 'jam', 'jelly', 'honey', 'water', 'juice', 'milk', 'coffee', 'tea', 'coke', 'sprite']
-
         allEntries.forEach(entry => {
             if (entry.meal_period === selectedPeriod && entry.master_food_items) {
                 const item = entry.master_food_items
@@ -240,18 +303,11 @@ export default function MenuContainer({
                     return
                 }
 
-                if (hideCondiments) {
-                    const stationMatch = beverageKeywords.some(kw => station.toLowerCase().includes(kw))
-                    const foodMatch = foodKeywords.some(kw => item.food_name?.toLowerCase().includes(kw))
-                    const nutrientMatch = (item.calories_kcal ?? 0) <= 15 &&
-                        (item.protein_g ?? 0) <= 1 &&
-                        (item.fat_g ?? 0) <= 1 &&
-                        (item.carbohydrates_g ?? 0) <= 3
-
-                    if (stationMatch || foodMatch || nutrientMatch) {
-                        return
-                    }
+                /*
+                if (hideCondiments && isCondimentOrDrink(item, station)) {
+                    return
                 }
+                */
 
                 // Deduplicate items by recipe_number across stations for the "Picks" logic
                 if (!items.find(it => it.item.recipe_number === item.recipe_number)) {
@@ -347,9 +403,6 @@ export default function MenuContainer({
     const stationsMap = useMemo(() => {
         const map: Record<string, MasterFoodItem[]> = {}
 
-        const beverageKeywords = ['beverage', 'drink', 'coffee', 'tea', 'soda', 'juice', 'condiment', 'sauce', 'dressing', 'toppings', 'packets']
-        const foodKeywords = ['mustard', 'ketchup', 'mayo', 'relish', 'hot sauce', 'soy sauce', 'syrup', 'salt', 'pepper', 'sugar', 'creamer', 'dressing', 'vinaigrette', 'jam', 'jelly', 'honey', 'water', 'juice', 'milk', 'coffee', 'tea', 'coke', 'sprite']
-
         allEntries.forEach(entry => {
             if (entry.meal_period === selectedPeriod && entry.master_food_items) {
                 const item = entry.master_food_items
@@ -363,18 +416,11 @@ export default function MenuContainer({
                 // Nutrition Filters (Intersection) - REMOVED for All Items
                 // Filters now only apply to "Top Picks" section
 
-                if (hideCondiments) {
-                    const stationMatch = beverageKeywords.some(kw => station.toLowerCase().includes(kw))
-                    const foodMatch = foodKeywords.some(kw => item.food_name?.toLowerCase().includes(kw))
-                    const nutrientMatch = (item.calories_kcal ?? 0) <= 15 &&
-                        (item.protein_g ?? 0) <= 1 &&
-                        (item.fat_g ?? 0) <= 1 &&
-                        (item.carbohydrates_g ?? 0) <= 3
-
-                    if (stationMatch || foodMatch || nutrientMatch) {
-                        return
-                    }
+                /*
+                if (hideCondiments && isCondimentOrDrink(item, station)) {
+                    return
                 }
+                */
 
                 if (!map[station]) {
                     map[station] = []
@@ -509,6 +555,8 @@ export default function MenuContainer({
                 activeFilters={activeFilters}
                 onToggleFilter={toggleFilter}
                 onClearAll={clearAllFilters}
+                hideCondiments={hideCondiments}
+                onToggleHideCondiments={() => setHideCondiments(!hideCondiments)}
             />
 
             {/* Main Content - Full Width */}

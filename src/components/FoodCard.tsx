@@ -91,7 +91,7 @@ export default function FoodCard({ item, station, reason, mealPeriod, searchQuer
                 'rounded-2xl border border-zinc-200/80 dark:border-zinc-800',
                 'bg-white dark:bg-zinc-900/60',
                 'p-5 sm:p-6',
-                'h-full min-h-[180px]',
+                'h-full min-h-[140px]',
                 'transition-shadow duration-300',
                 'hover:shadow-xl hover:shadow-zinc-200/50 dark:hover:shadow-zinc-900/50',
                 'hover:border-zinc-300 dark:hover:border-zinc-700',
@@ -138,16 +138,7 @@ export default function FoodCard({ item, station, reason, mealPeriod, searchQuer
                 <div className="flex-1" />
 
                 {/* Compact nutritional info row */}
-                <div className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-[11px] font-medium">
-                    <span className="text-zinc-700 dark:text-zinc-300">{protein_g ?? 0}g</span>
-                    <span className="text-zinc-400 dark:text-zinc-600">protein</span>
-                    <span className="text-zinc-300 dark:text-zinc-700 mx-0.5">|</span>
-                    <span className="text-zinc-700 dark:text-zinc-300">{fat_g ?? 0}g</span>
-                    <span className="text-zinc-400 dark:text-zinc-600">fat</span>
-                    <span className="text-zinc-300 dark:text-zinc-700 mx-0.5">|</span>
-                    <span className="text-zinc-700 dark:text-zinc-300">{carbohydrates_g ?? 0}g</span>
-                    <span className="text-zinc-400 dark:text-zinc-600">carbs</span>
-                </div>
+
 
                 {/* Calories - prominent with gradient */}
                 <motion.div
