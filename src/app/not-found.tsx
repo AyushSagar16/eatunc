@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import DitherShader from '@/components/ui/dither-shader'
 import { motion } from 'motion/react'
 
@@ -42,13 +43,26 @@ export default function NotFound() {
                         transition={{ duration: 0.6, delay: 0.2 }}
                         className="space-y-6 relative z-10"
                     >
-                        <motion.span
-                            className="inline-block px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-300 text-sm font-bold tracking-widest uppercase"
-                            animate={{ scale: [1, 1.05, 1] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                        >
-                            404 Error
-                        </motion.span>
+                        <div className="flex flex-col items-center gap-4">
+                            <motion.div
+                                className="relative w-20 h-20 rounded-2xl overflow-hidden shadow-lg border border-white/10"
+                                animate={{ scale: [1, 1.02, 1] }}
+                                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                            >
+                                <Image
+                                    src="/unc-food-logo.png"
+                                    alt="Eat UNC Logo"
+                                    fill
+                                    className="object-cover"
+                                    unoptimized
+                                />
+                            </motion.div>
+                            <motion.span
+                                className="inline-block px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-300 text-sm font-bold tracking-widest uppercase"
+                            >
+                                404 Error
+                            </motion.span>
+                        </div>
 
                         <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-white">
                             Off the <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-white to-blue-200">Menu</span>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 
 export default function AboutPage() {
@@ -9,7 +10,18 @@ export default function AboutPage() {
                 Back to Menu
             </Link>
 
-            <h1 className="text-3xl font-bold tracking-tight mb-6">About eatUNC</h1>
+            <div className="flex items-center gap-4 mb-6">
+                <div className="relative w-14 h-14 rounded-xl overflow-hidden shadow-lg border border-zinc-200 dark:border-zinc-800 shrink-0">
+                    <Image
+                        src="/unc-food-logo.png"
+                        alt="Eat UNC Logo"
+                        fill
+                        className="object-cover"
+                        unoptimized
+                    />
+                </div>
+                <h1 className="text-3xl font-bold tracking-tight">About eatUNC</h1>
+            </div>
 
             <div className="prose dark:prose-invert">
                 <p className="text-lg text-muted-foreground mb-6">

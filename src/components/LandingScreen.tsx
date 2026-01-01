@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import DitherShader from './ui/dither-shader'
 import { motion } from 'motion/react'
+import Image from 'next/image'
 
 export default function LandingScreen() {
     const router = useRouter()
@@ -63,13 +64,17 @@ export default function LandingScreen() {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.5, delay: 0.1 }}
-                        className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm text-blue-200/80 text-xs font-medium tracking-wider uppercase"
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm text-blue-200/80 text-xs font-medium tracking-wider uppercase"
                     >
-                        <motion.span
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                            className="w-1.5 h-1.5 rounded-full bg-blue-400"
-                        />
+                        <div className="relative w-8 h-8 rounded-full overflow-hidden">
+                            <Image
+                                src="/unc-food-logo.png"
+                                alt="Eat UNC Logo"
+                                fill
+                                className="object-cover"
+                                unoptimized
+                            />
+                        </div>
                         Eat UNC
                     </motion.div>
                     <motion.h1
