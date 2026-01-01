@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
+import NextDayPrefetch from "@/components/NextDayPrefetch";
 
 export const runtime = 'edge';
 export const fetchCache = 'default-cache'; // Enable caching for fetch requests
@@ -25,11 +26,8 @@ async function MenuContent({ date, hallSlug }: { date?: string, hallSlug: string
   const selectedHall = HALL_MAP[hallSlug] || 'Chase';
 
   // TRUE parallel data fetching - fetch dates first to determine default date
-  const [{ data: dateData }] = await Promise.all([
-    getAvailableDates(),
-  ]);
+  const dateData = await getAvailableDates();
 
-  // Get unique dates and sort them
   const availableDates = Array.from(new Set(dateData?.map(d => d.menu_date) || [])).sort();
 
   // Default date logic: Try to find today, otherwise find closest
@@ -60,7 +58,14 @@ async function MenuContent({ date, hallSlug }: { date?: string, hallSlug: string
   }
 
   // Fetch menu data after we know the selected date
-  const { data: menu, error: menuError } = await getFullMenuByDateAndHall(selectedDate, selectedHall);
+  let menu;
+  let menuError;
+
+  try {
+    menu = await getFullMenuByDateAndHall(selectedDate, selectedHall);
+  } catch (error) {
+    menuError = error as Error;
+  }
 
   if (menuError) {
     return (
@@ -159,6 +164,9 @@ async function MenuContent({ date, hallSlug }: { date?: string, hallSlug: string
         selectedDate={selectedDate}
         selectedHall={selectedHall}
       />
+
+      {/* Prefetch next day's content in the background */}
+      <NextDayPrefetch currentDate={selectedDate} currentHall={selectedHall} />
     </div>
   );
 }

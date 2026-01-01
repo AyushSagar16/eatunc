@@ -69,13 +69,15 @@ export async function getMenuByDateAndHall(date: string, diningHall: string) {
 /**
  * Optimized: Cached version with Next.js unstable_cache for persistent caching.
  * Uses selective field fetching to reduce payload size.
+ * Cache key is parameterized by date and diningHall to prevent collisions.
  */
-export const getFullMenuByDateAndHall = unstable_cache(
-    async (date: string, diningHall: string) => {
-        // Only select fields we actually use to reduce payload size
-        return await supabase
-            .from('menus')
-            .select(`
+export function getFullMenuByDateAndHall(date: string, diningHall: string) {
+    return unstable_cache(
+        async () => {
+            // Only select fields we actually use to reduce payload size
+            const { data, error } = await supabase
+                .from('menus')
+                .select(`
                 id,
                 menu_date,
                 dining_hall,
@@ -94,16 +96,19 @@ export const getFullMenuByDateAndHall = unstable_cache(
                     )
                 )
             `)
-            .eq('menu_date', date)
-            .eq('dining_hall', diningHall)
-            .maybeSingle()
-    },
-    ['menu-by-date-hall'],
-    {
-        revalidate: 3600, // Cache for 1 hour
-        tags: ['menus']
-    }
-)
+                .eq('menu_date', date)
+                .eq('dining_hall', diningHall)
+                .maybeSingle()
+
+            if (error) throw error
+            return data
+        },
+        ['menu-by-date-hall', date, diningHall],
+        {
+            revalidate: 3600, // Cache for 1 hour
+            tags: ['menus']
+        })()
+}
 
 /**
  * Fetch all food items.
@@ -117,10 +122,13 @@ export async function getAllFoodItems() {
  */
 export const getAvailableDates = unstable_cache(
     async () => {
-        return await supabase
+        const { data, error } = await supabase
             .from('menus')
             .select('menu_date')
             .order('menu_date', { ascending: false })
+
+        if (error) throw error
+        return data
     },
     ['available-dates'],
     {
@@ -130,29 +138,41 @@ export const getAvailableDates = unstable_cache(
 )
 
 /**
- * Optimized: Fetch all menus for a date with field selection.
+ * Optimized: Fetch all menus for a date with persistent caching.
+ * Cache key is parameterized by date to prevent collisions.
  */
-export const getFullMenusByDate = cache(async (date: string) => {
-    return await supabase
-        .from('menus')
-        .select(`
-            id,
-            menu_date,
-            dining_hall,
-            menu_entries (
-                meal_period,
-                meal_station,
-                recipe_number,
-                master_food_items (
+export function getFullMenusByDate(date: string) {
+    return unstable_cache(
+        async () => {
+            const { data, error } = await supabase
+                .from('menus')
+                .select(`
+                id,
+                menu_date,
+                dining_hall,
+                menu_entries (
+                    meal_period,
+                    meal_station,
                     recipe_number,
-                    food_name,
-                    calories_kcal,
-                    protein_g,
-                    fat_g,
-                    carbohydrates_g,
-                    amount_per_serving
+                    master_food_items (
+                        recipe_number,
+                        food_name,
+                        calories_kcal,
+                        protein_g,
+                        fat_g,
+                        carbohydrates_g,
+                        amount_per_serving
+                    )
                 )
-            )
-        `)
-        .eq('menu_date', date)
-})
+            `)
+                .eq('menu_date', date)
+
+            if (error) throw error
+            return data
+        },
+        ['menus-by-date', date],
+        {
+            revalidate: 3600, // Cache for 1 hour
+            tags: ['menus']
+        })()
+}

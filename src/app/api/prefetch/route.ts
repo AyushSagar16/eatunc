@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getFullMenuByDateAndHall, getAvailableDates } from '@/lib/api'
 
 export const runtime = 'edge'
-export const fetchCache = 'force-cache' // Always use cache for prefetch
 
 /**
  * Prefetch API route
@@ -26,7 +25,7 @@ export async function GET(request: NextRequest) {
     try {
         // If no date provided, find the closest available date
         if (!date) {
-            const { data: dateData } = await getAvailableDates()
+            const dateData = await getAvailableDates()
             const availableDates = Array.from(new Set(dateData?.map(d => d.menu_date) || [])).sort()
 
             if (availableDates.length === 0) {
@@ -51,9 +50,19 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // Fetch the menu data - this will populate the cache
-        await getFullMenuByDateAndHall(date, hall)
+        // Check if menu exists before prefetching
+        const menu = await getFullMenuByDateAndHall(date, hall)
 
+        // If menu doesn't exist, don't prefetch (avoid caching null)
+        if (!menu) {
+            return NextResponse.json({
+                success: true,
+                prefetched: null,
+                message: 'Menu does not exist for this date/hall combination'
+            })
+        }
+
+        // Menu exists and is now cached
         return NextResponse.json({
             success: true,
             prefetched: { date, hall }
