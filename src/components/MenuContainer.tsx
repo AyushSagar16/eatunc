@@ -76,7 +76,7 @@ const MiniFoodCard = ({ item, onClick }: { item: MasterFoodItem; onClick: () => 
             animate={{ opacity: 1, scale: 1 }}
             whileHover={{ scale: 1.02, backgroundColor: "rgba(250, 250, 250, 1)" }}
             whileTap={{ scale: 0.98 }}
-            className="flex items-center justify-between p-4 rounded-xl border border-zinc-200/50 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/30 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 transition-all group"
+            className="flex items-center justify-between p-3 rounded-xl border border-zinc-200/50 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/30 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 transition-all group h-full min-h-[42px]"
         >
             <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200 transition-colors">
                 {item.food_name}
@@ -136,6 +136,8 @@ const StationSection = ({
         return [...main, ...cond]
     }, [items, station])
 
+
+
     return (
         <section className="flex flex-col gap-6">
             <button
@@ -172,7 +174,7 @@ const StationSection = ({
                         transition={{ duration: 0.3, ease: 'easeInOut' }}
                         className="overflow-hidden"
                     >
-                        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 grid-flow-row-dense">
                             {sortedItems.map((item, index) => (
                                 <motion.div
                                     key={item.recipe_number}
@@ -182,7 +184,7 @@ const StationSection = ({
                                         delay: Math.min(index * 0.02, 0.4),
                                         duration: 0.2
                                     }}
-                                    className="h-full"
+                                    className={`h-full ${isCondimentOrDrink(item, station) ? 'row-span-1' : 'row-span-3'}`}
                                 >
                                     {isCondimentOrDrink(item, station) ? (
                                         <MiniFoodCard
@@ -493,6 +495,7 @@ export default function MenuContainer({
             day: 'numeric',
             timeZone: 'UTC',
         })
+
 
         return (
             <FoodDisplayLayout
