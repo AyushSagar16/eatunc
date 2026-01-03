@@ -11,18 +11,18 @@ export default function LandingScreen() {
 
     // Prefetch menus for both halls in the background
     useEffect(() => {
-        const prefetchMenus = async () => {
-            // Don't pass a date - let the API route find the closest available date
-            // This ensures we only prefetch if there's actually menu data available
-            try {
-                await Promise.all([
-                    fetch(`/api/prefetch?hall=Chase`),
-                    fetch(`/api/prefetch?hall=Top of Lenoir`)
-                ])
-            } catch (error) {
-                // Silently fail - prefetch is an optimization, not critical
-                console.log('Prefetch skipped:', error)
-            }
+        const prefetchMenus = () => {
+            // Prefetch for both halls for today (EST)
+            const now = new Date()
+            const today = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'America/New_York',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).format(now)
+
+            router.prefetch(`/chase/${today}`)
+            router.prefetch(`/lenoir/${today}`)
         }
 
         // Small delay to not block initial page render
@@ -31,9 +31,17 @@ export default function LandingScreen() {
     }, [])
 
     const handleSelect = (hall: string) => {
-        // Always navigate to today's date, even if the menu doesn't exist
-        const today = new Date().toISOString().split('T')[0]
-        router.push(`/?hall=${hall}&date=${today}`)
+        // Always navigate to today's date in EST (UNC Time)
+        // usage of toLocaleDateString ensures we get the correct "dining day"
+        const now = new Date()
+        const today = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/New_York',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).format(now) // standard format is YYYY-MM-DD for en-CA
+
+        router.push(`/${hall}/${today}`)
     }
 
     return (

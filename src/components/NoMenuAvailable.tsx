@@ -31,7 +31,7 @@ export default function NoMenuAvailable({
     const handleNavigateToNextDate = () => {
         if (nextAvailableDate) {
             const hallSlug = selectedHall === 'Chase' ? 'chase' : 'lenoir'
-            router.push(`/?hall=${hallSlug}&date=${nextAvailableDate}`)
+            router.push(`/${hallSlug}/${nextAvailableDate}`)
         }
     }
 

@@ -170,12 +170,9 @@ export default function FoodDisplayLayout({
         if (onDateChange) {
             onDateChange(date)
         } else {
-            const params = new URLSearchParams(searchParams.toString())
-            params.set('date', date)
-            if (selectedPeriod) {
-                params.set('period', selectedPeriod)
-            }
-            router.push(`/?${params.toString()}`)
+            // Updated to path-based routing: /{diningHall}/{date}
+            const hallSlug = diningHall === 'Chase' ? 'chase' : 'lenoir'
+            router.push(`/${hallSlug}/${date}`)
         }
     }
 
@@ -210,13 +207,8 @@ export default function FoodDisplayLayout({
 
     const handleSwitchHall = () => {
         const oppositeSlug = getOppositeHallSlug()
-        const params = new URLSearchParams(searchParams.toString())
-        params.set('hall', oppositeSlug)
-        params.set('date', selectedDate)
-        if (selectedPeriod) {
-            params.set('period', selectedPeriod)
-        }
-        router.push(`/?${params.toString()}`)
+        // Updated to path-based routing
+        router.push(`/${oppositeSlug}/${selectedDate}`)
     }
 
     // Meal tabs configuration for Aceternity Tabs
