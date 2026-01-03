@@ -10,8 +10,6 @@ interface FilterSidebarProps {
     activeFilters: FilterOption[]
     onToggleFilter: (filter: FilterOption) => void
     onClearAll: () => void
-    hideCondiments: boolean
-    onToggleHideCondiments: () => void
     className?: string
 }
 
@@ -79,8 +77,6 @@ export default function FilterSidebar({
     activeFilters,
     onToggleFilter,
     onClearAll,
-    hideCondiments,
-    onToggleHideCondiments,
     className,
 }: FilterSidebarProps) {
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -241,57 +237,6 @@ export default function FilterSidebar({
                                 })}
                             </div>
 
-                            {/* Display Options Section */}
-                            <div className="px-6 pb-6">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-700" />
-                                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Display Options</span>
-                                    <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-700" />
-                                </div>
-                                <motion.button
-                                    onClick={onToggleHideCondiments}
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    role="checkbox"
-                                    aria-checked={hideCondiments}
-                                    aria-label={`Hide Condiments & Drinks${hideCondiments ? ', currently enabled' : ', currently disabled'}`}
-                                    tabIndex={0}
-                                    className={cn(
-                                        'w-full flex items-center gap-4 p-4 rounded-2xl transition-all min-h-[72px]',
-                                        'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
-                                        hideCondiments
-                                            ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-2 border-amber-500 dark:border-amber-600'
-                                            : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-2 border-transparent hover:border-zinc-200 dark:hover:border-zinc-700'
-                                    )}
-                                >
-                                    <div
-                                        className={cn(
-                                            'flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center',
-                                            hideCondiments
-                                                ? 'bg-amber-100 dark:bg-amber-800'
-                                                : 'bg-zinc-100 dark:bg-zinc-700'
-                                        )}
-                                    >
-                                        {hideCondiments ? (
-                                            <Check className="w-6 h-6 text-amber-600 dark:text-amber-300" />
-                                        ) : (
-                                            <svg className="w-5 h-5 text-zinc-500 dark:text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-                                                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-                                                <line x1="6" y1="1" x2="6" y2="4" />
-                                                <line x1="10" y1="1" x2="10" y2="4" />
-                                                <line x1="14" y1="1" x2="14" y2="4" />
-                                            </svg>
-                                        )}
-                                    </div>
-                                    <div className="flex flex-col items-start text-left flex-1">
-                                        <span className="text-base font-bold">Hide Condiments & Drinks</span>
-                                        <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                                            Hide sauces, beverages, and low-nutrient items
-                                        </span>
-                                    </div>
-                                </motion.button>
-                            </div>
 
                             {/* Footer Actions */}
                             <div className="p-6 pt-0 pb-[calc(1.5rem+env(safe-area-inset-bottom))] flex flex-col gap-3 sticky bottom-0 bg-gradient-to-t from-white dark:from-zinc-900 via-white dark:via-zinc-900 to-transparent pt-4">

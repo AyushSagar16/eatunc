@@ -232,8 +232,6 @@ export default function MenuContainer({
         return availablePeriods[0] || ''
     })
 
-    // Initialize hideCondiments from localStorage
-    const [hideCondiments, setHideCondiments] = useState(true)
 
     useEffect(() => {
         if (initialPeriod) {
@@ -248,17 +246,6 @@ export default function MenuContainer({
         }
     }, [initialPeriod, availablePeriods])
 
-    // Load settings from localStorage and sync URL on mount/change
-    useEffect(() => {
-        const saved = localStorage.getItem('hideCondiments')
-        if (saved !== null) {
-            setHideCondiments(saved === 'true')
-        }
-    }, [])
-
-    useEffect(() => {
-        localStorage.setItem('hideCondiments', hideCondiments.toString())
-    }, [hideCondiments])
 
 
     // Filter state
@@ -318,7 +305,7 @@ export default function MenuContainer({
             }
         })
         return items
-    }, [allEntries, selectedPeriod, hideCondiments, debouncedSearchQuery])
+    }, [allEntries, selectedPeriod, debouncedSearchQuery])
 
     const applyGlobalSort = (items: any[]) => {
         if (sortBy === 'recommended') return items;
@@ -355,6 +342,10 @@ export default function MenuContainer({
                 const carbs = item.carbohydrates_g
 
                 if (cal === null || protein === null || fat === null || carbs === null) {
+                    return null
+                }
+
+                if (isCondimentOrDrink(item, station)) {
                     return null
                 }
 
@@ -439,7 +430,7 @@ export default function MenuContainer({
         });
 
         return map
-    }, [allEntries, selectedPeriod, hideCondiments, debouncedSearchQuery, sortBy])
+    }, [allEntries, selectedPeriod, debouncedSearchQuery, sortBy])
 
     // Initial visibility for stations (show first 3 immediately)
     const [visibleStationsCount, setVisibleStationsCount] = useState(3)
@@ -558,8 +549,6 @@ export default function MenuContainer({
                 activeFilters={activeFilters}
                 onToggleFilter={toggleFilter}
                 onClearAll={clearAllFilters}
-                hideCondiments={hideCondiments}
-                onToggleHideCondiments={() => setHideCondiments(!hideCondiments)}
             />
 
             {/* Main Content - Full Width */}
@@ -670,14 +659,6 @@ export default function MenuContainer({
                                     className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors"
                                 >
                                     Clear All Filters
-                                </button>
-                            )}
-                            {hideCondiments && (
-                                <button
-                                    onClick={() => setHideCondiments(false)}
-                                    className="px-4 py-2 rounded-xl bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-sm font-bold hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors"
-                                >
-                                    Show Condiments & Drinks
                                 </button>
                             )}
                         </div>
