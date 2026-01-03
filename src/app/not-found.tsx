@@ -50,7 +50,7 @@ export default function NotFound() {
                                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                             >
                                 <Image
-                                    src="/unc-food-logo.png"
+                                    src="/eat_unc_logo_square.png"
                                     alt="Eat UNC Logo"
                                     fill
                                     className="object-cover"

@@ -44,7 +44,7 @@ export default function NoMenuAvailable({
                     <div className="flex items-center gap-4">
                         <div className="relative w-12 h-12 md:w-16 md:h-16 shrink-0 rounded-xl overflow-hidden shadow-lg border border-zinc-200 dark:border-zinc-800">
                             <Image
-                                src="/unc-food-logo.png"
+                                src="/eat_unc_logo_square.png"
                                 alt="UNC Food Logo"
                                 fill
                                 className="object-cover"

@@ -13,7 +13,7 @@ export default function AboutPage() {
             <div className="flex items-center gap-4 mb-6">
                 <div className="relative w-14 h-14 rounded-xl overflow-hidden shadow-lg border border-zinc-200 dark:border-zinc-800 shrink-0">
                     <Image
-                        src="/unc-food-logo.png"
+                        src="/eat_unc_logo_square.png"
                         alt="Eat UNC Logo"
                         fill
                         className="object-cover"

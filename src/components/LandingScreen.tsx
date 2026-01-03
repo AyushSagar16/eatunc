@@ -74,14 +74,14 @@ export default function LandingScreen() {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.5, delay: 0.1 }}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm text-blue-200/80 text-xs font-medium tracking-wider uppercase"
+                        className="inline-flex items-center gap-4 px-6 py-3 rounded-full bg-white/10 border border-white/10 backdrop-blur-md text-blue-50/90 text-xl font-bold tracking-wider uppercase shadow-lg shadow-black/20"
                     >
-                        <div className="relative w-8 h-8 rounded-full overflow-hidden">
+                        <div className="relative w-10 h-10">
                             <Image
-                                src="/unc-food-logo.png"
+                                src="/eat_unc_logo_white_nb.svg"
                                 alt="Eat UNC Logo"
                                 fill
-                                className="object-cover"
+                                className="object-contain"
                                 unoptimized
                             />
                         </div>

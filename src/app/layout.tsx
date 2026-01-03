@@ -24,21 +24,21 @@ export const metadata: Metadata = {
   description: "A premium dashboard for UNC dining menus and nutrition.",
   icons: {
     icon: [
-      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon-for-public/icon1.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-for-public/icon1.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-for-public/favicon.ico', sizes: 'any' },
     ],
     apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/favicon-for-public/apple-icon.png', sizes: '180x180', type: 'image/png' },
     ],
     other: [
       {
         rel: 'android-chrome-192x192',
-        url: '/android-chrome-192x192.png',
+        url: '/favicon-for-app/icon1.png',
       },
       {
         rel: 'android-chrome-512x512',
-        url: '/android-chrome-512x512.png',
+        url: '/favicon-for-app/icon1.png',
       },
     ],
   },
