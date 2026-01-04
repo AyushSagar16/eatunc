@@ -58,3 +58,77 @@ export function getClosestDate(availableDates: string[]): string {
         return currDiff < prevDiff ? curr : prev;
     });
 }
+
+/**
+ * Parses time ranges from meal period strings.
+ * Handles formats like:
+ *   - "Breakfast (7:00 AM - 10:30 AM)"
+ *   - "Continental (9am-11am)"
+ *   - "Brunch (11am-3pm)"
+ * Returns start and end times as minutes since midnight, or null if parsing fails.
+ */
+export function parseMealPeriodTimes(period: string): { startMinutes: number; endMinutes: number } | null {
+    // More flexible regex to match various time formats:
+    // - Optional colons and minutes (:00)
+    // - Optional spaces around AM/PM
+    // - Handles both "7:00 AM" and "7am"
+    const timeRangeMatch = period.match(/\((\d{1,2})(?::(\d{2}))?\s*(am|pm)\s*-\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)\)/i)
+
+    if (!timeRangeMatch) return null
+
+    const [, startHour, startMin = '0', startPeriod, endHour, endMin = '0', endPeriod] = timeRangeMatch
+
+    // Convert to 24-hour format (minutes since midnight)
+    const toMinutes = (hour: string, min: string, period: string): number => {
+        let h = parseInt(hour, 10)
+        const m = parseInt(min, 10)
+        const isPM = period.toUpperCase() === 'PM'
+
+        // Handle 12 AM (midnight) = 0, 12 PM (noon) = 12
+        if (h === 12) {
+            h = isPM ? 12 : 0
+        } else if (isPM) {
+            h += 12
+        }
+
+        return h * 60 + m
+    }
+
+    return {
+        startMinutes: toMinutes(startHour, startMin, startPeriod),
+        endMinutes: toMinutes(endHour, endMin, endPeriod)
+    }
+}
+
+/**
+ * Finds which meal period is currently active based on the given time.
+ * Falls back to the first available period if no match is found.
+ */
+export function getActiveMealPeriod(periods: string[], currentTime: Date): string {
+    if (periods.length === 0) return ''
+
+    // Get current time as minutes since midnight
+    const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes()
+
+    for (const period of periods) {
+        const times = parseMealPeriodTimes(period)
+        if (times) {
+            const { startMinutes, endMinutes } = times
+
+            // Handle normal case: start < end (e.g., 7:00 AM - 10:30 AM)
+            if (startMinutes <= endMinutes) {
+                if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
+                    return period
+                }
+            } else {
+                // Handle overnight case: end < start (e.g., 10:00 PM - 2:00 AM)
+                if (currentMinutes >= startMinutes || currentMinutes < endMinutes) {
+                    return period
+                }
+            }
+        }
+    }
+
+    // No active period found - fall back to first period
+    return periods[0]
+}

@@ -45,7 +45,7 @@ export default function LandingScreen() {
     }
 
     return (
-        <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-zinc-950">
+        <div className="relative min-h-screen-ios-safe flex flex-col items-center justify-center overflow-hidden" style={{ backgroundColor: '#3a4f5f' }}>
             {/* Dither Background with Overlay */}
             <div className="absolute inset-0 z-0">
                 <DitherShader

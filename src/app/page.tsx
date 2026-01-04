@@ -25,7 +25,7 @@ export default async function Home({ searchParams }: PageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-transparent overflow-hidden">
+    <main className="min-h-screen-ios-safe bg-transparent overflow-hidden">
       <LandingScreen />
     </main>
   );

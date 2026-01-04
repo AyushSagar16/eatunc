@@ -73,9 +73,9 @@ export default function SearchAndSort({
     const currentSort = SORT_OPTIONS.find(opt => opt.value === sortBy) || SORT_OPTIONS[0]
 
     return (
-        <div className="flex flex-row items-center gap-3">
+        <div className="flex flex-row items-center justify-end sm:justify-start gap-3">
             {/* Search Input */}
-            <div className="relative flex-1 min-w-0">
+            <div className="relative flex-1 min-w-0 hidden sm:block">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search className="w-4 h-4 text-zinc-400" />
                 </div>
@@ -117,10 +117,10 @@ export default function SearchAndSort({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className={`
-                        flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all
+                        flex items-center gap-2 px-4 h-14 sm:h-auto sm:py-2.5 rounded-2xl sm:rounded-xl border text-base sm:text-sm font-bold sm:font-medium transition-all
                         ${isDropdownOpen
                             ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300'
-                            : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700'
+                            : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 shadow-lg shadow-zinc-200/20 sm:shadow-none'
                         }
                     `}
                 >

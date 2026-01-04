@@ -9,7 +9,6 @@ import Image from 'next/image'
 
 import SearchAndSort, { SortOption } from '@/components/SearchAndSort'
 import type { FilterOption } from '@/lib/types'
-import BackButton from '@/components/BackButton'
 
 interface FoodDisplayLayoutProps {
     diningHall: string
@@ -150,7 +149,7 @@ export default function FoodDisplayLayout({
             weekday: 'short',
             month: 'short',
             day: 'numeric',
-            timeZone: 'UTC',
+            timeZone: 'UTC', // MIGHT HAVE TO CHANGE THIS LATER TO EST
         })
     }
 
@@ -235,27 +234,29 @@ export default function FoodDisplayLayout({
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         {/* Left: Back Button & Dining Hall Name */}
                         <div className="flex items-center gap-4 justify-start flex-1">
-                            <BackButton />
-                            <h1 className="text-2xl sm:text-3xl font-black text-zinc-900">
+                            <h1 className="text-3xl sm:text-4xl font-black text-zinc-800">
                                 {diningHall}
                             </h1>
                         </div>
 
                         {/* Right: Dining Hall Switcher & Date Selector */}
-                        <div className="flex flex-row items-center gap-2">
+                        <div className="flex flex-row items-center justify-between sm:justify-center gap-3 sm:gap-4">
                             {/* Dining Hall Switcher Button */}
                             <motion.button
                                 onClick={handleSwitchHall}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                className="flex items-center justify-center gap-2 px-6 py-2.5 min-h-[52px] rounded-xl bg-zinc-100 text-zinc-900 border border-zinc-200/50 font-bold text-sm hover:bg-zinc-200 active:bg-zinc-300 transition-all touch-manipulation"
+                                className="flex items-center justify-center gap-1.5 px-3 sm:px-6 py-1.5 min-h-[52px] rounded-xl bg-zinc-100 text-zinc-900 border border-zinc-200/50 font-bold text-md sm:text-base hover:bg-zinc-200 active:bg-zinc-300 transition-all touch-manipulation"
                             >
-                                <ArrowLeftRight className="w-4 h-4 text-zinc-500" />
-                                <span className="whitespace-nowrap">Switch to {getOppositeDiningHall()}</span>
+                                <ArrowLeftRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-500 shrink-0" />
+                                <span className="whitespace-nowrap">
+                                    <span className="hidden sm:inline">Switch to </span>
+                                    {getOppositeDiningHall()}
+                                </span>
                             </motion.button>
 
                             {/* Date Selector */}
-                            <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200/50 min-h-[52px]">
+                            <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-zinc-100 rounded-xl border border-zinc-200/50 min-h-[52px] shrink-0">
                                 <motion.button
                                     onClick={handlePrevDate}
                                     disabled={!canGoBack}
@@ -266,7 +267,7 @@ export default function FoodDisplayLayout({
                                     <ChevronLeft className="w-5 h-5" />
                                 </motion.button>
 
-                                <div className="px-3 sm:px-4 min-w-[100px] sm:min-w-[120px] text-center font-bold text-sm text-zinc-900">
+                                <div className="px-2 sm:px-4 min-w-[80px] sm:min-w-[120px] text-center font-bold text-md sm:text-base text-zinc-900">
                                     {formatDate(selectedDate)}
                                 </div>
 
@@ -285,31 +286,60 @@ export default function FoodDisplayLayout({
                 </div>
             </header>
 
-            {/* Meal Time Tabs */}
+            {/* Meal selection and Filtering */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
-                <div className="flex justify-center mb-6">
-                    <MealTabsWithScrollIndicators
-                        availablePeriods={availablePeriods}
-                        selectedPeriod={selectedPeriod}
-                        onPeriodChange={onPeriodChange}
-                        getMealLabel={getMealLabel}
-                    />
-                </div>
-
-                {/* Search and Sort */}
-                {onSearchChange && onSortChange && (
-                    <div className="mb-3">
+                {/* Mobile View: Same row for Period and Sort */}
+                <div className="flex sm:hidden flex-row items-stretch gap-3 mb-6 w-full">
+                    <div className="relative flex-1">
+                        <select
+                            value={selectedPeriod}
+                            onChange={(e) => onPeriodChange(e.target.value)}
+                            className="w-full h-14 px-4 bg-blue-600 border border-blue-500 rounded-2xl text-base font-bold text-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all appearance-none cursor-pointer pr-12 shadow-lg shadow-blue-500/20"
+                        >
+                            {availablePeriods.map((period) => (
+                                <option key={period} value={period} className="bg-white text-zinc-900">
+                                    {getMealLabel(period)}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-white">
+                            <ChevronRight className="w-5 h-5 rotate-90" />
+                        </div>
+                    </div>
+                    {onSearchChange && onSortChange && (
                         <SearchAndSort
                             searchQuery={searchQuery}
                             onSearchChange={onSearchChange}
                             sortBy={sortBy}
                             onSortChange={onSortChange}
                         />
+                    )}
+                </div>
+
+                {/* Desktop View: Tabs and Search/Sort separated */}
+                <div className="hidden sm:block">
+                    <div className="flex justify-center mb-6 w-full">
+                        <MealTabsWithScrollIndicators
+                            availablePeriods={availablePeriods}
+                            selectedPeriod={selectedPeriod}
+                            onPeriodChange={onPeriodChange}
+                            getMealLabel={getMealLabel}
+                        />
                     </div>
-                )}
 
-
+                    {onSearchChange && onSortChange && (
+                        <div className="mb-3">
+                            <SearchAndSort
+                                searchQuery={searchQuery}
+                                onSearchChange={onSearchChange}
+                                sortBy={sortBy}
+                                onSortChange={onSortChange}
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
+
 
             {/* Main Content Area */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 pb-12">

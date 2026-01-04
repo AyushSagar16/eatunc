@@ -9,7 +9,7 @@ import FoodDisplayLayout from '@/components/FoodDisplayLayout'
 import FilterSidebar from '@/components/FilterSidebar'
 import { FoodGridSkeleton, ContentLoader } from '@/components/LoadingStates'
 import { FilterOption } from '@/lib/types'
-import { calculateHealthyScore, getMealPeriodLabel } from '@/lib/utils'
+import { calculateHealthyScore, getMealPeriodLabel, getActiveMealPeriod } from '@/lib/utils'
 
 interface MenuEntry {
     meal_period: string
@@ -218,7 +218,7 @@ export default function MenuContainer({
     selectedHall,
     initialPeriod
 }: MenuContainerProps) {
-    // Initialize selectedPeriod default - try initialPeriod first, then fallback
+    // Initialize selectedPeriod default - try initialPeriod first, then time-based (if today), then fallback
     const [selectedPeriod, setSelectedPeriod] = useState(() => {
         if (initialPeriod) {
             const normalizedInitial = initialPeriod.split('(')[0].trim().toLowerCase()
@@ -229,6 +229,21 @@ export default function MenuContainer({
             })
             if (match) return match
         }
+
+        // Only auto-select based on current time if viewing today's date
+        const now = new Date()
+        const todayStr = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/New_York',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).format(now)
+
+        if (selectedDate === todayStr) {
+            return getActiveMealPeriod(availablePeriods, now) || availablePeriods[0] || ''
+        }
+
+        // For past/future dates, default to first period
         return availablePeriods[0] || ''
     })
 

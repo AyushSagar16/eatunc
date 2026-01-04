@@ -86,10 +86,21 @@
 /* Ensure Tailwind 4 dark: variant uses the .dark class */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* iOS Safari viewport fixes */
+html {
+  /* Fix for iOS Safari viewport height issues */
+  height: -webkit-fill-available;
+}
+
 body {
   background-image: none !important;
   /* Force remove any grid */
   transition: background-color 0.3s ease, color 0.3s ease;
+  /* Ensure body fills viewport on iOS Safari */
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  /* Use dynamic viewport height when available (modern browsers) */
+  min-height: 100dvh;
 }
 
 :root {
@@ -182,6 +193,17 @@ body {
 @layer utilities {
   .focus-ring {
     @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2;
+  }
+}
+
+/* iOS Safari full viewport height utility */
+@layer utilities {
+  .min-h-screen-ios-safe {
+    min-height: 100vh;
+    /* Fallback for older iOS Safari */
+    min-height: -webkit-fill-available;
+    /* Modern browsers with dynamic viewport support */
+    min-height: 100dvh;
   }
 }
 

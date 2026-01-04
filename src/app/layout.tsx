@@ -19,6 +19,15 @@ const geistMono = Geist_Mono({
   display: 'swap', // Optimize font loading
 });
 
+// Viewport configuration - separate export as required by Next.js
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: 'cover', // Extend into safe areas on iOS
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://eatunc.com'),
   title: {
