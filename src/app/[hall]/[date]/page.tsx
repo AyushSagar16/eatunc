@@ -4,7 +4,6 @@ import MenuContainer from "@/components/MenuContainer";
 import MenuSkeleton from "@/components/MenuSkeleton";
 import NoMenuAvailable from "@/components/NoMenuAvailable";
 import BackButton from "@/components/BackButton";
-import NextDayPrefetch from "@/components/NextDayPrefetch";
 import StructuredData from "@/components/StructuredData";
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
@@ -12,9 +11,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 
-export const runtime = 'edge';
-export const fetchCache = 'default-cache';
-export const revalidate = 3600;
+// Dynamic rendering - no caching, always fetch fresh data
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
     params: Promise<{
@@ -211,9 +209,6 @@ async function MenuContent({ date, hallSlug }: { date: string, hallSlug: string 
                 selectedHall={selectedHall}
                 initialPeriod={undefined}
             />
-
-            {/* Prefetch next day's content in the background */}
-            <NextDayPrefetch currentDate={date} currentHall={selectedHall} />
         </div>
     );
 }

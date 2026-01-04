@@ -2,9 +2,8 @@
 import { getAvailableDates } from "@/lib/api";
 import { redirect, notFound } from "next/navigation";
 
-export const runtime = 'edge';
-export const fetchCache = 'default-cache';
-export const revalidate = 3600;
+// Dynamic rendering - no caching
+export const dynamic = 'force-dynamic';
 
 const HALL_MAP: Record<string, string> = {
     chase: 'Chase',

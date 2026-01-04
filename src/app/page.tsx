@@ -2,9 +2,8 @@
 import LandingScreen from "@/components/LandingScreen";
 import { redirect } from "next/navigation";
 
-export const runtime = 'edge';
-export const fetchCache = 'default-cache';
-export const revalidate = 3600;
+// Dynamic rendering - no caching
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   searchParams: Promise<{ date?: string, hall?: string }>;

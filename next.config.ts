@@ -18,10 +18,10 @@ const nextConfig: NextConfig = {
   // Production optimizations
   productionBrowserSourceMaps: false, // Disable source maps in production
 
-  // Logging
+  // Logging - disabled to reduce noise from "cache skip" messages
   logging: {
     fetches: {
-      fullUrl: process.env.NODE_ENV === 'development',
+      fullUrl: false,
     },
   },
 };
