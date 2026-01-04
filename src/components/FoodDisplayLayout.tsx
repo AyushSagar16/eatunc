@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Tabs } from '@/components/ui/tabs'
 import { ChevronLeft, ChevronRight, ArrowLeftRight } from 'lucide-react'
@@ -9,6 +9,15 @@ import Image from 'next/image'
 
 import SearchAndSort, { SortOption } from '@/components/SearchAndSort'
 import type { FilterOption } from '@/lib/types'
+
+// PERFORMANCE: Move pure function outside component to prevent recreation on every render
+// Capitalize first letter of each word in meal period
+function getMealLabel(period: string): string {
+    return period
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ')
+}
 
 interface FoodDisplayLayoutProps {
     diningHall: string
@@ -142,16 +151,17 @@ export default function FoodDisplayLayout({
     const router = useRouter()
     const searchParams = useSearchParams()
 
-    // Format date for display (e.g., "Wed, Jan 7")
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString)
+    // PERFORMANCE: Memoize date formatting to prevent re-running expensive toLocaleDateString
+    // Only recalculate when selectedDate changes
+    const formattedDate = useMemo(() => {
+        const date = new Date(selectedDate)
         return date.toLocaleDateString('en-US', {
             weekday: 'short',
             month: 'short',
             day: 'numeric',
             timeZone: 'UTC', // MIGHT HAVE TO CHANGE THIS LATER TO EST
         })
-    }
+    }, [selectedDate])
 
     // Date navigation handlers
     const currentDate = new Date(selectedDate)
@@ -187,14 +197,6 @@ export default function FoodDisplayLayout({
         const next = new Date(selectedDate)
         next.setUTCDate(next.getUTCDate() + 1)
         handleDateChange(next.toISOString().split('T')[0])
-    }
-
-    // Capitalize first letter of each word in meal period
-    const getMealLabel = (period: string) => {
-        return period
-            .split(' ')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-            .join(' ')
     }
 
     // Dining hall switcher logic
@@ -268,7 +270,7 @@ export default function FoodDisplayLayout({
                                 </motion.button>
 
                                 <div className="px-2 sm:px-4 min-w-[80px] sm:min-w-[120px] text-center font-bold text-md sm:text-base text-zinc-900">
-                                    {formatDate(selectedDate)}
+                                    {formattedDate}
                                 </div>
 
                                 <motion.button

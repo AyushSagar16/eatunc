@@ -69,6 +69,8 @@ export async function getMenuByDateAndHall(date: string, diningHall: string) {
  * No caching - always fetches fresh data from Supabase.
  */
 export async function getFullMenuByDateAndHall(date: string, diningHall: string) {
+    const startTime = performance.now()
+
     const { data, error } = await supabase
         .from('menus')
         .select(`
@@ -93,6 +95,13 @@ export async function getFullMenuByDateAndHall(date: string, diningHall: string)
         .eq('menu_date', date)
         .eq('dining_hall', diningHall)
         .maybeSingle()
+
+    const endTime = performance.now()
+    const duration = Math.round(endTime - startTime)
+
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`[API] Fetched menu for ${diningHall} on ${date} in ${duration}ms`)
+    }
 
     if (error) throw error
     return data

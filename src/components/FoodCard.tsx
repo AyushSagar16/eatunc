@@ -14,11 +14,12 @@ interface FoodCardProps {
     onClick: () => void
 }
 
+// PERFORMANCE: Move pure function outside component to prevent recreation on every render
 // Highlight matching text in food names
 function highlightText(text: string, query: string): React.ReactNode {
     if (!query.trim()) return text
 
-    const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'))
+    const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')})`, 'gi'))
 
     return parts.map((part, i) =>
         part.toLowerCase() === query.toLowerCase() ? (
@@ -31,7 +32,29 @@ function highlightText(text: string, query: string): React.ReactNode {
     )
 }
 
-export default function FoodCard({ item, station, reason, mealPeriod, searchQuery = '', onClick }: FoodCardProps) {
+// PERFORMANCE: Move pure function outside component to prevent recreation on every render
+// Color-coded reason badges based on filter type
+function getReasonStyle(reasonText: string): string {
+    const lower = reasonText.toLowerCase()
+    if (lower.includes('protein')) {
+        return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'
+    }
+    if (lower.includes('calorie') || lower.includes('low cal')) {
+        return 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-400'
+    }
+    if (lower.includes('fat')) {
+        return 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400'
+    }
+    if (lower.includes('carbohydrate') || lower.includes('carb')) {
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-500'
+    }
+    // Default green for combined
+    return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+}
+
+// PERFORMANCE: Wrap with React.memo to prevent re-renders when props haven't changed
+// This is especially important since FoodCard is rendered many times in lists
+const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPeriod, searchQuery = '', onClick }: FoodCardProps) {
     const {
         food_name,
         calories_kcal,
@@ -39,25 +62,6 @@ export default function FoodCard({ item, station, reason, mealPeriod, searchQuer
         fat_g,
         carbohydrates_g,
     } = item
-
-    // Color-coded reason badges based on filter type
-    const getReasonStyle = (reasonText: string) => {
-        const lower = reasonText.toLowerCase()
-        if (lower.includes('protein')) {
-            return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'
-        }
-        if (lower.includes('calorie') || lower.includes('low cal')) {
-            return 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-400'
-        }
-        if (lower.includes('fat')) {
-            return 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400'
-        }
-        if (lower.includes('carbohydrate') || lower.includes('carb')) {
-            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-500'
-        }
-        // Default green for combined
-        return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-    }
 
     return (
         <motion.div
@@ -115,9 +119,10 @@ export default function FoodCard({ item, station, reason, mealPeriod, searchQuer
                         transition={{ delay: 0.05, type: 'spring', stiffness: 300 }}
                         className="flex flex-wrap gap-1.5"
                     >
-                        {reason.split('+').map((r, i) => (
+                        {/* PERFORMANCE: Use stable keys (reason text) instead of index */}
+                        {reason.split('+').map((r) => (
                             <span
-                                key={i}
+                                key={r.trim()}
                                 className={cn(
                                     'px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider',
                                     getReasonStyle(r.trim())
@@ -157,4 +162,6 @@ export default function FoodCard({ item, station, reason, mealPeriod, searchQuer
             </div>
         </motion.div>
     )
-}
+})
+
+export default FoodCard

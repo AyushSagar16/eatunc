@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { MasterFoodItem } from '@/lib/api'
 import FoodCard from '@/components/FoodCard'
@@ -10,6 +10,7 @@ import FilterSidebar from '@/components/FilterSidebar'
 import { FoodGridSkeleton, ContentLoader } from '@/components/LoadingStates'
 import { FilterOption } from '@/lib/types'
 import { calculateHealthyScore, getMealPeriodLabel, getActiveMealPeriod } from '@/lib/utils'
+import { useVirtualizer } from '@tanstack/react-virtual'
 
 interface MenuEntry {
     meal_period: string
@@ -67,7 +68,8 @@ const isCondimentOrDrink = (item: MasterFoodItem, station: string) => {
     return stationMatch || foodMatch || nutrientMatch
 }
 
-const MiniFoodCard = ({ item, onClick }: { item: MasterFoodItem; onClick: () => void }) => {
+// PERFORMANCE: Memoize MiniFoodCard to prevent re-renders when props haven't changed
+const MiniFoodCard = React.memo(({ item, onClick }: { item: MasterFoodItem; onClick: () => void }) => {
     return (
         <motion.div
             onClick={onClick}
@@ -83,9 +85,11 @@ const MiniFoodCard = ({ item, onClick }: { item: MasterFoodItem; onClick: () => 
             </span>
         </motion.div>
     )
-}
+})
 
-const StationSection = ({
+// PERFORMANCE: Memoize StationSection to prevent re-renders of large sections
+// This component renders many FoodCards, so preventing unnecessary re-renders is critical
+const StationSection = React.memo((({
     station,
     items,
     selectedHall,
@@ -95,6 +99,7 @@ const StationSection = ({
     onItemClick
 }: StationSectionProps) => {
     const [isCollapsed, setIsCollapsed] = useState(false)
+    const parentRef = useRef<HTMLDivElement>(null)
 
     // Load saved state
     useEffect(() => {
@@ -136,7 +141,42 @@ const StationSection = ({
         return [...main, ...cond]
     }, [items, station])
 
+    // VIRTUAL SCROLLING: Calculate items per row based on responsive breakpoints
+    // This matches the grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 layout
+    const getItemsPerRow = useCallback(() => {
+        if (typeof window === 'undefined') return 2
+        const width = window.innerWidth
+        if (width >= 1280) return 4 // xl
+        if (width >= 1024) return 3 // lg
+        if (width >= 768) return 2  // md
+        return 2 // mobile
+    }, [])
 
+    // VIRTUAL SCROLLING: Only enable for large lists (50+ items) to improve performance
+    // For smaller lists, use regular rendering to preserve animations
+    const shouldVirtualize = sortedItems.length > 50
+    const [itemsPerRow, setItemsPerRow] = useState(getItemsPerRow)
+
+    // Update items per row on window resize
+    useEffect(() => {
+        if (!shouldVirtualize) return
+
+        const handleResize = () => {
+            setItemsPerRow(getItemsPerRow())
+        }
+
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+    }, [shouldVirtualize, getItemsPerRow])
+
+    // VIRTUAL SCROLLING: Setup virtualizer for large lists
+    // Virtualizes rows instead of individual items to maintain grid layout
+    const rowVirtualizer = shouldVirtualize ? useVirtualizer({
+        count: Math.ceil(sortedItems.length / itemsPerRow),
+        getScrollElement: () => parentRef.current,
+        estimateSize: () => 240, // Estimated row height in pixels
+        overscan: 5, // Render 5 extra rows above/below viewport for smooth scrolling
+    }) : null
 
     return (
         <section className="flex flex-col gap-6">
@@ -174,41 +214,106 @@ const StationSection = ({
                         transition={{ duration: 0.3, ease: 'easeInOut' }}
                         className="overflow-hidden"
                     >
-                        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 grid-flow-row-dense">
-                            {sortedItems.map((item, index) => (
-                                <motion.div
-                                    key={item.recipe_number}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{
-                                        delay: Math.min(index * 0.02, 0.4),
-                                        duration: 0.2
+                        {/* VIRTUAL SCROLLING: Use virtualized rendering for large lists (50+ items) */}
+                        {shouldVirtualize && rowVirtualizer ? (
+                            <div
+                                ref={parentRef}
+                                className="relative"
+                                style={{
+                                    height: '600px', // Fixed height for virtual scroller
+                                    overflow: 'auto',
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        height: `${rowVirtualizer.getTotalSize()}px`,
+                                        width: '100%',
+                                        position: 'relative',
                                     }}
-                                    className={`h-full ${isCondimentOrDrink(item, station) ? 'row-span-1' : 'row-span-3'}`}
                                 >
-                                    {isCondimentOrDrink(item, station) ? (
-                                        <MiniFoodCard
-                                            item={item}
-                                            onClick={() => onItemClick(item, station)}
-                                        />
-                                    ) : (
-                                        <FoodCard
-                                            item={item}
-                                            station={station}
-                                            mealPeriod={selectedPeriod}
-                                            searchQuery={searchQuery}
-                                            onClick={() => onItemClick(item, station)}
-                                        />
-                                    )}
-                                </motion.div>
-                            ))}
-                        </div>
+                                    {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                                        const startIndex = virtualRow.index * itemsPerRow
+                                        const rowItems = sortedItems.slice(startIndex, startIndex + itemsPerRow)
+
+                                        return (
+                                            <div
+                                                key={virtualRow.key}
+                                                data-index={virtualRow.index}
+                                                ref={rowVirtualizer.measureElement}
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: '100%',
+                                                    transform: `translateY(${virtualRow.start}px)`,
+                                                }}
+                                            >
+                                                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 grid-flow-row-dense">
+                                                    {rowItems.map((item) => (
+                                                        <div
+                                                            key={item.recipe_number}
+                                                            className={`h-full ${isCondimentOrDrink(item, station) ? 'row-span-1' : 'row-span-3'}`}
+                                                        >
+                                                            {isCondimentOrDrink(item, station) ? (
+                                                                <MiniFoodCard
+                                                                    item={item}
+                                                                    onClick={() => onItemClick(item, station)}
+                                                                />
+                                                            ) : (
+                                                                <FoodCard
+                                                                    item={item}
+                                                                    station={station}
+                                                                    mealPeriod={selectedPeriod}
+                                                                    searchQuery={searchQuery}
+                                                                    onClick={() => onItemClick(item, station)}
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        ) : (
+                            // Regular rendering for smaller lists (< 50 items) - preserves animations
+                            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 grid-flow-row-dense">
+                                {sortedItems.map((item, index) => (
+                                    <motion.div
+                                        key={item.recipe_number}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{
+                                            delay: Math.min(index * 0.02, 0.4),
+                                            duration: 0.2
+                                        }}
+                                        className={`h-full ${isCondimentOrDrink(item, station) ? 'row-span-1' : 'row-span-3'}`}
+                                    >
+                                        {isCondimentOrDrink(item, station) ? (
+                                            <MiniFoodCard
+                                                item={item}
+                                                onClick={() => onItemClick(item, station)}
+                                            />
+                                        ) : (
+                                            <FoodCard
+                                                item={item}
+                                                station={station}
+                                                mealPeriod={selectedPeriod}
+                                                searchQuery={searchQuery}
+                                                onClick={() => onItemClick(item, station)}
+                                            />
+                                        )}
+                                    </motion.div>
+                                ))}
+                            </div>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>
         </section>
     )
-}
+}))
 
 export default function MenuContainer({
     allEntries,
