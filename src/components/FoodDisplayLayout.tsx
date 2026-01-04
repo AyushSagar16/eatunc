@@ -298,7 +298,7 @@ export default function FoodDisplayLayout({
 
                 {/* Search and Sort */}
                 {onSearchChange && onSortChange && (
-                    <div className="mt-4">
+                    <div className="mb-3">
                         <SearchAndSort
                             searchQuery={searchQuery}
                             onSearchChange={onSearchChange}
