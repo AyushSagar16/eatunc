@@ -18,12 +18,7 @@ const nextConfig: NextConfig = {
   // Production optimizations
   productionBrowserSourceMaps: false, // Disable source maps in production
 
-  // Logging - disabled to reduce noise from "cache skip" messages
-  logging: {
-    fetches: {
-      fullUrl: false,
-    },
-  },
+
 };
 
 export default nextConfig;

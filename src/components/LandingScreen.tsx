@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+
 import DitherShader from './ui/dither-shader'
 import { motion } from 'motion/react'
 import Image from 'next/image'
@@ -9,26 +9,7 @@ import Image from 'next/image'
 export default function LandingScreen() {
     const router = useRouter()
 
-    // Prefetch menus for both halls in the background
-    useEffect(() => {
-        const prefetchMenus = () => {
-            // Prefetch for both halls for today (EST)
-            const now = new Date()
-            const today = new Intl.DateTimeFormat('en-CA', {
-                timeZone: 'America/New_York',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            }).format(now)
 
-            router.prefetch(`/chase/${today}`)
-            router.prefetch(`/lenoir/${today}`)
-        }
-
-        // Small delay to not block initial page render
-        const timer = setTimeout(prefetchMenus, 100)
-        return () => clearTimeout(timer)
-    }, [])
 
     const handleSelect = (hall: string) => {
         // Always navigate to today's date in EST (UNC Time)
