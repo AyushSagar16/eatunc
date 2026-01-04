@@ -5,9 +5,11 @@ import MenuSkeleton from "@/components/MenuSkeleton";
 import NoMenuAvailable from "@/components/NoMenuAvailable";
 import BackButton from "@/components/BackButton";
 import NextDayPrefetch from "@/components/NextDayPrefetch";
+import StructuredData from "@/components/StructuredData";
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
+import type { Metadata } from "next";
 
 export const runtime = 'edge';
 export const fetchCache = 'default-cache';
@@ -24,6 +26,73 @@ const HALL_MAP: Record<string, string> = {
     chase: 'Chase',
     lenoir: 'Top of Lenoir',
 };
+
+// Generate dynamic metadata for SEO
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+    const { hall, date } = await params;
+    const hallName = HALL_MAP[hall];
+
+    if (!hallName) {
+        return {
+            title: 'Page Not Found',
+        };
+    }
+
+    // Format date for display
+    const dateObj = new Date(date + 'T12:00:00');
+    const formattedDate = dateObj.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    });
+
+    // Determine if it's today
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const isToday = date === todayStr;
+    const dateText = isToday ? 'Today' : formattedDate;
+
+    const title = `${hallName} Menu ${dateText} | UNC Dining`;
+    const description = `View the ${hallName} dining hall menu for ${formattedDate}. Check meal times, nutrition facts, and healthy options at UNC Chapel Hill.`;
+
+    return {
+        title,
+        description,
+        keywords: [
+            `${hallName} menu`,
+            `${hallName} dining hall`,
+            `UNC ${hall} menu`,
+            `UNC dining ${formattedDate}`,
+            "UNC dining hall menu today",
+            "UNC Chapel Hill dining",
+        ],
+        openGraph: {
+            title,
+            description,
+            url: `https://eatunc.com/${hall}/${date}`,
+            siteName: 'UNC Dining Menu',
+            images: [
+                {
+                    url: '/eat_unc_text_logo_nw.svg',
+                    width: 1200,
+                    height: 630,
+                    alt: `${hallName} - UNC Dining Menu`,
+                }
+            ],
+            type: 'website',
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title,
+            description,
+            images: ['/eat_unc_text_logo_nw.svg'],
+        },
+        alternates: {
+            canonical: `https://eatunc.com/${hall}/${date}`,
+        },
+    };
+}
+
 
 async function MenuContent({ date, hallSlug }: { date: string, hallSlug: string }) {
     const selectedHall = HALL_MAP[hallSlug];
@@ -168,6 +237,9 @@ export default async function Page({ params }: PageProps) {
 
     return (
         <main className="min-h-screen bg-transparent relative overflow-hidden">
+            {/* Structured Data for SEO */}
+            <StructuredData hall={hall} date={date} />
+
             {/* Background Glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-blue-500/10 blur-[120px] pointer-events-none -z-10 dark:bg-blue-600/5" />
 
