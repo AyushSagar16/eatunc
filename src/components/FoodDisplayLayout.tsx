@@ -5,9 +5,11 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Tabs } from '@/components/ui/tabs'
 import { ChevronLeft, ChevronRight, ArrowLeftRight } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 
 import SearchAndSort, { SortOption } from '@/components/SearchAndSort'
 import type { FilterOption } from '@/lib/types'
+import BackButton from '@/components/BackButton'
 
 interface FoodDisplayLayoutProps {
     diningHall: string
@@ -231,29 +233,16 @@ export default function FoodDisplayLayout({
             <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-xl border-b border-zinc-200 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        {/* Left: Back Button & Branding */}
-                        <div className="flex items-center gap-3">
-                            <motion.a
-                                href="/"
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-3 py-2 min-h-[44px] rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 transition-colors touch-manipulation"
-                            >
-                                <ChevronLeft className="w-5 h-5" />
-                                <span className="text-sm font-medium hidden sm:inline">Back</span>
-                            </motion.a>
-                            <div className="h-6 w-px bg-zinc-200" />
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm font-black text-blue-600 tracking-tight">EAT UNC</span>
-                                <span className="text-zinc-300">•</span>
-                                <h1 className="text-lg sm:text-xl font-bold text-zinc-900">
-                                    {diningHall}
-                                </h1>
-                            </div>
+                        {/* Left: Back Button & Dining Hall Name */}
+                        <div className="flex items-center gap-4 justify-start flex-1">
+                            <BackButton />
+                            <h1 className="text-2xl sm:text-3xl font-black text-zinc-900">
+                                {diningHall}
+                            </h1>
                         </div>
 
                         {/* Right: Dining Hall Switcher & Date Selector */}
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <div className="flex flex-row items-center gap-2">
                             {/* Dining Hall Switcher Button */}
                             <motion.button
                                 onClick={handleSwitchHall}

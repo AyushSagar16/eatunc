@@ -73,7 +73,7 @@ export default function SearchAndSort({
     const currentSort = SORT_OPTIONS.find(opt => opt.value === sortBy) || SORT_OPTIONS[0]
 
     return (
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div className="flex flex-row items-center gap-3">
             {/* Search Input */}
             <div className="relative flex-1 min-w-0">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

@@ -8,6 +8,7 @@ import NextDayPrefetch from "@/components/NextDayPrefetch";
 import StructuredData from "@/components/StructuredData";
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 
@@ -184,30 +185,20 @@ async function MenuContent({ date, hallSlug }: { date: string, hallSlug: string 
 
     return (
         <div className="relative">
-            {/* Prominent Header */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-6">
+            {/* Prominent Logo */}
 
-                <div className="flex flex-col gap-6">
-                    <BackButton />
-                    <div className="flex items-center gap-4">
-                        <div className="relative w-12 h-12 md:w-16 md:h-16 shrink-0 rounded-xl overflow-hidden shadow-lg border border-zinc-200 dark:border-zinc-800">
-                            <Image
-                                src="/eat_unc_logo_square.png"
-                                alt="UNC Food Logo"
-                                fill
-                                className="object-cover"
-                                unoptimized
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 opacity-80">
-                                Eat UNC
-                            </p>
-                            <h1 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
-                                {selectedHall}
-                            </h1>
-                        </div>
-                    </div>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                <div className="flex justify-start">
+                    <Link href="/" className="inline-block hover:opacity-80 transition-opacity">
+                        <Image
+                            src="/eat_unc_text_logo_nw.svg"
+                            alt="EAT UNC"
+                            width={600}
+                            height={180}
+                            className="h-28 md:h-36 w-auto"
+                            priority
+                        />
+                    </Link>
                 </div>
             </div>
 
