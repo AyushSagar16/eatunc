@@ -398,6 +398,24 @@ export default function MenuContainer({
         return () => clearTimeout(timer)
     }, [searchQuery])
 
+    // DEBUG: Log entries with null master_food_items
+    // This helps identify data integrity issues where menu_entries exist but lack nutrition data
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'development') {
+            const nullFoodItems = allEntries.filter(e =>
+                e.meal_period === selectedPeriod && !e.master_food_items
+            )
+
+            if (nullFoodItems.length > 0) {
+                console.error('[MENU] Entries with null master_food_items:', nullFoodItems.map(e => ({
+                    recipe_number: e.recipe_number,
+                    station: e.meal_station,
+                    period: e.meal_period
+                })))
+            }
+        }
+    }, [allEntries, selectedPeriod])
+
     const baseFilteredItems = useMemo(() => {
         const items: { item: MasterFoodItem; station: string }[] = []
 
@@ -512,8 +530,24 @@ export default function MenuContainer({
         return applyGlobalSort(picks);
     }, [baseFilteredItems, activeFilters, sortBy])
 
+    /**
+     * stationsMap: Groups food items by their station for display
+     * 
+     * Deduplication Logic:
+     * - Each station can only have ONE instance of each recipe_number
+     * - This is necessary because the database may have duplicate entries for the same item at the same station
+     * - We use a Set to track processed station+recipe combinations
+     * 
+     * Items are ONLY skipped if:
+     * 1. They don't match the selected meal period
+     * 2. They have null master_food_items (no nutrition data in database)
+     * 3. They don't match the search query
+     * 4. They are a duplicate (same recipe_number at the same station)
+     */
     const stationsMap = useMemo(() => {
         const map: Record<string, MasterFoodItem[]> = {}
+        // Track processed combinations: "station:recipe_number"
+        const processedIds = new Set<string>()
 
         allEntries.forEach(entry => {
             if (entry.meal_period === selectedPeriod && entry.master_food_items) {
@@ -525,23 +559,37 @@ export default function MenuContainer({
                     return
                 }
 
-                // Nutrition Filters (Intersection) - REMOVED for All Items
-                // Filters now only apply to "Top Picks" section
+                // Create a unique key combining station and recipe_number
+                // This ensures we only skip TRUE duplicates (same item at same station)
+                const uniqueKey = `${station}:${entry.recipe_number}`
 
-                /*
-                if (hideCondiments && isCondimentOrDrink(item, station)) {
+                // Only skip if this exact station+recipe combo was already processed
+                if (processedIds.has(uniqueKey)) {
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log(`[MENU] Skipping duplicate: ${item.food_name} (${entry.recipe_number}) at ${station}`)
+                    }
                     return
                 }
-                */
+
+                processedIds.add(uniqueKey)
 
                 if (!map[station]) {
                     map[station] = []
                 }
-                if (!map[station].find(it => it.recipe_number === entry.recipe_number)) {
-                    map[station].push(item)
-                }
+                map[station].push(item)
             }
         })
+
+        // Log final counts for debugging
+        if (process.env.NODE_ENV === 'development') {
+            console.log('[MENU] Final station item counts:',
+                Object.entries(map).map(([station, items]) => ({
+                    station,
+                    count: items.length,
+                    recipes: items.map(i => i.recipe_number)
+                }))
+            )
+        }
 
         // Apply global sort to each station
         Object.keys(map).forEach(station => {
