@@ -117,6 +117,7 @@ export default function FilterSidebar({
 
             {/* Floating Filter Button - Visible on all screen sizes */}
             <motion.button
+                data-tutorial-target="filter-button"
                 onClick={() => setIsModalOpen(true)}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}

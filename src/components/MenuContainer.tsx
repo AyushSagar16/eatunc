@@ -710,6 +710,7 @@ export default function MenuContainer({
                                         duration: 0.2
                                     }}
                                     className="h-full"
+                                    {...(index === 0 ? { 'data-tutorial-target': 'food-card' } : {})}
                                 >
                                     <FoodCard
                                         item={item}
