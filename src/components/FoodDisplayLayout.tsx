@@ -83,7 +83,7 @@ function MealTabsWithScrollIndicators({
     }, [checkScroll, availablePeriods])
 
     return (
-        <div className="relative max-w-full">
+        <div className="relative max-w-full" data-tutorial-target="meal-tabs">
             {/* Left scroll fade indicator */}
             <div
                 className={`absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-black/20 to-transparent pointer-events-none z-10 rounded-l-2xl sm:hidden transition-opacity duration-200 ${showLeftFade ? 'opacity-100' : 'opacity-0'}`}
@@ -245,6 +245,7 @@ export default function FoodDisplayLayout({
                         <div className="flex flex-row items-center justify-between sm:justify-center gap-3 sm:gap-4">
                             {/* Dining Hall Switcher Button */}
                             <motion.button
+                                data-tutorial-target="hall-switcher"
                                 onClick={handleSwitchHall}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
@@ -258,7 +259,7 @@ export default function FoodDisplayLayout({
                             </motion.button>
 
                             {/* Date Selector */}
-                            <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-zinc-100 rounded-xl border border-zinc-200/50 min-h-[52px] shrink-0">
+                            <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-zinc-100 rounded-xl border border-zinc-200/50 min-h-[52px] shrink-0" data-tutorial-target="date-nav">
                                 <motion.button
                                     onClick={handlePrevDate}
                                     disabled={!canGoBack}
@@ -292,7 +293,7 @@ export default function FoodDisplayLayout({
             <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
                 {/* Mobile View: Same row for Period and Sort */}
                 <div className="flex sm:hidden flex-row items-stretch gap-3 mb-6 w-full">
-                    <div className="relative flex-1">
+                    <div className="relative flex-1" data-tutorial-target="meal-dropdown">
                         <select
                             value={selectedPeriod}
                             onChange={(e) => onPeriodChange(e.target.value)}

@@ -5,11 +5,19 @@ import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Suspense } from "react";
+import { HelpCircle } from "lucide-react";
 
 function FooterContent() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const isLanding = pathname === "/" && !searchParams.get("hall");
+    const isMenuPage = pathname.includes("/chase") || pathname.includes("/lenoir");
+
+    const handleRestartTutorial = () => {
+        // Clear tutorial completion status and dispatch restart event
+        localStorage.removeItem("eatunc_tutorial_completed");
+        window.dispatchEvent(new CustomEvent("restartTutorial"));
+    };
 
     return (
         <footer
@@ -32,7 +40,20 @@ function FooterContent() {
                         &copy; {new Date().getFullYear()} eatUNC. All rights reserved.
                     </p>
                 </div>
-                <div className="flex gap-4">
+                <div className="flex gap-4 items-center">
+                    {isMenuPage && (
+                        <button
+                            onClick={handleRestartTutorial}
+                            className={cn(
+                                "text-sm font-medium transition-colors flex items-center gap-1.5 hover:text-foreground",
+                                isLanding ? "text-white/60 hover:text-white" : "text-muted-foreground"
+                            )}
+                            aria-label="Start tutorial"
+                        >
+                            <HelpCircle className="w-4 h-4" />
+                            <span>Tutorial</span>
+                        </button>
+                    )}
                     <Link
                         href="/about"
                         className={cn(

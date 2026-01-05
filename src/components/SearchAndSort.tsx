@@ -75,7 +75,7 @@ export default function SearchAndSort({
     return (
         <div className="flex flex-row items-center justify-end sm:justify-start gap-3">
             {/* Search Input */}
-            <div className="relative flex-1 min-w-0 hidden sm:block">
+            <div className="relative flex-1 min-w-0 hidden sm:block" data-tutorial-target="search-bar">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search className="w-4 h-4 text-zinc-400" />
                 </div>
@@ -111,7 +111,7 @@ export default function SearchAndSort({
             </div>
 
             {/* Sort Dropdown */}
-            <div ref={dropdownRef} className="relative flex-shrink-0">
+            <div ref={dropdownRef} className="relative flex-shrink-0" data-tutorial-target="sort-dropdown">
                 <motion.button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     whileHover={{ scale: 1.02 }}
