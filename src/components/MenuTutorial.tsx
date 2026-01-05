@@ -22,8 +22,8 @@ const DESKTOP_STEPS: Step[] = [
     },
     {
         target: '[data-tutorial-target="food-card"]',
-        content: 'Click any food card to see detailed nutrition info',
-        title: 'Food Cards',
+        content: 'Click on any food card to view detailed nutritional facts including calories, protein, carbs, fats, and allergen information',
+        title: 'View Nutrition Details',
         placement: 'right',
         disableBeacon: true,
         spotlightPadding: 8,
@@ -74,8 +74,8 @@ const MOBILE_STEPS: Step[] = [
     },
     {
         target: '[data-tutorial-target="food-card"]',
-        content: 'Tap any food card to see detailed nutrition info',
-        title: 'Food Cards',
+        content: 'Tap on any food card to view detailed nutritional facts including calories, protein, carbs, fats, and allergen information',
+        title: 'View Nutrition Details',
         placement: 'bottom',
         disableBeacon: true,
         spotlightPadding: 8,

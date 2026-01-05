@@ -36,6 +36,7 @@ interface StationSectionProps {
     selectedPeriod: string
     searchQuery: string
     hasActiveFilters: boolean
+    isFirstStation?: boolean
     onItemClick: (item: MasterFoodItem, station: string) => void
 }
 
@@ -95,6 +96,7 @@ const StationSection = React.memo((({
     selectedPeriod,
     searchQuery,
     hasActiveFilters,
+    isFirstStation = false,
     onItemClick
 }: StationSectionProps) => {
     const [isCollapsed, setIsCollapsed] = useState(false)
@@ -278,33 +280,39 @@ const StationSection = React.memo((({
                         ) : (
                             // Regular rendering for smaller lists (< 50 items) - preserves animations
                             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 grid-flow-row-dense">
-                                {sortedItems.map((item, index) => (
-                                    <motion.div
-                                        key={item.recipe_number}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{
-                                            delay: Math.min(index * 0.02, 0.4),
-                                            duration: 0.2
-                                        }}
-                                        className={`h-full ${isCondimentOrDrink(item, station) ? 'row-span-1' : 'row-span-3'}`}
-                                    >
-                                        {isCondimentOrDrink(item, station) ? (
-                                            <MiniFoodCard
-                                                item={item}
-                                                onClick={() => onItemClick(item, station)}
-                                            />
-                                        ) : (
-                                            <FoodCard
-                                                item={item}
-                                                station={station}
-                                                mealPeriod={selectedPeriod}
-                                                searchQuery={searchQuery}
-                                                onClick={() => onItemClick(item, station)}
-                                            />
-                                        )}
-                                    </motion.div>
-                                ))}
+                                {sortedItems.map((item, index) => {
+                                    const isCondiment = isCondimentOrDrink(item, station)
+                                    // Add tutorial target to first non-condiment card in first station
+                                    const shouldAddTutorialTarget = isFirstStation && index === 0 && !isCondiment
+                                    return (
+                                        <motion.div
+                                            key={item.recipe_number}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{
+                                                delay: Math.min(index * 0.02, 0.4),
+                                                duration: 0.2
+                                            }}
+                                            className={`h-full ${isCondiment ? 'row-span-1' : 'row-span-3'}`}
+                                            {...(shouldAddTutorialTarget ? { 'data-tutorial-target': 'food-card' } : {})}
+                                        >
+                                            {isCondiment ? (
+                                                <MiniFoodCard
+                                                    item={item}
+                                                    onClick={() => onItemClick(item, station)}
+                                                />
+                                            ) : (
+                                                <FoodCard
+                                                    item={item}
+                                                    station={station}
+                                                    mealPeriod={selectedPeriod}
+                                                    searchQuery={searchQuery}
+                                                    onClick={() => onItemClick(item, station)}
+                                                />
+                                            )}
+                                        </motion.div>
+                                    )
+                                })}
                             </div>
                         )}
                     </motion.div>
@@ -847,7 +855,7 @@ export default function MenuContainer({
                     the prompt specified a row of pills that act as a global intersection filter. */}
 
                 <div className="flex flex-col gap-12">
-                    {visibleStations.map((station) => (
+                    {visibleStations.map((station, stationIndex) => (
                         <StationSection
                             key={station}
                             station={station}
@@ -856,6 +864,7 @@ export default function MenuContainer({
                             selectedPeriod={selectedPeriod}
                             searchQuery={debouncedSearchQuery}
                             hasActiveFilters={activeFilters.length > 0}
+                            isFirstStation={stationIndex === 0 && activeFilters.length === 0}
                             onItemClick={(item, stat) => {
                                 setSelectedItemForModal(item)
                                 setSelectedItemStation(stat)
