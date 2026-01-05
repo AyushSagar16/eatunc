@@ -1,30 +1,28 @@
+'use client'
+
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-    title: "About eatUNC | UNC Dining Menu Dashboard",
-    description: "Learn about eatUNC, a premium dining dashboard for UNC Chapel Hill students. View real-time menu updates, nutritional information, and dietary preference filtering.",
-    keywords: [
-        "about eatUNC",
-        "UNC dining app",
-        "UNC meal tracker",
-        "Carolina dining",
-    ],
-    openGraph: {
-        title: "About eatUNC | UNC Dining Menu Dashboard",
-        description: "Learn about eatUNC, a premium dining dashboard for UNC Chapel Hill students.",
-        url: "https://eatunc.com/about",
-        siteName: "UNC Dining Menu",
-        type: "website",
-    },
-    alternates: {
-        canonical: "https://eatunc.com/about",
-    },
-};
+import { ArrowLeft, Play } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function AboutPage() {
+    const router = useRouter();
+
+    const handleTryTutorial = () => {
+        // Clear tutorial flag
+        localStorage.removeItem('eatunc_tutorial_completed');
+
+        // Get today's date in YYYY-MM-DD format (local time)
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
+
+        // Redirect specifically to Lenoir for the tutorial
+        router.push(`/lenoir/${dateStr}`);
+    };
+
     return (
         <div className="container mx-auto px-4 py-8 max-w-2xl min-h-screen">
             <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors">
@@ -32,22 +30,32 @@ export default function AboutPage() {
                 Back to Menu
             </Link>
 
-            <div className="flex items-center gap-4 mb-6">
-                <div className="relative w-14 h-14 rounded-xl overflow-hidden shadow-lg border border-zinc-200 dark:border-zinc-800 shrink-0">
-                    <Image
-                        src="/eat_unc_logo_square.png"
-                        alt="Eat UNC Logo"
-                        fill
-                        className="object-cover"
-                        unoptimized
-                    />
+            <div className="flex items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-4">
+                    <div className="relative w-14 h-14 rounded-xl overflow-hidden shadow-lg border border-zinc-200 dark:border-zinc-800 shrink-0">
+                        <Image
+                            src="/eat_unc_logo_square.png"
+                            alt="Eat UNC Logo"
+                            fill
+                            className="object-cover"
+                            unoptimized
+                        />
+                    </div>
+                    <h1 className="text-3xl font-bold tracking-tight">About Eat UNC</h1>
                 </div>
-                <h1 className="text-3xl font-bold tracking-tight">About eatUNC</h1>
+
+                <button
+                    onClick={handleTryTutorial}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#4B9CD3] hover:bg-[#4B9CD3]/90 text-white font-semibold transition-all shadow-md active:scale-95"
+                >
+                    <Play className="w-4 h-4 fill-current" />
+                    Try it out
+                </button>
             </div>
 
             <div className="prose dark:prose-invert">
                 <p className="text-lg text-muted-foreground mb-6">
-                    eatUNC is a premium dining dashboard designed for UNC students. We provide standard menu information with a focus on nutrition and clarity.
+                    Eat UNC is a premium dining dashboard designed for UNC students. We provide standard menu information with a focus on nutrition and clarity.
                 </p>
 
                 <h2 className="text-xl font-semibold mb-3">Our Mission</h2>

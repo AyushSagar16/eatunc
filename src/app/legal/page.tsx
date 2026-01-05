@@ -4,10 +4,10 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
     title: "Legal & Privacy | UNC Dining Menu",
-    description: "Legal information, privacy policy, and terms of use for eatUNC - the unofficial UNC dining hall menu dashboard.",
+    description: "Legal information, privacy policy, and terms of use for Eat UNC - the unofficial UNC dining hall menu dashboard.",
     openGraph: {
         title: "Legal & Privacy | UNC Dining Menu",
-        description: "Legal information, privacy policy, and terms of use for eatUNC.",
+        description: "Legal information, privacy policy, and terms of use for Eat UNC.",
         url: "https://eatunc.com/legal",
         siteName: "UNC Dining Menu",
         type: "website",
@@ -35,17 +35,20 @@ export default function LegalPage() {
                 <section className="mb-8">
                     <h2 className="text-xl font-semibold mb-3">Disclaimer</h2>
                     <p className="text-muted-foreground mb-4">
-                        eatUNC is an independent project and is not officially affiliated with the University of North Carolina at Chapel Hill or Carolina Dining Services.
+                        Eat UNC is an independent project and is not officially affiliated with the University of North Carolina at Chapel Hill or Carolina Dining Services.
+                    </p>
+                    <p className="text-muted-foreground mb-4">
+                        This website provides menu information sourced from the <a href="https://dining.unc.edu/menu-hours/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline underline-offset-4 decoration-primary/30">official UNC Dining website</a>.
                     </p>
                     <p className="text-muted-foreground">
-                        While we strive for accuracy, menu items, ingredients, and nutritional information are subject to change without notice. Please verify important dietary information directly with dining staff.
+                        While we strive for accuracy, menu items, ingredients, and nutritional information are subject to change without notice. <strong>Eat UNC does not guarantee the accuracy of allergy information or nutritional data.</strong> All food selections and allergy concerns should be double-checked in person with dining hall staff before consumption.
                     </p>
                 </section>
 
                 <section className="mb-8">
                     <h2 className="text-xl font-semibold mb-3">Privacy Policy</h2>
                     <p className="text-muted-foreground mb-4">
-                        We respect your privacy. eatUNC does not collect personal identifiable information. We may use anonymous analytics to improve the user experience.
+                        We respect your privacy. Eat UNC does not collect personal identifiable information. We may use anonymous analytics to improve the user experience.
                     </p>
                 </section>
 

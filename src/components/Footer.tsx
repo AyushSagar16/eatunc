@@ -37,7 +37,7 @@ function FooterContent() {
                             isLanding ? "text-white/60" : "text-muted-foreground"
                         )}
                     >
-                        &copy; {new Date().getFullYear()} eatUNC. All rights reserved.
+                        &copy; {new Date().getFullYear()} Eat UNC. All rights reserved.
                     </p>
                 </div>
                 <div className="flex gap-4 items-center">

@@ -15,7 +15,7 @@ const homepageStructuredData = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   "name": "Eat UNC - UNC Dining Menu",
-  "alternateName": "eatUNC",
+  "alternateName": "Eat UNC",
   "url": "https://eatunc.com",
   "description": "View daily menus for UNC Chapel Hill dining halls including Chase and Top of Lenoir. Check nutrition facts, meal times, and healthy options.",
   "potentialAction": {
