@@ -75,20 +75,17 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
             role="button"
             tabIndex={0}
             aria-label={`${food_name}. ${calories_kcal} calories, ${protein_g}g protein, ${fat_g}g fat, ${carbohydrates_g}g carbs${reason ? `. Tagged as ${reason}` : ''}. Click for details.`}
-            layout
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            exit={{ opacity: 0, scale: 0.98 }}
             whileHover={{
-                scale: 1.03,
-                y: -6,
+                scale: 1.01,
+                y: -2,
             }}
-            whileTap={{ scale: 0.98 }}
+            whileTap={{ scale: 0.99 }}
             transition={{
-                type: 'spring',
-                stiffness: 400,
-                damping: 30,
-                layout: { type: 'spring', stiffness: 300, damping: 30 },
+                duration: 0.2,
+                ease: 'easeOut',
             }}
             className={cn(
                 'group relative flex flex-col cursor-pointer overflow-hidden',
@@ -104,19 +101,19 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
         >
             {/* Animated glow effect */}
             <motion.div
-                className="absolute -right-12 -top-12 h-28 w-28 rounded-full bg-gradient-to-br from-blue-400/20 to-purple-400/10 blur-3xl pointer-events-none"
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileHover={{ opacity: 0.4, scale: 1.2 }}
-                transition={{ duration: 0.4 }}
+                className="absolute -right-12 -top-12 h-28 w-28 rounded-full bg-gradient-to-br from-blue-400/10 to-purple-400/5 blur-3xl pointer-events-none"
+                initial={{ opacity: 0 }}
+                whileHover={{ opacity: 0.3 }}
+                transition={{ duration: 0.3 }}
             />
 
             <div className="flex flex-col gap-3 flex-1 relative z-10">
                 {/* Reason badge - color-coded */}
                 {reason && (
                     <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.05, type: 'spring', stiffness: 300 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.2 }}
                         className="flex flex-wrap gap-1.5"
                     >
                         {/* PERFORMANCE: Use stable keys (reason text) instead of index */}
@@ -149,7 +146,7 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                 <motion.div
                     className="flex items-baseline gap-1.5 mt-1"
                     initial={{ opacity: 0.8 }}
-                    whileHover={{ opacity: 1, scale: 1.02 }}
+                    whileHover={{ opacity: 1 }}
                     transition={{ duration: 0.2 }}
                 >
                     <span className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent">

@@ -73,11 +73,10 @@ const MiniFoodCard = React.memo(({ item, onClick }: { item: MasterFoodItem; onCl
     return (
         <motion.div
             onClick={onClick}
-            layout
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ scale: 1.02, backgroundColor: "rgba(250, 250, 250, 1)" }}
-            whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            whileHover={{ backgroundColor: "rgba(250, 250, 250, 1)" }}
+            whileTap={{ scale: 0.99 }}
             className="flex items-center justify-between p-3 rounded-xl border border-zinc-200/50 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/30 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 transition-all group h-full min-h-[42px]"
         >
             <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200 transition-colors">
