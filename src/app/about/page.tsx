@@ -1,6 +1,28 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "About eatUNC | UNC Dining Menu Dashboard",
+    description: "Learn about eatUNC, a premium dining dashboard for UNC Chapel Hill students. View real-time menu updates, nutritional information, and dietary preference filtering.",
+    keywords: [
+        "about eatUNC",
+        "UNC dining app",
+        "UNC meal tracker",
+        "Carolina dining",
+    ],
+    openGraph: {
+        title: "About eatUNC | UNC Dining Menu Dashboard",
+        description: "Learn about eatUNC, a premium dining dashboard for UNC Chapel Hill students.",
+        url: "https://eatunc.com/about",
+        siteName: "UNC Dining Menu",
+        type: "website",
+    },
+    alternates: {
+        canonical: "https://eatunc.com/about",
+    },
+};
 
 export default function AboutPage() {
     return (

@@ -1,5 +1,21 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "Legal & Privacy | UNC Dining Menu",
+    description: "Legal information, privacy policy, and terms of use for eatUNC - the unofficial UNC dining hall menu dashboard.",
+    openGraph: {
+        title: "Legal & Privacy | UNC Dining Menu",
+        description: "Legal information, privacy policy, and terms of use for eatUNC.",
+        url: "https://eatunc.com/legal",
+        siteName: "UNC Dining Menu",
+        type: "website",
+    },
+    alternates: {
+        canonical: "https://eatunc.com/legal",
+    },
+};
 
 export default function LegalPage() {
     return (

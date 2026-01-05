@@ -67,9 +67,9 @@ export const metadata: Metadata = {
     description: 'View today\'s UNC dining hall menus for Chase and Top of Lenoir. Check daily menus, nutrition facts, and meal times.',
     images: [
       {
-        url: '/eat_unc_text_logo_nw.svg',
-        width: 1200,
-        height: 630,
+        url: '/eat_unc_logo_square.png',
+        width: 512,
+        height: 512,
         alt: 'UNC Dining Menu - Eat UNC',
       }
     ],
@@ -78,7 +78,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'UNC Dining Menu Today | Chase & Lenoir Dining Halls',
     description: 'View today\'s UNC dining hall menus for Chase and Top of Lenoir. Check daily menus, nutrition facts, and meal times.',
-    images: ['/eat_unc_text_logo_nw.svg'],
+    images: ['/eat_unc_logo_square.png'],
     creator: '@UNC',
   },
   robots: {
