@@ -366,9 +366,68 @@ export default function MenuContainer({
     }, [initialPeriod, availablePeriods])
 
 
+    // ========================================
+    // PERSISTENT FILTERS (localStorage)
+    // ========================================
+    // Filters are saved to localStorage and restored on page load
+    // Key: "eatunc_active_filters"
+    // Testing: localStorage.removeItem("eatunc_active_filters") to reset
 
-    // Filter state
-    const [activeFilters, setActiveFilters] = useState<FilterOption[]>(['protein'])
+    const FILTERS_STORAGE_KEY = 'eatunc_active_filters'
+    const VALID_FILTERS: FilterOption[] = ['protein', 'calories', 'fat', 'carbs']
+
+    /**
+     * Load filters from localStorage
+     * Returns saved filters or empty array if none saved/error
+     */
+    const loadFiltersFromStorage = useCallback((): FilterOption[] => {
+        try {
+            if (typeof window === 'undefined') return []
+            const saved = localStorage.getItem(FILTERS_STORAGE_KEY)
+            if (!saved) return []
+
+            const parsed = JSON.parse(saved)
+            if (!Array.isArray(parsed)) return []
+
+            // Validate each filter ID is still valid
+            return parsed.filter((f): f is FilterOption => VALID_FILTERS.includes(f))
+        } catch {
+            // Corrupted data or localStorage unavailable
+            return []
+        }
+    }, [])
+
+    /**
+     * Save filters to localStorage
+     * Silently fails if localStorage unavailable
+     */
+    const saveFiltersToStorage = useCallback((filters: FilterOption[]) => {
+        try {
+            if (typeof window === 'undefined') return
+            localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters))
+        } catch {
+            // localStorage unavailable (e.g., Safari private mode)
+            console.warn('Could not save filters to localStorage')
+        }
+    }, [])
+
+    // Initialize filter state from localStorage or empty array
+    const [activeFilters, setActiveFilters] = useState<FilterOption[]>([])
+    const [filtersLoaded, setFiltersLoaded] = useState(false)
+
+    // Load saved filters on mount (client-side only)
+    useEffect(() => {
+        const savedFilters = loadFiltersFromStorage()
+        setActiveFilters(savedFilters)
+        setFiltersLoaded(true)
+    }, [loadFiltersFromStorage])
+
+    // Save filters to localStorage whenever they change (after initial load)
+    useEffect(() => {
+        if (filtersLoaded) {
+            saveFiltersToStorage(activeFilters)
+        }
+    }, [activeFilters, filtersLoaded, saveFiltersToStorage])
 
     const toggleFilter = (filter: FilterOption) => {
         setActiveFilters(prev =>
@@ -380,6 +439,12 @@ export default function MenuContainer({
 
     const clearAllFilters = () => {
         setActiveFilters([])
+        // Also clear from localStorage
+        try {
+            localStorage.removeItem(FILTERS_STORAGE_KEY)
+        } catch {
+            // Ignore errors
+        }
     }
 
 
