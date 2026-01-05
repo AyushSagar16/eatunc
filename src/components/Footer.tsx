@@ -64,6 +64,15 @@ function FooterContent() {
                         About
                     </Link>
                     <Link
+                        href="/feedback"
+                        className={cn(
+                            "text-sm font-medium transition-colors hover:text-foreground",
+                            isLanding ? "text-white/60 hover:text-white" : "text-muted-foreground"
+                        )}
+                    >
+                        Feedback
+                    </Link>
+                    <Link
                         href="/legal"
                         className={cn(
                             "text-sm font-medium transition-colors hover:text-foreground",
