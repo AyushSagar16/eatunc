@@ -225,7 +225,7 @@ export default function MenuTutorial() {
             // Delay start to ensure all elements are rendered
             const timer = setTimeout(() => {
                 setRun(true)
-            }, 1500)
+            }, 1000)
             return () => clearTimeout(timer)
         }
     }, [isClient])
