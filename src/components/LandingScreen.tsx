@@ -42,7 +42,7 @@ export default function LandingScreen() {
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/20 to-zinc-950/40" />
             </div>
 
-            <div className="max-w-7xl w-full px-6 relative z-10 flex flex-col items-center gap-16">
+            <div className="max-w-7xl w-full px-6 pt-8 relative z-10 flex flex-col items-center gap-16">
 
                 {/* Header */}
                 <motion.div
@@ -238,6 +238,21 @@ export default function LandingScreen() {
                 >
                     Menus are dynamically updated from UNC Dining services.
                 </motion.p>
+
+                {/* SEO Content Section - Ultra subtle for SEO value without visual disruption */}
+                <motion.section
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.6, delay: 0.8 }}
+                    className="hidden md:block mt-4 mb-4 max-w-2xl text-center opacity-20 hover:opacity-40 transition-opacity duration-300"
+                >
+                    <h2 className="sr-only">UNC Dining Halls</h2>
+                    <p className="text-xs text-zinc-500 leading-relaxed">
+                        Eat UNC helps you explore daily menus at UNC Chapel Hill dining halls.
+                        Chase Dining Hall on South Campus and Top of Lenoir on North Campus serve breakfast, lunch, and dinner with
+                        nutrition facts and dietary options including vegetarian and vegan choices.
+                    </p>
+                </motion.section>
             </div>
         </div>
     )

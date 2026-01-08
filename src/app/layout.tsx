@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     default: "UNC Dining Menu Today | Chase & Lenoir Dining Halls",
     template: "%s | UNC Dining"
   },
-  description: "View today's UNC dining hall menus for Chase and Top of Lenoir. Check daily menus, nutrition facts, meal times, and healthy options at University of North Carolina dining halls.",
+  description: "Check UNC dining menus for Chase and Lenoir dining halls. View today's menu, meal times, and nutrition facts at UNC Chapel Hill's dining locations.",
   keywords: [
     "UNC dining",
     "UNC dining hall menu",
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     url: 'https://eatunc.com',
     siteName: 'UNC Dining Menu',
     title: 'UNC Dining Menu Today | Chase & Lenoir Dining Halls',
-    description: 'View today\'s UNC dining hall menus for Chase and Top of Lenoir. Check daily menus, nutrition facts, and meal times.',
+    description: 'Check UNC dining menus for Chase and Lenoir dining halls. View today\'s menu, meal times, and nutrition facts at UNC Chapel Hill.',
     images: [
       {
         url: '/eat_unc_logo_square.png',
@@ -77,7 +77,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'UNC Dining Menu Today | Chase & Lenoir Dining Halls',
-    description: 'View today\'s UNC dining hall menus for Chase and Top of Lenoir. Check daily menus, nutrition facts, and meal times.',
+    description: 'Check UNC dining menus for Chase and Lenoir dining halls. View today\'s menu, meal times, and nutrition facts at UNC Chapel Hill.',
     images: ['/eat_unc_logo_square.png'],
     creator: '@UNC',
   },
