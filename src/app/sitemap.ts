@@ -8,6 +8,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Note: /chase and /lenoir are NOT included because they redirect to /chase/{date} and /lenoir/{date}
     const routes = [
         { path: '', priority: 1.0, changeFrequency: 'daily' as const },
+        // SEO landing pages for dining hall queries
+        { path: '/chase-menu', priority: 0.9, changeFrequency: 'daily' as const },
+        { path: '/lenoir-menu', priority: 0.9, changeFrequency: 'daily' as const },
+        { path: '/today', priority: 0.8, changeFrequency: 'daily' as const },
         { path: '/about', priority: 0.6, changeFrequency: 'monthly' as const },
         { path: '/feedback', priority: 0.5, changeFrequency: 'monthly' as const },
         { path: '/legal', priority: 0.3, changeFrequency: 'yearly' as const },

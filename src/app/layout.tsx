@@ -36,19 +36,23 @@ export const metadata: Metadata = {
   },
   description: "Check UNC dining menus for Chase and Lenoir dining halls. View today's menu, meal times, and nutrition facts at UNC Chapel Hill's dining locations.",
   keywords: [
-    "UNC dining",
+    // Primary target keywords
+    "unc menu",
+    "unc dining menu",
+    "chase dining hall menu",
+    "lenoir dining hall menu",
+    "unc dining today",
+    "unc campus dining",
+    // Secondary keywords
     "UNC dining hall menu",
-    "UNC dining menu today",
-    "Chase dining hall",
-    "Lenoir dining hall",
-    "Top of Lenoir",
+    "top of lenoir menu",
+    "chase menu unc",
+    "lenoir menu unc",
     "UNC Chapel Hill dining",
-    "UNC food menu",
-    "UNC cafeteria menu",
+    "unc food menu",
     "Carolina dining halls",
     "UNC nutrition",
-    "UNC meal plan",
-    "university dining menu"
+    "UNC meal plan"
   ],
   authors: [{ name: "Eat UNC" }],
   creator: "Eat UNC",
