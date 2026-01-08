@@ -22,65 +22,113 @@ function FooterContent() {
     return (
         <footer
             className={cn(
-                "w-full py-6 mt-auto",
+                "w-full",
                 isLanding
-                    ? "fixed bottom-0 left-0 z-50 border-none bg-transparent"
-                    : "border-t border-border bg-background mt-12"
+                    ? "bg-[#13294B] text-white border-t border-white/5"
+                    : "bg-background border-t border-border mt-auto"
             )}
         >
-            <div className="container mx-auto flex flex-col items-center justify-between gap-4 md:h-16 md:flex-row px-4">
-                <div className="flex items-center gap-2">
+            <div className="container mx-auto px-6 py-6 md:py-8">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-8">
+                    {/* Brand & Description Column */}
+                    <div className="col-span-2 space-y-4">
+                        <div className="flex items-center gap-2">
+                            {/* Simple text logo or icon if available */}
+                            <span className="text-xl font-bold tracking-tight">Eat UNC</span>
+                        </div>
+                        <p className={cn(
+                            "text-sm leading-relaxed max-w-md",
+                            isLanding ? "text-blue-100/70" : "text-muted-foreground"
+                        )}>
+                            {isLanding
+                                ? "View today's dining menu at UNC Chapel Hill. Eat UNC provides real-time menus for Chase Dining Hall on South Campus and Top of Lenoir on North Campus."
+                                : "Making UNC dining menus eager to explore. Real-time updates, nutrition facts, and dietary filters for Chapel Hill students."
+                            }
+                        </p>
+                        <p className={cn("text-xs pt-2", isLanding ? "text-blue-100/40" : "text-muted-foreground")}>
+                            &copy; {new Date().getFullYear()} Eat UNC. All rights reserved.
+                        </p>
+                    </div>
 
-                    <p
-                        className={cn(
-                            "text-sm text-center md:text-left transition-colors",
-                            isLanding ? "text-white/60" : "text-muted-foreground"
-                        )}
-                    >
-                        &copy; {new Date().getFullYear()} Eat UNC. All rights reserved.
-                    </p>
-                </div>
-                <div className="flex gap-4 items-center">
-                    {isMenuPage && (
-                        <button
-                            onClick={handleRestartTutorial}
-                            className={cn(
-                                "text-sm font-medium transition-colors flex items-center gap-1.5 hover:text-foreground",
-                                isLanding ? "text-white/60 hover:text-white" : "text-muted-foreground"
+                    {/* Dining Halls Column */}
+                    <div className="space-y-4">
+                        <h4 className="text-xs font-semibold uppercase tracking-wider opacity-80">
+                            Dining Halls
+                        </h4>
+                        <ul className="space-y-1.5 text-sm">
+                            <li>
+                                <Link
+                                    href="/chase-menu"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    Chase Dining Hall
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href="/lenoir-menu"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    Top of Lenoir
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href="/today"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    Today's Menu
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+
+                    {/* Resources Column */}
+                    <div className="space-y-4">
+                        <h4 className="text-xs font-semibold uppercase tracking-wider opacity-80">
+                            Resources
+                        </h4>
+                        <ul className="space-y-1.5 text-sm">
+                            <li>
+                                <Link
+                                    href="/about"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    About Us
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href="/feedback"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    Feedback
+                                </Link>
+                            </li>
+                            {isMenuPage && (
+                                <li>
+                                    <button
+                                        onClick={handleRestartTutorial}
+                                        className={cn(
+                                            "flex items-center gap-2 transition-colors",
+                                            isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <HelpCircle className="w-3.5 h-3.5" />
+                                        Tutorial
+                                    </button>
+                                </li>
                             )}
-                            aria-label="Start tutorial"
-                        >
-                            <HelpCircle className="w-4 h-4" />
-                            <span>Tutorial</span>
-                        </button>
-                    )}
-                    <Link
-                        href="/about"
-                        className={cn(
-                            "text-sm font-medium transition-colors hover:text-foreground",
-                            isLanding ? "text-white/60 hover:text-white" : "text-muted-foreground"
-                        )}
-                    >
-                        About
-                    </Link>
-                    <Link
-                        href="/feedback"
-                        className={cn(
-                            "text-sm font-medium transition-colors hover:text-foreground",
-                            isLanding ? "text-white/60 hover:text-white" : "text-muted-foreground"
-                        )}
-                    >
-                        Feedback
-                    </Link>
-                    <Link
-                        href="/legal"
-                        className={cn(
-                            "text-sm font-medium transition-colors hover:text-foreground",
-                            isLanding ? "text-white/60 hover:text-white" : "text-muted-foreground"
-                        )}
-                    >
-                        Legal
-                    </Link>
+                            <li>
+                                <Link
+                                    href="/legal"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    Legal
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </footer>

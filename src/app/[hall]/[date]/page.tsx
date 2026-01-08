@@ -52,18 +52,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const isToday = date === todayStr;
     const dateText = isToday ? 'Today' : formattedDate;
 
-    const title = `${hallName} Menu ${dateText} | UNC Dining`;
-    const description = `View the ${hallName} dining hall menu for ${formattedDate}. Check meal times, nutrition facts, and healthy options at UNC Chapel Hill.`;
+    // Hall-specific title formatting
+    const hallDisplayName = hall === 'chase' ? 'Chase Dining Hall' : 'Lenoir Dining Hall';
+    const title = `${hallDisplayName} Menu ${dateText} | UNC Campus Dining`;
+    const description = `View the ${hallDisplayName} menu for ${formattedDate}. Check meal times, nutrition facts, and healthy options at UNC Chapel Hill.`;
 
     return {
         title,
         description,
         keywords: [
-            `${hallName} menu`,
-            `${hallName} dining hall`,
-            `UNC ${hall} menu`,
-            `UNC dining ${formattedDate}`,
-            "UNC dining hall menu today",
+            `${hall} dining hall menu`,
+            `${hall} menu unc`,
+            `unc ${hall} menu`,
+            `unc dining ${isToday ? 'today' : formattedDate}`,
+            "unc dining hall menu",
+            "unc campus dining",
             "UNC Chapel Hill dining",
         ],
         openGraph: {

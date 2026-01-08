@@ -26,9 +26,9 @@ export default function LandingScreen() {
     }
 
     return (
-        <div className="relative min-h-screen-ios-safe flex flex-col items-center justify-center overflow-hidden" style={{ backgroundColor: '#3a4f5f' }}>
+        <div className="relative min-h-screen-ios-safe flex flex-col items-center" style={{ backgroundColor: '#3a4f5f' }}>
             {/* Dither Background with Overlay */}
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-0 pointer-events-none">
                 <DitherShader
                     src="/old-well-optimized.jpg"
                     ditherMode="bayer"
@@ -42,9 +42,8 @@ export default function LandingScreen() {
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/20 to-zinc-950/40" />
             </div>
 
-            <div className="max-w-7xl w-full px-6 relative z-10 flex flex-col items-center gap-16">
-
-                {/* Header */}
+            <div className="max-w-7xl w-full px-6 pt-16 pb-8 relative z-10 flex flex-col items-center gap-16 md:gap-24">
+                {/* Header content... (lines 48-241) */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -92,7 +91,7 @@ export default function LandingScreen() {
                             }
                         }
                     }}
-                    className="grid grid-cols-2 gap-4 md:gap-6 w-full max-w-4xl"
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 w-full max-w-4xl"
                 >
 
                     {/* Chase Card */}
@@ -105,7 +104,7 @@ export default function LandingScreen() {
                         onClick={() => handleSelect('chase')}
                         whileHover={{ scale: 1.02, y: -4 }}
                         whileTap={{ scale: 0.98 }}
-                        className="group relative flex flex-col p-5 md:p-10 h-56 md:h-80 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-left overflow-hidden"
+                        className="group relative flex flex-col p-5 md:p-10 h-64 md:h-80 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-left overflow-hidden"
                     >
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -149,12 +148,12 @@ export default function LandingScreen() {
                                 initial={{ opacity: 0.9 }}
                                 whileHover={{ opacity: 1 }}
                             >
-                                <h2 className="text-xl md:text-3xl font-bold text-white mb-1 md:mb-2 tracking-tight">Chase</h2>
-                                <div className="flex items-center gap-1.5 md:gap-2 text-blue-200/60 font-medium text-xs md:text-base">
+                                <h2 className="text-2xl md:text-4xl font-bold text-white mb-1 md:mb-2 tracking-tight">Chase</h2>
+                                <div className="flex items-center gap-1.5 md:gap-2 text-blue-200/60 font-medium text-sm md:text-lg">
                                     <motion.span
                                         animate={{ scale: [1, 1.2, 1] }}
                                         transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-                                        className="w-1 h-1 rounded-full bg-blue-400"
+                                        className="w-1.5 h-1.5 rounded-full bg-blue-400"
                                     />
                                     South Campus
                                 </div>
@@ -172,7 +171,7 @@ export default function LandingScreen() {
                         onClick={() => handleSelect('lenoir')}
                         whileHover={{ scale: 1.02, y: -4 }}
                         whileTap={{ scale: 0.98 }}
-                        className="group relative flex flex-col p-5 md:p-10 h-56 md:h-80 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-left overflow-hidden"
+                        className="group relative flex flex-col p-5 md:p-10 h-64 md:h-80 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-left overflow-hidden"
                     >
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -216,12 +215,12 @@ export default function LandingScreen() {
                                 initial={{ opacity: 0.9 }}
                                 whileHover={{ opacity: 1 }}
                             >
-                                <h2 className="text-xl md:text-3xl font-bold text-white mb-1 md:mb-2 tracking-tight leading-tight">Top of <br className="md:hidden" />Lenoir</h2>
-                                <div className="flex items-center gap-1.5 md:gap-2 text-teal-200/60 font-medium text-xs md:text-base">
+                                <h2 className="text-2xl md:text-4xl font-bold text-white mb-1 md:mb-2 tracking-tight leading-tight">Top of <br className="md:hidden" />Lenoir</h2>
+                                <div className="flex items-center gap-1.5 md:gap-2 text-teal-200/60 font-medium text-sm md:text-lg">
                                     <motion.span
                                         animate={{ scale: [1, 1.2, 1] }}
                                         transition={{ duration: 2, repeat: Infinity, delay: 0.7 }}
-                                        className="w-1 h-1 rounded-full bg-teal-400"
+                                        className="w-1.5 h-1.5 rounded-full bg-teal-400"
                                     />
                                     North Campus
                                 </div>
@@ -242,3 +241,4 @@ export default function LandingScreen() {
         </div>
     )
 }
+
