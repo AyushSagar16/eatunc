@@ -4,6 +4,7 @@ import React from 'react'
 import { MasterFoodItem } from '@/lib/api'
 import { motion } from 'motion/react'
 import { cn } from '@/lib/utils'
+import { DIETARY_ICON_MAP, parseDietaryPreferences } from '@/components/icons/DietaryIcons'
 
 interface FoodCardProps {
     item: MasterFoodItem
@@ -62,6 +63,8 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
         fat_g,
         carbohydrates_g,
     } = item
+
+    const dietaryPrefs = parseDietaryPreferences(item.dietary_preferences)
 
     return (
         <motion.div
@@ -157,6 +160,32 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                     </span>
                 </motion.div>
             </div>
+
+            {/* Dietary Preference Icons - Bottom Right */}
+            {dietaryPrefs.length > 0 && (
+                <div className="absolute bottom-3 right-3 flex items-center gap-1">
+                    {dietaryPrefs.slice(0, 4).map((pref) => {
+                        const IconComponent = DIETARY_ICON_MAP[pref]
+                        if (!IconComponent) return null
+
+                        return (
+                            <div
+                                key={pref}
+                                className="w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm border border-zinc-200/50 flex items-center justify-center dark:bg-zinc-800/90 dark:border-zinc-700/50"
+                            >
+                                <IconComponent className="w-4 h-4" />
+                            </div>
+                        )
+                    })}
+                    {dietaryPrefs.length > 4 && (
+                        <div className="w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm border border-zinc-200/50 flex items-center justify-center dark:bg-zinc-800/90 dark:border-zinc-700/50">
+                            <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">
+                                +{dietaryPrefs.length - 4}
+                            </span>
+                        </div>
+                    )}
+                </div>
+            )}
         </motion.div>
     )
 })

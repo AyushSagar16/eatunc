@@ -13,6 +13,12 @@ interface FoodModalProps {
     onClose: () => void
 }
 
+// Helper function to parse comma-separated allergens string
+function parseAllergens(allergensString: string | null): string[] {
+    if (!allergensString) return []
+    return allergensString.split(',').map(a => a.trim())
+}
+
 export default function FoodModal({
     item,
     station,
@@ -48,6 +54,8 @@ export default function FoodModal({
     const isHighProtein = (protein_g ?? 0) >= 20
     const isLowCal = (calories_kcal ?? 0) <= 350 && (calories_kcal ?? 0) > 0
     const isLowFat = (fat_g ?? 0) <= 8 && (calories_kcal ?? 0) > 0
+
+    const allergens = parseAllergens(item.allergens)
 
     return (
         <AnimatePresence>
@@ -148,6 +156,18 @@ export default function FoodModal({
                                 <NutrientHighlight label="Carbs" value={carbohydrates_g} unit="g" color="text-amber-600 dark:text-amber-400" bgColor="bg-amber-500/10" />
                                 <NutrientHighlight label="Fat" value={fat_g} unit="g" color="text-rose-600 dark:text-rose-400" bgColor="bg-rose-500/10" />
                             </div>
+
+                            {/* Allergens Section */}
+                            {allergens.length > 0 && (
+                                <div className="mt-2 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                                    <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200 mb-2">
+                                        Allergens
+                                    </h3>
+                                    <p className="text-sm text-amber-800 dark:text-amber-300">
+                                        {allergens.join(', ')}
+                                    </p>
+                                </div>
+                            )}
                         </motion.div>
                     </motion.div>
                 </div>

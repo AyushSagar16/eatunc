@@ -18,6 +18,8 @@ export interface Database {
                     carbohydrates_g: number | null
                     amount_per_serving: string | null
                     fat_g: number | null
+                    dietary_preferences: string | null
+                    allergens: string | null
                 }
                 Insert: {
                     recipe_number: number
@@ -27,6 +29,8 @@ export interface Database {
                     carbohydrates_g?: number | null
                     amount_per_serving?: string | null
                     fat_g?: number | null
+                    dietary_preferences?: string | null
+                    allergens?: string | null
                 }
                 Update: {
                     recipe_number?: number
@@ -36,6 +40,8 @@ export interface Database {
                     carbohydrates_g?: number | null
                     amount_per_serving?: string | null
                     fat_g?: number | null
+                    dietary_preferences?: string | null
+                    allergens?: string | null
                 }
                 Relationships: []
             }
