@@ -193,3 +193,13 @@ export function parseDietaryPreferences(preferencesString: string | null): strin
     if (!preferencesString) return []
     return preferencesString.split(',').map(p => p.trim().toLowerCase())
 }
+
+/**
+ * Parses a comma-separated string of allergens into an array of lowercase strings.
+ * @param allergensString - The raw allergens string from the database (e.g., "Milk, Eggs, Wheat")
+ * @returns An array of lowercase allergen strings, or an empty array if input is null/empty
+ */
+export function parseAllergens(allergensString: string | null): string[] {
+    if (!allergensString) return []
+    return allergensString.split(',').map(a => a.trim().toLowerCase())
+}

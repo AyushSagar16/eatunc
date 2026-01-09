@@ -32,7 +32,35 @@ export type MealPeriod = 'Breakfast' | 'Lunch' | 'Dinner';
 /**
  * Available filter options for nutritional filtering
  */
-export type FilterOption = 'protein' | 'calories' | 'fat' | 'carbs';
+export type FilterOption = 'protein' | 'calories' | 'fat' | 'carbs'
+
+/**
+ * Dietary preference filter options
+ */
+export type DietaryPreferenceOption =
+    | 'vegan'
+    | 'vegetarian'
+    | 'gluten-free'
+    | 'halal'
+    | 'local'
+    | 'organic'
+    | 'smart-choice'
+    | 'sustainable-seafood'
+    | 'coolfood'
+
+/**
+ * Allergen filter options (exclusion filters)
+ */
+export type AllergenOption =
+    | 'milk'
+    | 'eggs'
+    | 'fish'
+    | 'shellfish'
+    | 'tree nuts'
+    | 'peanuts'
+    | 'wheat'
+    | 'soy'
+    | 'sesame';
 
 /**
  * Props for food display components

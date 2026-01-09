@@ -1,26 +1,54 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { cn } from '@/lib/utils'
-import { Filter, X, Check, Trash2 } from 'lucide-react'
-import type { FilterOption } from '@/lib/types'
+import { Filter, X, Check, Trash2, ChevronDown } from 'lucide-react'
+import type { FilterOption, DietaryPreferenceOption, AllergenOption } from '@/lib/types'
+import {
+    VeganIcon,
+    VegetarianIcon,
+    GlutenFreeIcon,
+    HalalIcon,
+    LocalIcon,
+    OrganicIcon,
+    SmartChoiceIcon,
+    SustainableSeafoodIcon,
+    CoolfoodIcon,
+} from '@/components/icons/DietaryIcons'
 
 interface FilterSidebarProps {
     activeFilters: FilterOption[]
     onToggleFilter: (filter: FilterOption) => void
     onClearAll: () => void
     className?: string
+    // Dietary preferences
+    activeDietaryPreferences: DietaryPreferenceOption[]
+    onToggleDietaryPreference: (pref: DietaryPreferenceOption) => void
+    // Allergens
+    activeAllergens: AllergenOption[]
+    onToggleAllergen: (allergen: AllergenOption) => void
 }
 
-interface FilterItem {
+interface MacroFilterItem {
     id: FilterOption
     label: string
     description: string
     icon: React.ReactNode
 }
 
-const filters: FilterItem[] = [
+interface DietaryPreferenceItem {
+    id: DietaryPreferenceOption
+    label: string
+    icon: React.ComponentType<{ className?: string }>
+}
+
+interface AllergenItem {
+    id: AllergenOption
+    label: string
+}
+
+const macroFilters: MacroFilterItem[] = [
     {
         id: 'protein',
         label: 'High Protein',
@@ -65,6 +93,30 @@ const filters: FilterItem[] = [
     },
 ]
 
+const dietaryPreferences: DietaryPreferenceItem[] = [
+    { id: 'vegan', label: 'Vegan', icon: VeganIcon },
+    { id: 'vegetarian', label: 'Vegetarian', icon: VegetarianIcon },
+    { id: 'gluten-free', label: 'Made Without Gluten', icon: GlutenFreeIcon },
+    { id: 'halal', label: 'Halal', icon: HalalIcon },
+    { id: 'local', label: 'Local', icon: LocalIcon },
+    { id: 'organic', label: 'Organic', icon: OrganicIcon },
+    { id: 'smart-choice', label: 'Smart Choice', icon: SmartChoiceIcon },
+    { id: 'sustainable-seafood', label: 'Sustainable Seafood', icon: SustainableSeafoodIcon },
+    { id: 'coolfood', label: 'Coolfood', icon: CoolfoodIcon },
+]
+
+const allergens: AllergenItem[] = [
+    { id: 'milk', label: 'Milk' },
+    { id: 'eggs', label: 'Eggs' },
+    { id: 'fish', label: 'Fish' },
+    { id: 'shellfish', label: 'Shellfish' },
+    { id: 'tree nuts', label: 'Tree Nuts' },
+    { id: 'peanuts', label: 'Peanuts' },
+    { id: 'wheat', label: 'Wheat' },
+    { id: 'soy', label: 'Soy' },
+    { id: 'sesame', label: 'Sesame' },
+]
+
 /**
  * FilterSidebar - Collapsible filter panel with Aceternity-style animations
  * - Desktop: Collapsible sidebar on hover
@@ -78,11 +130,70 @@ export default function FilterSidebar({
     onToggleFilter,
     onClearAll,
     className,
+    activeDietaryPreferences,
+    onToggleDietaryPreference,
+    activeAllergens,
+    onToggleAllergen,
 }: FilterSidebarProps) {
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [announcement, setAnnouncement] = useState('')
 
-    const activeCount = activeFilters.length
+    // ========================================
+    // COLLAPSIBLE SECTIONS (localStorage)
+    // ========================================
+    const SECTION_COLLAPSED_KEY = 'eatunc_filter_sections_collapsed'
+
+    type SectionKey = 'macro' | 'dietary' | 'allergens'
+
+    const loadCollapsedFromStorage = useCallback((): Record<SectionKey, boolean> => {
+        try {
+            if (typeof window === 'undefined') return { macro: false, dietary: false, allergens: false }
+            const saved = localStorage.getItem(SECTION_COLLAPSED_KEY)
+            if (!saved) return { macro: false, dietary: false, allergens: false }
+            const parsed = JSON.parse(saved)
+            return {
+                macro: Boolean(parsed.macro),
+                dietary: Boolean(parsed.dietary),
+                allergens: Boolean(parsed.allergens),
+            }
+        } catch {
+            return { macro: false, dietary: false, allergens: false }
+        }
+    }, [])
+
+    const saveCollapsedToStorage = useCallback((collapsed: Record<SectionKey, boolean>) => {
+        try {
+            if (typeof window === 'undefined') return
+            localStorage.setItem(SECTION_COLLAPSED_KEY, JSON.stringify(collapsed))
+        } catch {
+            console.warn('Could not save section collapsed state to localStorage')
+        }
+    }, [])
+
+    // All sections open by default (false = not collapsed)
+    const [collapsedSections, setCollapsedSections] = useState<Record<SectionKey, boolean>>({
+        macro: false,
+        dietary: false,
+        allergens: false,
+    })
+
+    // Load collapsed state from localStorage on mount
+    useEffect(() => {
+        const savedCollapsed = loadCollapsedFromStorage()
+        setCollapsedSections(savedCollapsed)
+    }, [loadCollapsedFromStorage])
+
+    // Save when collapsed state changes
+    const toggleSection = (section: SectionKey) => {
+        setCollapsedSections(prev => {
+            const newState = { ...prev, [section]: !prev[section] }
+            saveCollapsedToStorage(newState)
+            return newState
+        })
+    }
+
+    // Total count of all active filters
+    const activeCount = activeFilters.length + activeDietaryPreferences.length + activeAllergens.length
 
     // Announce filter changes to screen readers
     const announceFilterChange = (filterLabel: string, isActive: boolean) => {
@@ -91,10 +202,22 @@ export default function FilterSidebar({
         setTimeout(() => setAnnouncement(''), 1000)
     }
 
-    const handleToggleFilter = (filter: FilterItem) => {
+    const handleToggleMacroFilter = (filter: MacroFilterItem) => {
         const isActive = activeFilters.includes(filter.id)
         announceFilterChange(filter.label, isActive)
         onToggleFilter(filter.id)
+    }
+
+    const handleToggleDietaryPreference = (pref: DietaryPreferenceItem) => {
+        const isActive = activeDietaryPreferences.includes(pref.id)
+        announceFilterChange(pref.label, isActive)
+        onToggleDietaryPreference(pref.id)
+    }
+
+    const handleToggleAllergen = (allergen: AllergenItem) => {
+        const isActive = activeAllergens.includes(allergen.id)
+        announceFilterChange(allergen.label, isActive)
+        onToggleAllergen(allergen.id)
     }
 
     const handleClearAll = () => {
@@ -183,59 +306,242 @@ export default function FilterSidebar({
                                 </button>
                             </div>
 
-                            {/* Filter List */}
-                            <div className="p-6 flex flex-col gap-3">
-                                {filters.map((filter) => {
-                                    const isActive = activeFilters.includes(filter.id)
-                                    return (
-                                        <motion.button
-                                            key={filter.id}
-                                            onClick={() => handleToggleFilter(filter)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' || e.key === ' ') {
-                                                    e.preventDefault()
-                                                    handleToggleFilter(filter)
-                                                }
-                                            }}
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            role="checkbox"
-                                            aria-checked={isActive}
-                                            aria-label={`${filter.label}: ${filter.description}${isActive ? ', currently selected' : ''}`}
-                                            tabIndex={0}
-                                            className={cn(
-                                                'flex items-center gap-4 p-4 rounded-2xl transition-all min-h-[72px]',
-                                                'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
-                                                isActive
-                                                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-2 border-blue-500 dark:border-blue-600'
-                                                    : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-2 border-transparent hover:border-zinc-200 dark:hover:border-zinc-700'
-                                            )}
+                            {/* Filter Sections */}
+                            <div className="p-6 flex flex-col gap-4">
+                                {/* Section 1: Macro Filters */}
+                                <section>
+                                    <button
+                                        onClick={() => toggleSection('macro')}
+                                        className="w-full flex items-center justify-between py-2 group"
+                                        aria-expanded={!collapsedSections.macro}
+                                    >
+                                        <h3 className="text-sm font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
+                                            Macro Filters
+                                        </h3>
+                                        <motion.div
+                                            animate={{ rotate: collapsedSections.macro ? -90 : 0 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="text-zinc-400 dark:text-zinc-500"
                                         >
-                                            <div
-                                                className={cn(
-                                                    'flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center',
-                                                    isActive
-                                                        ? 'bg-blue-100 dark:bg-blue-800'
-                                                        : 'bg-zinc-100 dark:bg-zinc-700'
-                                                )}
+                                            <ChevronDown className="w-5 h-5" />
+                                        </motion.div>
+                                    </button>
+                                    <AnimatePresence initial={false}>
+                                        {!collapsedSections.macro && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.2, ease: 'easeInOut' }}
+                                                className="overflow-hidden"
                                             >
-                                                {isActive ? (
-                                                    <Check className="w-6 h-6 text-blue-600 dark:text-blue-300" />
-                                                ) : (
-                                                    <span className="text-zinc-500 dark:text-zinc-400">
-                                                        {filter.icon}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="flex flex-col items-start text-left flex-1">
-                                                <span className="text-base font-bold">{filter.label}</span>
-                                                <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                                                    {filter.description}
-                                                </span>
-                                            </div>
-                                        </motion.button>
-                                    )
-                                })}
+                                                <div className="grid grid-cols-2 gap-2 pt-2">
+                                                    {macroFilters.map((filter) => {
+                                                        const isActive = activeFilters.includes(filter.id)
+                                                        return (
+                                                            <motion.button
+                                                                key={filter.id}
+                                                                onClick={() => handleToggleMacroFilter(filter)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                                        e.preventDefault()
+                                                                        handleToggleMacroFilter(filter)
+                                                                    }
+                                                                }}
+                                                                whileHover={{ scale: 1.02 }}
+                                                                whileTap={{ scale: 0.98 }}
+                                                                role="checkbox"
+                                                                aria-checked={isActive}
+                                                                aria-label={`${filter.label}: ${filter.description}${isActive ? ', currently selected' : ''}`}
+                                                                tabIndex={0}
+                                                                className={cn(
+                                                                    'flex flex-col items-center justify-center gap-1 p-3 rounded-xl transition-all min-h-[80px]',
+                                                                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
+                                                                    isActive
+                                                                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-2 border-blue-500 dark:border-blue-600'
+                                                                        : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-2 border-transparent hover:border-zinc-200 dark:hover:border-zinc-700'
+                                                                )}
+                                                            >
+                                                                <div
+                                                                    className={cn(
+                                                                        'flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center',
+                                                                        isActive
+                                                                            ? 'bg-blue-100 dark:bg-blue-800'
+                                                                            : 'bg-zinc-100 dark:bg-zinc-700'
+                                                                    )}
+                                                                >
+                                                                    {isActive ? (
+                                                                        <Check className="w-4 h-4 text-blue-600 dark:text-blue-300" />
+                                                                    ) : (
+                                                                        <span className="text-zinc-500 dark:text-zinc-400 [&>svg]:w-4 [&>svg]:h-4">
+                                                                            {filter.icon}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <span className="text-xs font-bold text-center leading-tight">{filter.label}</span>
+                                                            </motion.button>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </section>
+
+                                {/* Divider */}
+                                <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
+
+                                {/* Section 2: Dietary Preferences */}
+                                <section>
+                                    <button
+                                        onClick={() => toggleSection('dietary')}
+                                        className="w-full flex items-center justify-between py-2 group"
+                                        aria-expanded={!collapsedSections.dietary}
+                                    >
+                                        <h3 className="text-sm font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
+                                            Dietary Preferences
+                                        </h3>
+                                        <motion.div
+                                            animate={{ rotate: collapsedSections.dietary ? -90 : 0 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="text-zinc-400 dark:text-zinc-500"
+                                        >
+                                            <ChevronDown className="w-5 h-5" />
+                                        </motion.div>
+                                    </button>
+                                    <AnimatePresence initial={false}>
+                                        {!collapsedSections.dietary && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.2, ease: 'easeInOut' }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="grid grid-cols-3 gap-2 pt-2">
+                                                    {dietaryPreferences.map((pref) => {
+                                                        const isActive = activeDietaryPreferences.includes(pref.id)
+                                                        const IconComponent = pref.icon
+                                                        return (
+                                                            <motion.button
+                                                                key={pref.id}
+                                                                onClick={() => handleToggleDietaryPreference(pref)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                                        e.preventDefault()
+                                                                        handleToggleDietaryPreference(pref)
+                                                                    }
+                                                                }}
+                                                                whileHover={{ scale: 1.02 }}
+                                                                whileTap={{ scale: 0.98 }}
+                                                                role="checkbox"
+                                                                aria-checked={isActive}
+                                                                aria-label={`${pref.label}${isActive ? ', currently selected' : ''}`}
+                                                                tabIndex={0}
+                                                                className={cn(
+                                                                    'flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all min-h-[72px]',
+                                                                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2',
+                                                                    isActive
+                                                                        ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-2 border-emerald-500 dark:border-emerald-600'
+                                                                        : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-2 border-transparent hover:border-zinc-200 dark:hover:border-zinc-700'
+                                                                )}
+                                                            >
+                                                                <div
+                                                                    className={cn(
+                                                                        'flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center',
+                                                                        isActive
+                                                                            ? 'bg-emerald-100 dark:bg-emerald-800'
+                                                                            : 'bg-white dark:bg-zinc-700'
+                                                                    )}
+                                                                >
+                                                                    {isActive ? (
+                                                                        <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />
+                                                                    ) : (
+                                                                        <IconComponent className="w-5 h-5" />
+                                                                    )}
+                                                                </div>
+                                                                <span className="text-[10px] font-bold text-center leading-tight line-clamp-2">{pref.label}</span>
+                                                            </motion.button>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </section>
+
+                                {/* Divider */}
+                                <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
+
+                                {/* Section 3: Allergen Filters */}
+                                <section>
+                                    <button
+                                        onClick={() => toggleSection('allergens')}
+                                        className="w-full flex items-center justify-between py-2 group"
+                                        aria-expanded={!collapsedSections.allergens}
+                                    >
+                                        <h3 className="text-sm font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
+                                            Avoid Allergens
+                                        </h3>
+                                        <motion.div
+                                            animate={{ rotate: collapsedSections.allergens ? -90 : 0 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="text-zinc-400 dark:text-zinc-500"
+                                        >
+                                            <ChevronDown className="w-5 h-5" />
+                                        </motion.div>
+                                    </button>
+                                    <AnimatePresence initial={false}>
+                                        {!collapsedSections.allergens && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.2, ease: 'easeInOut' }}
+                                                className="overflow-hidden"
+                                            >
+                                                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 pt-1 pb-2">
+                                                    Items with selected allergens will appear grayed out. These filters do not guarantee complete accuracy—please verify in person.
+                                                </p>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {allergens.map((allergen) => {
+                                                        const isActive = activeAllergens.includes(allergen.id)
+                                                        return (
+                                                            <motion.button
+                                                                key={allergen.id}
+                                                                onClick={() => handleToggleAllergen(allergen)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                                        e.preventDefault()
+                                                                        handleToggleAllergen(allergen)
+                                                                    }
+                                                                }}
+                                                                whileHover={{ scale: 1.02 }}
+                                                                whileTap={{ scale: 0.98 }}
+                                                                role="checkbox"
+                                                                aria-checked={isActive}
+                                                                aria-label={`Avoid ${allergen.label}${isActive ? ', currently selected' : ''}`}
+                                                                tabIndex={0}
+                                                                className={cn(
+                                                                    'flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all min-h-[56px]',
+                                                                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2',
+                                                                    isActive
+                                                                        ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-2 border-amber-500 dark:border-amber-600'
+                                                                        : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-2 border-transparent hover:border-zinc-200 dark:hover:border-zinc-700'
+                                                                )}
+                                                            >
+                                                                {isActive && (
+                                                                    <Check className="w-4 h-4 text-amber-600 dark:text-amber-300" />
+                                                                )}
+                                                                <span className="text-xs font-bold text-center leading-tight">{allergen.label}</span>
+                                                            </motion.button>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </section>
                             </div>
 
 
