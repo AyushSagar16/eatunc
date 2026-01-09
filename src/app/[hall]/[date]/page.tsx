@@ -6,6 +6,7 @@ import NoMenuAvailable from "@/components/NoMenuAvailable";
 import BackButton from "@/components/BackButton";
 import StructuredData from "@/components/StructuredData";
 import MenuTutorial from "@/components/MenuTutorial";
+import FeedbackPopup from "@/components/FeedbackPopup";
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
@@ -213,6 +214,9 @@ async function MenuContent({ date, hallSlug }: { date: string, hallSlug: string 
         <div className="relative">
             {/* Onboarding Tutorial */}
             <MenuTutorial />
+
+            {/* Feedback Popup - appears after 15 seconds, once per week */}
+            <FeedbackPopup />
 
             {/* Prominent Logo */}
 
