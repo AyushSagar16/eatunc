@@ -184,7 +184,12 @@ export default function FilterSidebar({
                             </div>
 
                             {/* Filter List */}
-                            <div className="p-6 flex flex-col gap-3">
+                            <div className="px-6 pt-6 pb-2">
+                                <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                                    Select multiple filters
+                                </span>
+                            </div>
+                            <div className="p-6 pt-0 flex flex-col gap-3">
                                 {filters.map((filter) => {
                                     const isActive = activeFilters.includes(filter.id)
                                     return (
