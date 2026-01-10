@@ -1,7 +1,7 @@
 
 import { getAvailableDates, getFullMenuByDateAndHall } from "@/lib/api";
 import MenuContainer from "@/components/MenuContainer";
-import MenuSkeleton from "@/components/MenuSkeleton";
+import LoadingScreen from "@/components/LoadingScreen";
 import NoMenuAvailable from "@/components/NoMenuAvailable";
 import BackButton from "@/components/BackButton";
 import StructuredData from "@/components/StructuredData";
@@ -266,11 +266,7 @@ export default async function Page({ params }: PageProps) {
 
             <Suspense
                 key={`${date}-${hall}`}
-                fallback={
-                    <div className="relative">
-                        <MenuSkeleton />
-                    </div>
-                }
+                fallback={<LoadingScreen isLoading={true} />}
             >
                 <MenuContent date={date} hallSlug={hall} />
             </Suspense>

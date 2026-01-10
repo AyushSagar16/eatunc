@@ -38,45 +38,46 @@ export default function LoadingScreen({ isLoading }: LoadingScreenProps) {
                     </div>
 
                     {/* Loading Content */}
-                    <div className="relative z-10 flex flex-col items-center gap-8">
-                        {/* Logo/Icon */}
+                    <div className="relative z-10 flex flex-col items-center gap-6">
+                        {/* EatUNC Logo with Pulsing Animation */}
                         <motion.div
                             initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ duration: 0.5 }}
+                            animate={{
+                                scale: [1, 1.05, 1],
+                                opacity: 1
+                            }}
+                            transition={{
+                                scale: {
+                                    duration: 1.5,
+                                    repeat: Infinity,
+                                    ease: 'easeInOut',
+                                },
+                                opacity: {
+                                    duration: 0.5
+                                }
+                            }}
+                            className="relative"
                         >
-                            <div className="relative">
-                                {/* Pulsing Ring */}
-                                <motion.div
-                                    animate={{
-                                        scale: [1, 1.2, 1],
-                                        opacity: [0.5, 0.2, 0.5],
-                                    }}
-                                    transition={{
-                                        duration: 2,
-                                        repeat: Infinity,
-                                        ease: 'easeInOut',
-                                    }}
-                                    className="absolute inset-0 rounded-full bg-blue-400/30 blur-xl"
-                                />
+                            {/* Pulsing Glow Effect */}
+                            <motion.div
+                                animate={{
+                                    scale: [1, 1.15, 1],
+                                    opacity: [0.4, 0.1, 0.4],
+                                }}
+                                transition={{
+                                    duration: 1.5,
+                                    repeat: Infinity,
+                                    ease: 'easeInOut',
+                                }}
+                                className="absolute inset-0 rounded-3xl bg-white/20 blur-2xl"
+                            />
 
-                                {/* Main Circle */}
-                                <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-2xl">
-                                    <svg
-                                        className="w-10 h-10 text-white"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                                        />
-                                    </svg>
-                                </div>
-                            </div>
+                            {/* Logo Image */}
+                            <img
+                                src="/eat_unc_logo_white_nb.svg"
+                                alt="EatUNC Logo"
+                                className="relative w-56 h-56 md:w-64 md:h-64 object-contain drop-shadow-2xl"
+                            />
                         </motion.div>
 
                         {/* Loading Text */}
@@ -86,8 +87,8 @@ export default function LoadingScreen({ isLoading }: LoadingScreenProps) {
                             transition={{ delay: 0.2, duration: 0.5 }}
                             className="flex flex-col items-center gap-3"
                         >
-                            <h2 className="text-2xl font-bold text-white tracking-tight">
-                                Loading Your Menu
+                            <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+                                Loading the Menu
                             </h2>
 
                             {/* Animated Dots */}
@@ -108,26 +109,6 @@ export default function LoadingScreen({ isLoading }: LoadingScreenProps) {
                                     />
                                 ))}
                             </div>
-                        </motion.div>
-
-                        {/* Progress Bar */}
-                        <motion.div
-                            initial={{ opacity: 0, width: 0 }}
-                            animate={{ opacity: 1, width: 200 }}
-                            transition={{ delay: 0.3, duration: 0.5 }}
-                            className="h-1 bg-white/10 rounded-full overflow-hidden"
-                        >
-                            <motion.div
-                                animate={{
-                                    x: ['-100%', '100%'],
-                                }}
-                                transition={{
-                                    duration: 1.5,
-                                    repeat: Infinity,
-                                    ease: 'easeInOut',
-                                }}
-                                className="h-full w-1/2 bg-gradient-to-r from-transparent via-blue-400 to-transparent"
-                            />
                         </motion.div>
                     </div>
                 </motion.div>
