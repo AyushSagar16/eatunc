@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import DitherShader from './ui/dither-shader'
 import { motion } from 'motion/react'
 import Image from 'next/image'
+import AnnouncementBanner from './AnnouncementBanner'
 
 export default function LandingScreen() {
     const router = useRouter()
@@ -27,6 +28,9 @@ export default function LandingScreen() {
 
     return (
         <div className="relative min-h-screen-ios-safe flex flex-col items-center" style={{ backgroundColor: '#3a4f5f' }}>
+            {/* Temporary Feature Announcement Banner - expires Jan 15, 2026 */}
+            <AnnouncementBanner expirationDate="2026-01-15" />
+
             {/* Dither Background with Overlay */}
             <div className="absolute inset-0 z-0 pointer-events-none">
                 <DitherShader

@@ -16,6 +16,7 @@ import {
     SustainableSeafoodIcon,
     CoolfoodIcon,
 } from '@/components/icons/DietaryIcons'
+import { useSearchParams } from 'next/navigation'
 
 interface FilterSidebarProps {
     activeFilters: FilterOption[]
@@ -135,8 +136,16 @@ export default function FilterSidebar({
     activeAllergens,
     onToggleAllergen,
 }: FilterSidebarProps) {
+    const searchParams = useSearchParams()
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [announcement, setAnnouncement] = useState('')
+
+    // Auto-open filter modal if openFilter=true query param is present
+    useEffect(() => {
+        if (searchParams.get('openFilter') === 'true') {
+            setIsModalOpen(true)
+        }
+    }, [searchParams])
 
     // ========================================
     // COLLAPSIBLE SECTIONS (localStorage)
