@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import DitherShader from './ui/dither-shader'
 import { motion } from 'motion/react'
 import Image from 'next/image'
+import AnnouncementBanner from './AnnouncementBanner'
 
 export default function LandingScreen() {
     const router = useRouter()
@@ -27,6 +28,9 @@ export default function LandingScreen() {
 
     return (
         <div className="relative min-h-screen-ios-safe flex flex-col items-center" style={{ backgroundColor: '#3a4f5f' }}>
+            {/* Temporary Feature Announcement Banner - expires Jan 15, 2026 */}
+            <AnnouncementBanner expirationDate="2026-01-15" />
+
             {/* Dither Background with Overlay */}
             <div className="absolute inset-0 z-0 pointer-events-none">
                 <DitherShader
@@ -104,7 +108,7 @@ export default function LandingScreen() {
                         onClick={() => handleSelect('chase')}
                         whileHover={{ scale: 1.02, y: -4 }}
                         whileTap={{ scale: 0.98 }}
-                        className="group relative flex flex-col p-5 md:p-10 h-64 md:h-80 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-left overflow-hidden"
+                        className="group relative flex flex-col p-5 md:p-10 h-48 md:h-80 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-left overflow-hidden"
                     >
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -171,7 +175,7 @@ export default function LandingScreen() {
                         onClick={() => handleSelect('lenoir')}
                         whileHover={{ scale: 1.02, y: -4 }}
                         whileTap={{ scale: 0.98 }}
-                        className="group relative flex flex-col p-5 md:p-10 h-64 md:h-80 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-left overflow-hidden"
+                        className="group relative flex flex-col p-5 md:p-10 h-48 md:h-80 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-left overflow-hidden"
                     >
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -215,7 +219,7 @@ export default function LandingScreen() {
                                 initial={{ opacity: 0.9 }}
                                 whileHover={{ opacity: 1 }}
                             >
-                                <h2 className="text-2xl md:text-4xl font-bold text-white mb-1 md:mb-2 tracking-tight leading-tight">Top of <br className="md:hidden" />Lenoir</h2>
+                                <h2 className="text-2xl md:text-4xl font-bold text-white mb-1 md:mb-2 tracking-tight leading-tight">Top of Lenoir</h2>
                                 <div className="flex items-center gap-1.5 md:gap-2 text-teal-200/60 font-medium text-sm md:text-lg">
                                     <motion.span
                                         animate={{ scale: [1, 1.2, 1] }}

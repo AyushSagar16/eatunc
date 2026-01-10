@@ -91,7 +91,9 @@ export async function getFullMenuByDateAndHall(date: string, diningHall: string)
                     protein_g,
                     fat_g,
                     carbohydrates_g,
-                    amount_per_serving
+                    amount_per_serving,
+                    dietary_preferences,
+                    allergens
                 )
             )
         `)
@@ -123,7 +125,9 @@ export async function getFullMenuByDateAndHall(date: string, diningHall: string)
                         protein_g,
                         fat_g,
                         carbohydrates_g,
-                        amount_per_serving
+                        amount_per_serving,
+                        dietary_preferences,
+                        allergens
                     )
                 `)
                 .eq('menu_id', data.id)

@@ -8,9 +8,10 @@ import FoodModal from '@/components/FoodModal'
 import FoodDisplayLayout from '@/components/FoodDisplayLayout'
 import FilterSidebar from '@/components/FilterSidebar'
 import { FoodGridSkeleton, ContentLoader } from '@/components/LoadingStates'
-import { FilterOption } from '@/lib/types'
+import { FilterOption, DietaryPreferenceOption, AllergenOption } from '@/lib/types'
 import { calculateHealthyScore, getMealPeriodLabel, getActiveMealPeriod } from '@/lib/utils'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { parseDietaryPreferences, parseAllergens } from '@/components/icons/DietaryIcons'
 
 interface MenuEntry {
     meal_period: string
@@ -38,6 +39,8 @@ interface StationSectionProps {
     hasActiveFilters: boolean
     isFirstStation?: boolean
     onItemClick: (item: MasterFoodItem, station: string) => void
+    activeAllergens: AllergenOption[]
+    activeDietaryPreferences: DietaryPreferenceOption[]
 }
 
 const BEVERAGE_KEYWORDS = ['beverage', 'drink', 'coffee', 'tea', 'soda', 'juice', 'condiment', 'sauce', 'dressing', 'toppings', 'packets']
@@ -70,17 +73,23 @@ const isCondimentOrDrink = (item: MasterFoodItem, station: string) => {
 }
 
 // PERFORMANCE: Memoize MiniFoodCard to prevent re-renders when props haven't changed
-const MiniFoodCard = React.memo(({ item, onClick }: { item: MasterFoodItem; onClick: () => void }) => {
+const MiniFoodCard = React.memo(({ item, onClick, containsAllergen = false }: { item: MasterFoodItem; onClick: () => void; containsAllergen?: boolean }) => {
     return (
         <motion.div
             onClick={onClick}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            whileHover={{ backgroundColor: "rgba(250, 250, 250, 1)" }}
+            whileHover={containsAllergen ? {} : { backgroundColor: "rgba(250, 250, 250, 1)" }}
             whileTap={{ scale: 0.99 }}
-            className="flex items-center justify-between p-3 rounded-xl border border-zinc-200/50 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/30 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 transition-all group h-full min-h-[42px]"
+            className={`flex items-center justify-between p-3 rounded-xl border bg-white/50 dark:bg-zinc-900/30 cursor-pointer transition-all group h-full min-h-[42px] ${containsAllergen
+                ? 'border-2 border-dashed border-zinc-300 dark:border-zinc-700 opacity-60'
+                : 'border-zinc-200/50 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                }`}
         >
-            <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200 transition-colors">
+            <span className={`text-sm font-bold transition-colors ${containsAllergen
+                ? 'text-zinc-400 dark:text-zinc-600'
+                : 'text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200'
+                }`}>
                 {item.food_name}
             </span>
         </motion.div>
@@ -97,10 +106,45 @@ const StationSection = React.memo((({
     searchQuery,
     hasActiveFilters,
     isFirstStation = false,
-    onItemClick
+    onItemClick,
+    activeAllergens,
+    activeDietaryPreferences
 }: StationSectionProps) => {
     const [isCollapsed, setIsCollapsed] = useState(false)
     const parentRef = useRef<HTMLDivElement>(null)
+
+    // Helper to check if item contains allergens to avoid
+    const itemContainsAllergens = useCallback((item: MasterFoodItem): boolean => {
+        if (activeAllergens.length === 0) return false
+        const itemAllergens = parseAllergens(item.allergens)
+        return activeAllergens.some(allergen =>
+            itemAllergens.some(itemAllergen =>
+                itemAllergen.toLowerCase() === allergen.toLowerCase()
+            )
+        )
+    }, [activeAllergens])
+
+    // Map preference IDs to database values
+    const PREF_ID_TO_DB: Record<string, string> = {
+        'vegan': 'vegan',
+        'vegetarian': 'vegetarian',
+        'gluten-free': 'made without gluten',
+        'halal': 'halal',
+        'local': 'local',
+        'organic': 'organic',
+        'smart-choice': 'smart choice',
+        'sustainable-seafood': 'sustainable seafood',
+        'coolfood': 'coolfood',
+    }
+
+    // Helper to check if item matches ALL selected dietary preferences
+    const itemMatchesDietaryFilter = useCallback((item: MasterFoodItem): boolean => {
+        if (activeDietaryPreferences.length === 0) return false
+        const itemPrefs = parseDietaryPreferences(item.dietary_preferences)
+        return activeDietaryPreferences.every(pref =>
+            itemPrefs.includes(PREF_ID_TO_DB[pref])
+        )
+    }, [activeDietaryPreferences])
 
     // Load saved state
     useEffect(() => {
@@ -213,7 +257,6 @@ const StationSection = React.memo((({
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.3, ease: 'easeInOut' }}
-                        className="overflow-hidden"
                     >
                         {/* VIRTUAL SCROLLING: Use virtualized rendering for large lists (50+ items) */}
                         {shouldVirtualize && rowVirtualizer ? (
@@ -259,6 +302,7 @@ const StationSection = React.memo((({
                                                                 <MiniFoodCard
                                                                     item={item}
                                                                     onClick={() => onItemClick(item, station)}
+                                                                    containsAllergen={itemContainsAllergens(item)}
                                                                 />
                                                             ) : (
                                                                 <FoodCard
@@ -267,6 +311,8 @@ const StationSection = React.memo((({
                                                                     mealPeriod={selectedPeriod}
                                                                     searchQuery={searchQuery}
                                                                     onClick={() => onItemClick(item, station)}
+                                                                    containsAllergen={itemContainsAllergens(item)}
+                                                                    matchesDietaryFilter={!itemContainsAllergens(item) && itemMatchesDietaryFilter(item)}
                                                                 />
                                                             )}
                                                         </div>
@@ -300,6 +346,7 @@ const StationSection = React.memo((({
                                                 <MiniFoodCard
                                                     item={item}
                                                     onClick={() => onItemClick(item, station)}
+                                                    containsAllergen={itemContainsAllergens(item)}
                                                 />
                                             ) : (
                                                 <FoodCard
@@ -308,6 +355,8 @@ const StationSection = React.memo((({
                                                     mealPeriod={selectedPeriod}
                                                     searchQuery={searchQuery}
                                                     onClick={() => onItemClick(item, station)}
+                                                    containsAllergen={itemContainsAllergens(item)}
+                                                    matchesDietaryFilter={!itemContainsAllergens(item) && itemMatchesDietaryFilter(item)}
                                                 />
                                             )}
                                         </motion.div>
@@ -447,13 +496,174 @@ export default function MenuContainer({
 
     const clearAllFilters = () => {
         setActiveFilters([])
+        setActiveDietaryPreferences([])
+        setActiveAllergens([])
         // Also clear from localStorage
         try {
             localStorage.removeItem(FILTERS_STORAGE_KEY)
+            localStorage.removeItem(DIETARY_PREFS_STORAGE_KEY)
+            localStorage.removeItem(ALLERGENS_STORAGE_KEY)
         } catch {
             // Ignore errors
         }
     }
+
+
+    // ========================================
+    // DIETARY PREFERENCES (localStorage)
+    // ========================================
+    const DIETARY_PREFS_STORAGE_KEY = 'eatunc_dietary_prefs'
+    const VALID_DIETARY_PREFS: DietaryPreferenceOption[] = [
+        'vegan', 'vegetarian', 'gluten-free', 'halal', 'local',
+        'organic', 'smart-choice', 'sustainable-seafood', 'coolfood'
+    ]
+
+    const loadDietaryPrefsFromStorage = useCallback((): DietaryPreferenceOption[] => {
+        try {
+            if (typeof window === 'undefined') return []
+            const saved = localStorage.getItem(DIETARY_PREFS_STORAGE_KEY)
+            if (!saved) return []
+            const parsed = JSON.parse(saved)
+            if (!Array.isArray(parsed)) return []
+            return parsed.filter((f): f is DietaryPreferenceOption => VALID_DIETARY_PREFS.includes(f))
+        } catch {
+            return []
+        }
+    }, [])
+
+    const saveDietaryPrefsToStorage = useCallback((prefs: DietaryPreferenceOption[]) => {
+        try {
+            if (typeof window === 'undefined') return
+            localStorage.setItem(DIETARY_PREFS_STORAGE_KEY, JSON.stringify(prefs))
+        } catch {
+            console.warn('Could not save dietary preferences to localStorage')
+        }
+    }, [])
+
+    const [activeDietaryPreferences, setActiveDietaryPreferences] = useState<DietaryPreferenceOption[]>([])
+
+    useEffect(() => {
+        const savedPrefs = loadDietaryPrefsFromStorage()
+        setActiveDietaryPreferences(savedPrefs)
+    }, [loadDietaryPrefsFromStorage])
+
+    useEffect(() => {
+        if (filtersLoaded) {
+            saveDietaryPrefsToStorage(activeDietaryPreferences)
+        }
+    }, [activeDietaryPreferences, filtersLoaded, saveDietaryPrefsToStorage])
+
+    const toggleDietaryPreference = (pref: DietaryPreferenceOption) => {
+        setActiveDietaryPreferences(prev =>
+            prev.includes(pref)
+                ? prev.filter(p => p !== pref)
+                : [...prev, pref]
+        )
+    }
+
+
+    // ========================================
+    // ALLERGEN FILTERS (localStorage)
+    // ========================================
+    const ALLERGENS_STORAGE_KEY = 'eatunc_allergens'
+    const VALID_ALLERGENS: AllergenOption[] = [
+        'milk', 'eggs', 'fish', 'shellfish', 'tree nuts',
+        'peanuts', 'wheat', 'soy', 'sesame'
+    ]
+
+    const loadAllergensFromStorage = useCallback((): AllergenOption[] => {
+        try {
+            if (typeof window === 'undefined') return []
+            const saved = localStorage.getItem(ALLERGENS_STORAGE_KEY)
+            if (!saved) return []
+            const parsed = JSON.parse(saved)
+            if (!Array.isArray(parsed)) return []
+            return parsed.filter((f): f is AllergenOption => VALID_ALLERGENS.includes(f))
+        } catch {
+            return []
+        }
+    }, [])
+
+    const saveAllergensToStorage = useCallback((allergens: AllergenOption[]) => {
+        try {
+            if (typeof window === 'undefined') return
+            localStorage.setItem(ALLERGENS_STORAGE_KEY, JSON.stringify(allergens))
+        } catch {
+            console.warn('Could not save allergens to localStorage')
+        }
+    }, [])
+
+    const [activeAllergens, setActiveAllergens] = useState<AllergenOption[]>([])
+
+    useEffect(() => {
+        const savedAllergens = loadAllergensFromStorage()
+        setActiveAllergens(savedAllergens)
+    }, [loadAllergensFromStorage])
+
+    useEffect(() => {
+        if (filtersLoaded) {
+            saveAllergensToStorage(activeAllergens)
+        }
+    }, [activeAllergens, filtersLoaded, saveAllergensToStorage])
+
+    const toggleAllergen = (allergen: AllergenOption) => {
+        setActiveAllergens(prev =>
+            prev.includes(allergen)
+                ? prev.filter(a => a !== allergen)
+                : [...prev, allergen]
+        )
+    }
+
+
+    // ========================================
+    // HELPER FUNCTIONS FOR FILTERING
+    // ========================================
+
+    /**
+     * Map preference IDs to database values
+     */
+    const PREF_ID_TO_DB: Record<DietaryPreferenceOption, string> = {
+        'vegan': 'vegan',
+        'vegetarian': 'vegetarian',
+        'gluten-free': 'made without gluten',
+        'halal': 'halal',
+        'local': 'local',
+        'organic': 'organic',
+        'smart-choice': 'smart choice',
+        'sustainable-seafood': 'sustainable seafood',
+        'coolfood': 'coolfood',
+    }
+
+    /**
+     * Check if item matches selected dietary preferences
+     * Uses AND logic - item must match ALL selected preferences
+     */
+    const itemMatchesDietaryPreferences = useCallback((
+        item: MasterFoodItem,
+        preferences: DietaryPreferenceOption[]
+    ): boolean => {
+        if (preferences.length === 0) return true
+        const itemPrefs = parseDietaryPreferences(item.dietary_preferences)
+        return preferences.every(pref =>
+            itemPrefs.includes(PREF_ID_TO_DB[pref])
+        )
+    }, [])
+
+    /**
+     * Check if item contains any allergens to avoid
+     */
+    const itemContainsSelectedAllergens = useCallback((
+        item: MasterFoodItem,
+        allergensToAvoid: AllergenOption[]
+    ): boolean => {
+        if (allergensToAvoid.length === 0) return false
+        const itemAllergens = parseAllergens(item.allergens)
+        return allergensToAvoid.some(allergen =>
+            itemAllergens.some(itemAllergen =>
+                itemAllergen.toLowerCase() === allergen.toLowerCase()
+            )
+        )
+    }, [])
 
 
     const [selectedItemForModal, setSelectedItemForModal] = useState<MasterFoodItem | null>(null)
@@ -540,7 +750,8 @@ export default function MenuContainer({
     };
 
     const healthyPicks = useMemo(() => {
-        if (activeFilters.length === 0) return []
+        // Show Top Picks if any macro filters or dietary preferences are active
+        if (activeFilters.length === 0 && activeDietaryPreferences.length === 0) return []
 
         // Count how many filters each item matches
         const picks = baseFilteredItems
@@ -559,9 +770,30 @@ export default function MenuContainer({
                     return null
                 }
 
-                // Count matched filters
+                // Skip items containing allergens to avoid
+                if (itemContainsSelectedAllergens(item, activeAllergens)) {
+                    return null
+                }
+
+                // Skip items that don't match dietary preferences
+                if (!itemMatchesDietaryPreferences(item, activeDietaryPreferences)) {
+                    return null
+                }
+
+                // Count matched macro filters
                 let matchCount = 0
                 const matchedFilters: string[] = []
+
+                // Add matched dietary preferences to reason
+                if (activeDietaryPreferences.length > 0) {
+                    const itemPrefs = parseDietaryPreferences(item.dietary_preferences)
+                    activeDietaryPreferences.forEach(pref => {
+                        if (itemPrefs.includes(PREF_ID_TO_DB[pref])) {
+                            matchedFilters.push(pref.charAt(0).toUpperCase() + pref.slice(1).replace('-', ' '))
+                            matchCount++
+                        }
+                    })
+                }
 
                 for (const filter of activeFilters) {
                     let matches = false
@@ -587,11 +819,12 @@ export default function MenuContainer({
                     if (matches) matchCount++
                 }
 
-                // Only include items matching 2+ filters (or all if only 1 active)
-                const minMatches = activeFilters.length === 1 ? 1 : 2
+                // Need at least 1 match to appear in Top Picks
+                const totalFiltersActive = activeFilters.length + activeDietaryPreferences.length
+                const minMatches = totalFiltersActive === 1 ? 1 : Math.min(2, totalFiltersActive)
                 if (matchCount < minMatches) return null
 
-                const score = matchCount + calculateHealthyScore(item, activeFilters[0]) / 100
+                const score = matchCount + calculateHealthyScore(item, activeFilters[0] || 'protein') / 100
                 const reason = matchedFilters.join(' + ')
 
                 return { item, station, score, matchCount, reason }
@@ -601,7 +834,7 @@ export default function MenuContainer({
             .slice(0, 8)
 
         return applyGlobalSort(picks);
-    }, [baseFilteredItems, activeFilters, sortBy])
+    }, [baseFilteredItems, activeFilters, activeDietaryPreferences, activeAllergens, sortBy, itemMatchesDietaryPreferences, itemContainsSelectedAllergens])
 
     /**
      * stationsMap: Groups food items by their station for display
@@ -789,12 +1022,16 @@ export default function MenuContainer({
                 activeFilters={activeFilters}
                 onToggleFilter={toggleFilter}
                 onClearAll={clearAllFilters}
+                activeDietaryPreferences={activeDietaryPreferences}
+                onToggleDietaryPreference={toggleDietaryPreference}
+                activeAllergens={activeAllergens}
+                onToggleAllergen={toggleAllergen}
             />
 
             {/* Main Content - Full Width */}
             <div className="w-full flex flex-col gap-8 transition-all duration-500 ease-in-out animate-in fade-in slide-in-from-bottom-2">
 
-                {activeFilters.length > 0 && healthyPicks.length > 0 && (
+                {(activeFilters.length > 0 || activeDietaryPreferences.length > 0) && healthyPicks.length > 0 && (
                     <section className="flex flex-col gap-6 p-6 -mx-4 sm:-mx-6 bg-gradient-to-br from-emerald-50/80 to-teal-50/50 dark:from-emerald-950/30 dark:to-teal-950/20 border-y border-emerald-100 dark:border-emerald-900/30 rounded-none sm:rounded-2xl sm:mx-0 sm:border">
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-3">
@@ -863,12 +1100,14 @@ export default function MenuContainer({
                             selectedHall={selectedHall}
                             selectedPeriod={selectedPeriod}
                             searchQuery={debouncedSearchQuery}
-                            hasActiveFilters={activeFilters.length > 0}
-                            isFirstStation={stationIndex === 0 && activeFilters.length === 0}
+                            hasActiveFilters={activeFilters.length > 0 || activeDietaryPreferences.length > 0}
+                            isFirstStation={stationIndex === 0 && activeFilters.length === 0 && activeDietaryPreferences.length === 0}
                             onItemClick={(item, stat) => {
                                 setSelectedItemForModal(item)
                                 setSelectedItemStation(stat)
                             }}
+                            activeAllergens={activeAllergens}
+                            activeDietaryPreferences={activeDietaryPreferences}
                         />
                     ))}
                 </div>

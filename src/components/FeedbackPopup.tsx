@@ -12,13 +12,13 @@ const FEEDBACK_POPUP_STORAGE_KEY = 'eatunc_feedback_popup_last_shown'
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
 // Delay before showing popup (15 seconds)
-const POPUP_DELAY_MS = 15000
+const POPUP_DELAY_MS = 10000
 
 /**
  * FeedbackPopup - Non-intrusive popup asking for user feedback
  * 
  * Features:
- * - Appears after 15 seconds on menu pages
+ * - Appears after 10 seconds on menu pages
  * - Only shows once per week (tracked via localStorage)
  * - Smooth slide-in animation from top
  * - Dismiss button to close

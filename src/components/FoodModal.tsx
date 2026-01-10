@@ -4,6 +4,20 @@ import { MasterFoodItem } from '@/lib/api'
 import { getMealPeriodLabel } from '@/lib/utils'
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import { DIETARY_ICON_MAP, parseDietaryPreferences } from '@/components/icons/DietaryIcons'
+
+// Mapping of dietary preference keys to display names
+const DIETARY_DISPLAY_NAMES: Record<string, string> = {
+    'vegan': 'Vegan',
+    'vegetarian': 'Vegetarian',
+    'made without gluten': 'Gluten Free',
+    'halal': 'Halal',
+    'local': 'Local',
+    'organic': 'Organic',
+    'smart choice': 'Smart Choice',
+    'sustainable seafood': 'Sustainable Seafood',
+    'coolfood': 'Coolfood',
+}
 
 interface FoodModalProps {
     item: MasterFoodItem
@@ -11,6 +25,12 @@ interface FoodModalProps {
     mealPeriod: string
     isOpen: boolean
     onClose: () => void
+}
+
+// Helper function to parse comma-separated allergens string
+function parseAllergens(allergensString: string | null): string[] {
+    if (!allergensString) return []
+    return allergensString.split(',').map(a => a.trim())
 }
 
 export default function FoodModal({
@@ -48,6 +68,9 @@ export default function FoodModal({
     const isHighProtein = (protein_g ?? 0) >= 20
     const isLowCal = (calories_kcal ?? 0) <= 350 && (calories_kcal ?? 0) > 0
     const isLowFat = (fat_g ?? 0) <= 8 && (calories_kcal ?? 0) > 0
+
+    const allergens = parseAllergens(item.allergens)
+    const dietaryPrefs = parseDietaryPreferences(item.dietary_preferences)
 
     return (
         <AnimatePresence>
@@ -122,7 +145,7 @@ export default function FoodModal({
                             </div>
 
                             <div
-                                className="grid grid-cols-1 gap-6 sm:grid-cols-2 py-6 border-y border-zinc-100 dark:border-zinc-800"
+                                className="grid grid-cols-2 gap-6 py-6 border-y border-zinc-100 dark:border-zinc-800"
                             >
                                 <div className="flex flex-col">
                                     <span className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-1">Total Calories</span>
@@ -132,11 +155,33 @@ export default function FoodModal({
                                         {calories_kcal ?? 0}
                                         <span className="ml-2 text-lg font-normal text-zinc-400">kcal</span>
                                     </span>
+                                    {amount_per_serving && (
+                                        <div className="mt-2">
+                                            <span className="text-xs uppercase tracking-widest text-zinc-400 font-bold">Serving: </span>
+                                            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{amount_per_serving}</span>
+                                        </div>
+                                    )}
                                 </div>
-                                {amount_per_serving && (
-                                    <div className="flex flex-col justify-end">
-                                        <span className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-1">Serving Size</span>
-                                        <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{amount_per_serving}</span>
+                                {/* Dietary Preferences - inline on mobile */}
+                                {dietaryPrefs.length > 0 && (
+                                    <div className="flex flex-col justify-center sm:hidden">
+                                        <span className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2">Dietary</span>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {dietaryPrefs.map((pref) => {
+                                                const IconComponent = DIETARY_ICON_MAP[pref]
+                                                if (!IconComponent) return null
+
+                                                return (
+                                                    <div
+                                                        key={pref}
+                                                        className="w-7 h-7 rounded-full bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 flex items-center justify-center"
+                                                        title={DIETARY_DISPLAY_NAMES[pref] || pref}
+                                                    >
+                                                        <IconComponent className="w-4 h-4" />
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -148,6 +193,47 @@ export default function FoodModal({
                                 <NutrientHighlight label="Carbs" value={carbohydrates_g} unit="g" color="text-amber-600 dark:text-amber-400" bgColor="bg-amber-500/10" />
                                 <NutrientHighlight label="Fat" value={fat_g} unit="g" color="text-rose-600 dark:text-rose-400" bgColor="bg-rose-500/10" />
                             </div>
+
+                            {/* Dietary Preferences Section - full display on desktop only */}
+                            {dietaryPrefs.length > 0 && (
+                                <div className="hidden sm:block mt-2 p-4 rounded-2xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                                    <h3 className="text-sm font-bold text-green-900 dark:text-green-200 mb-3">
+                                        Dietary Information
+                                    </h3>
+                                    <div className="flex flex-wrap gap-2">
+                                        {dietaryPrefs.map((pref) => {
+                                            const IconComponent = DIETARY_ICON_MAP[pref]
+                                            if (!IconComponent) return null
+
+                                            return (
+                                                <div
+                                                    key={pref}
+                                                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-zinc-800 border border-green-200 dark:border-green-700"
+                                                >
+                                                    <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">
+                                                        <IconComponent className="w-4 h-4" />
+                                                    </div>
+                                                    <span className="text-xs font-medium text-green-800 dark:text-green-300">
+                                                        {DIETARY_DISPLAY_NAMES[pref] || pref}
+                                                    </span>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Allergens Section */}
+                            {allergens.length > 0 && (
+                                <div className="mt-2 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                                    <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200 mb-2">
+                                        Allergens
+                                    </h3>
+                                    <p className="text-sm text-amber-800 dark:text-amber-300">
+                                        {allergens.join(', ')}
+                                    </p>
+                                </div>
+                            )}
                         </motion.div>
                     </motion.div>
                 </div>
