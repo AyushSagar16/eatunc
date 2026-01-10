@@ -72,17 +72,23 @@ const isCondimentOrDrink = (item: MasterFoodItem, station: string) => {
 }
 
 // PERFORMANCE: Memoize MiniFoodCard to prevent re-renders when props haven't changed
-const MiniFoodCard = React.memo(({ item, onClick }: { item: MasterFoodItem; onClick: () => void }) => {
+const MiniFoodCard = React.memo(({ item, onClick, containsAllergen = false }: { item: MasterFoodItem; onClick: () => void; containsAllergen?: boolean }) => {
     return (
         <motion.div
             onClick={onClick}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            whileHover={{ backgroundColor: "rgba(250, 250, 250, 1)" }}
+            whileHover={containsAllergen ? {} : { backgroundColor: "rgba(250, 250, 250, 1)" }}
             whileTap={{ scale: 0.99 }}
-            className="flex items-center justify-between p-3 rounded-xl border border-zinc-200/50 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/30 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 transition-all group h-full min-h-[42px]"
+            className={`flex items-center justify-between p-3 rounded-xl border bg-white/50 dark:bg-zinc-900/30 cursor-pointer transition-all group h-full min-h-[42px] ${containsAllergen
+                    ? 'border-2 border-dashed border-zinc-300 dark:border-zinc-700 opacity-60'
+                    : 'border-zinc-200/50 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                }`}
         >
-            <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200 transition-colors">
+            <span className={`text-sm font-bold transition-colors ${containsAllergen
+                    ? 'text-zinc-400 dark:text-zinc-600'
+                    : 'text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200'
+                }`}>
                 {item.food_name}
             </span>
         </motion.div>
@@ -227,7 +233,6 @@ const StationSection = React.memo((({
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.3, ease: 'easeInOut' }}
-                        className="overflow-hidden"
                     >
                         {/* VIRTUAL SCROLLING: Use virtualized rendering for large lists (50+ items) */}
                         {shouldVirtualize && rowVirtualizer ? (
@@ -273,6 +278,7 @@ const StationSection = React.memo((({
                                                                 <MiniFoodCard
                                                                     item={item}
                                                                     onClick={() => onItemClick(item, station)}
+                                                                    containsAllergen={itemContainsAllergens(item)}
                                                                 />
                                                             ) : (
                                                                 <FoodCard
@@ -315,6 +321,7 @@ const StationSection = React.memo((({
                                                 <MiniFoodCard
                                                     item={item}
                                                     onClick={() => onItemClick(item, station)}
+                                                    containsAllergen={itemContainsAllergens(item)}
                                                 />
                                             ) : (
                                                 <FoodCard

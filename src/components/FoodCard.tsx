@@ -80,12 +80,31 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
 
     const dietaryPrefs = parseDietaryPreferences(item.dietary_preferences)
 
+    // State for card hover (for z-index)
+    const [isHovered, setIsHovered] = useState(false)
+
+    // State for responsive icon display (2 on mobile, 3 on desktop)
+    const [isMobile, setIsMobile] = useState(false)
+
+    // Detect mobile breakpoint
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 640)
+        }
+        checkMobile()
+        window.addEventListener('resize', checkMobile)
+        return () => window.removeEventListener('resize', checkMobile)
+    }, [])
+
     // State and refs for dietary preferences popover
     const [showDietaryPopover, setShowDietaryPopover] = useState(false)
     const popoverRef = useRef<HTMLDivElement>(null)
     const triggerRef = useRef<HTMLButtonElement>(null)
 
-    // Close popover when clicking outside
+    // State for individual icon tooltips
+    const [activeTooltip, setActiveTooltip] = useState<string | null>(null)
+
+    // Close popover and tooltips when clicking outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (
@@ -97,14 +116,16 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
             ) {
                 setShowDietaryPopover(false)
             }
+            // Close tooltip if clicking outside
+            setActiveTooltip(null)
         }
 
         document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [showDietaryPopover])
 
-    // Maximum icons to show (3 on mobile)
-    const VISIBLE_ICONS_LIMIT = 3
+    // Maximum icons to show: 2 on mobile, 3 on desktop
+    const VISIBLE_ICONS_LIMIT = isMobile ? 2 : 3
     const hiddenCount = dietaryPrefs.length - VISIBLE_ICONS_LIMIT
 
     return (
@@ -115,6 +136,11 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                     e.preventDefault()
                     onClick?.()
                 }
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => {
+                setIsHovered(false)
+                setActiveTooltip(null)
             }}
             role="button"
             tabIndex={0}
@@ -131,8 +157,9 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                 duration: 0.2,
                 ease: 'easeOut',
             }}
+            style={{ zIndex: isHovered || showDietaryPopover ? 20 : 1 }}
             className={cn(
-                'group relative flex flex-col cursor-pointer overflow-hidden',
+                'group relative flex flex-col cursor-pointer',
                 'rounded-2xl',
                 containsAllergen
                     ? 'border-2 border-dashed border-zinc-300 dark:border-zinc-700 opacity-60'
@@ -217,8 +244,9 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
             </div>
 
             {/* Dietary Preference Icons - Bottom Right */}
+            {/* Mobile: vertical layout with 2 visible, Desktop: horizontal with 3 visible */}
             {dietaryPrefs.length > 0 && (
-                <div className="absolute bottom-3 right-3 flex items-center gap-1">
+                <div className={`absolute bottom-3 right-3 flex ${isMobile ? 'flex-col items-end' : 'flex-row items-center'} gap-1`}>
                     {dietaryPrefs.slice(0, VISIBLE_ICONS_LIMIT).map((pref) => {
                         const IconComponent = DIETARY_ICON_MAP[pref]
                         if (!IconComponent) return null
@@ -226,27 +254,62 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                         return (
                             <div
                                 key={pref}
-                                className="w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm border border-zinc-200/50 flex items-center justify-center dark:bg-zinc-800/90 dark:border-zinc-700/50"
-                                title={DIETARY_DISPLAY_NAMES[pref] || pref}
+                                className="relative"
                             >
-                                <IconComponent className="w-4 h-4" />
+                                <div
+                                    className="w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm border border-zinc-200/50 flex items-center justify-center dark:bg-zinc-800/90 dark:border-zinc-700/50 cursor-pointer hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/30 dark:hover:border-blue-700/50 transition-colors"
+                                    onMouseEnter={() => setActiveTooltip(pref)}
+                                    onMouseLeave={() => setActiveTooltip(null)}
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        setActiveTooltip(activeTooltip === pref ? null : pref)
+                                    }}
+                                >
+                                    <IconComponent className="w-4 h-4" />
+                                </div>
+                                {/* Tooltip */}
+                                <AnimatePresence>
+                                    {activeTooltip === pref && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 4 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 4 }}
+                                            transition={{ duration: 0.1 }}
+                                            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-medium rounded-md whitespace-nowrap z-50 pointer-events-none"
+                                        >
+                                            {DIETARY_DISPLAY_NAMES[pref] || pref}
+                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-900 dark:border-t-zinc-100" />
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         )
                     })}
+                    {/* +n button - show when there are hidden icons */}
                     {hiddenCount > 0 && (
                         <div className="relative">
+                            {/* Larger touch target wrapper on mobile */}
                             <button
                                 ref={triggerRef}
                                 onClick={(e) => {
+                                    e.preventDefault()
                                     e.stopPropagation()
                                     setShowDietaryPopover(!showDietaryPopover)
                                 }}
-                                className="w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm border border-zinc-200/50 flex items-center justify-center dark:bg-zinc-800/90 dark:border-zinc-700/50 hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/30 dark:hover:border-blue-700/50 transition-colors cursor-pointer"
+                                onTouchEnd={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    setShowDietaryPopover(!showDietaryPopover)
+                                }}
+                                className={`${isMobile ? 'w-11 h-11 -m-2' : 'w-6 h-6'} flex items-center justify-center cursor-pointer`}
                                 aria-label={`Show ${hiddenCount} more dietary preferences`}
                             >
-                                <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">
-                                    +{hiddenCount}
-                                </span>
+                                {/* Visual button - always 24x24 */}
+                                <div className="w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm border border-zinc-200/50 flex items-center justify-center dark:bg-zinc-800/90 dark:border-zinc-700/50 hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/30 dark:hover:border-blue-700/50 transition-colors">
+                                    <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">
+                                        +{hiddenCount}
+                                    </span>
+                                </div>
                             </button>
 
                             {/* Popover with all dietary preferences */}
