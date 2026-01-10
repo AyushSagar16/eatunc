@@ -465,6 +465,9 @@ export default function FilterSidebar({
                                                         )
                                                     })}
                                                 </div>
+                                                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 pt-2">
+                                                    Items matching selected preferences will be highlighted in green.
+                                                </p>
                                             </motion.div>
                                         )}
                                     </AnimatePresence>

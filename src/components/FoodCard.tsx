@@ -27,6 +27,7 @@ interface FoodCardProps {
     searchQuery?: string
     onClick: () => void
     containsAllergen?: boolean
+    matchesDietaryFilter?: boolean
 }
 
 // PERFORMANCE: Move pure function outside component to prevent recreation on every render
@@ -69,7 +70,7 @@ function getReasonStyle(reasonText: string): string {
 
 // PERFORMANCE: Wrap with React.memo to prevent re-renders when props haven't changed
 // This is especially important since FoodCard is rendered many times in lists
-const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPeriod, searchQuery = '', onClick, containsAllergen = false }: FoodCardProps) {
+const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPeriod, searchQuery = '', onClick, containsAllergen = false, matchesDietaryFilter = false }: FoodCardProps) {
     const {
         food_name,
         calories_kcal,
@@ -163,8 +164,10 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                 'rounded-2xl',
                 containsAllergen
                     ? 'border-2 border-dashed border-zinc-300 dark:border-zinc-700 opacity-60'
-                    : 'border border-zinc-200/80 dark:border-zinc-800',
-                'bg-white dark:bg-zinc-900/60',
+                    : matchesDietaryFilter
+                        ? 'border-2 border-green-400 dark:border-green-600 bg-green-50/50 dark:bg-green-900/20'
+                        : 'border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/60',
+                !containsAllergen && !matchesDietaryFilter && 'bg-white dark:bg-zinc-900/60',
                 'p-5 sm:p-6',
                 'h-full min-h-[140px]',
                 'transition-shadow duration-300',

@@ -40,6 +40,7 @@ interface StationSectionProps {
     isFirstStation?: boolean
     onItemClick: (item: MasterFoodItem, station: string) => void
     activeAllergens: AllergenOption[]
+    activeDietaryPreferences: DietaryPreferenceOption[]
 }
 
 const BEVERAGE_KEYWORDS = ['beverage', 'drink', 'coffee', 'tea', 'soda', 'juice', 'condiment', 'sauce', 'dressing', 'toppings', 'packets']
@@ -81,13 +82,13 @@ const MiniFoodCard = React.memo(({ item, onClick, containsAllergen = false }: { 
             whileHover={containsAllergen ? {} : { backgroundColor: "rgba(250, 250, 250, 1)" }}
             whileTap={{ scale: 0.99 }}
             className={`flex items-center justify-between p-3 rounded-xl border bg-white/50 dark:bg-zinc-900/30 cursor-pointer transition-all group h-full min-h-[42px] ${containsAllergen
-                    ? 'border-2 border-dashed border-zinc-300 dark:border-zinc-700 opacity-60'
-                    : 'border-zinc-200/50 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                ? 'border-2 border-dashed border-zinc-300 dark:border-zinc-700 opacity-60'
+                : 'border-zinc-200/50 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
                 }`}
         >
             <span className={`text-sm font-bold transition-colors ${containsAllergen
-                    ? 'text-zinc-400 dark:text-zinc-600'
-                    : 'text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200'
+                ? 'text-zinc-400 dark:text-zinc-600'
+                : 'text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200'
                 }`}>
                 {item.food_name}
             </span>
@@ -106,7 +107,8 @@ const StationSection = React.memo((({
     hasActiveFilters,
     isFirstStation = false,
     onItemClick,
-    activeAllergens
+    activeAllergens,
+    activeDietaryPreferences
 }: StationSectionProps) => {
     const [isCollapsed, setIsCollapsed] = useState(false)
     const parentRef = useRef<HTMLDivElement>(null)
@@ -121,6 +123,28 @@ const StationSection = React.memo((({
             )
         )
     }, [activeAllergens])
+
+    // Map preference IDs to database values
+    const PREF_ID_TO_DB: Record<string, string> = {
+        'vegan': 'vegan',
+        'vegetarian': 'vegetarian',
+        'gluten-free': 'made without gluten',
+        'halal': 'halal',
+        'local': 'local',
+        'organic': 'organic',
+        'smart-choice': 'smart choice',
+        'sustainable-seafood': 'sustainable seafood',
+        'coolfood': 'coolfood',
+    }
+
+    // Helper to check if item matches ALL selected dietary preferences
+    const itemMatchesDietaryFilter = useCallback((item: MasterFoodItem): boolean => {
+        if (activeDietaryPreferences.length === 0) return false
+        const itemPrefs = parseDietaryPreferences(item.dietary_preferences)
+        return activeDietaryPreferences.every(pref =>
+            itemPrefs.includes(PREF_ID_TO_DB[pref])
+        )
+    }, [activeDietaryPreferences])
 
     // Load saved state
     useEffect(() => {
@@ -288,6 +312,7 @@ const StationSection = React.memo((({
                                                                     searchQuery={searchQuery}
                                                                     onClick={() => onItemClick(item, station)}
                                                                     containsAllergen={itemContainsAllergens(item)}
+                                                                    matchesDietaryFilter={!itemContainsAllergens(item) && itemMatchesDietaryFilter(item)}
                                                                 />
                                                             )}
                                                         </div>
@@ -331,6 +356,7 @@ const StationSection = React.memo((({
                                                     searchQuery={searchQuery}
                                                     onClick={() => onItemClick(item, station)}
                                                     containsAllergen={itemContainsAllergens(item)}
+                                                    matchesDietaryFilter={!itemContainsAllergens(item) && itemMatchesDietaryFilter(item)}
                                                 />
                                             )}
                                         </motion.div>
@@ -1081,6 +1107,7 @@ export default function MenuContainer({
                                 setSelectedItemStation(stat)
                             }}
                             activeAllergens={activeAllergens}
+                            activeDietaryPreferences={activeDietaryPreferences}
                         />
                     ))}
                 </div>
