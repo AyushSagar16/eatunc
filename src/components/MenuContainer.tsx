@@ -14,6 +14,10 @@ import { calculateHealthyScore, getMealPeriodLabel, getActiveMealPeriod } from '
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { parseDietaryPreferences, parseAllergens } from '@/components/icons/DietaryIcons'
 
+// Debug flag: enable via NEXT_PUBLIC_DEBUG_MENU_PAGE=true in .env.local
+const DEBUG_MENU = process.env.NODE_ENV === 'development' ||
+    process.env.NEXT_PUBLIC_DEBUG_MENU_PAGE === 'true';
+
 interface MenuEntry {
     meal_period: string
     meal_station: string | null
@@ -380,6 +384,15 @@ export default function MenuContainer({
     selectedHall,
     initialPeriod
 }: MenuContainerProps) {
+    // iOS CRASH DEBUG: Log render counts and payload sizes
+//     if (DEBUG_MENU && typeof window !== 'undefined') {
+//         console.count('[MenuContainer] render');
+//         console.log('[MenuContainer] allEntries:', allEntries.length);
+//         console.log('[MenuContainer] availablePeriods:', availablePeriods.length);
+//         console.log('[MenuContainer] payload size (bytes):',
+//             JSON.stringify({ allEntries, availablePeriods }).length);
+//     }
+
     // PostHog for analytics
     const posthog = usePostHog()
     // Initialize selectedPeriod default - try initialPeriod first, then time-based (if today), then fallback

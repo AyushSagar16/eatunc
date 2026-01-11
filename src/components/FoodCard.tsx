@@ -195,9 +195,9 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2'
             )}
         >
-            {/* Animated glow effect */}
+            {/* Animated glow effect - hidden on low-capability devices via menu-glow-effect */}
             <motion.div
-                className="absolute -right-12 -top-12 h-28 w-28 rounded-full bg-gradient-to-br from-blue-400/10 to-purple-400/5 blur-3xl pointer-events-none"
+                className="menu-glow-effect absolute -right-12 -top-12 h-28 w-28 rounded-full bg-gradient-to-br from-blue-400/10 to-purple-400/5 blur-3xl pointer-events-none"
                 initial={{ opacity: 0 }}
                 whileHover={{ opacity: 0.3 }}
                 transition={{ duration: 0.3 }}
@@ -278,7 +278,7 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                                 className="relative"
                             >
                                 <div
-                                    className="w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm border border-zinc-200/50 flex items-center justify-center dark:bg-zinc-800/90 dark:border-zinc-700/50 cursor-pointer hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/30 dark:hover:border-blue-700/50 transition-colors"
+                                    className="menu-dietary-icon w-6 h-6 rounded-full flex items-center justify-center cursor-pointer"
                                     onMouseEnter={() => setActiveTooltip(pref)}
                                     onMouseLeave={() => setActiveTooltip(null)}
                                     onClick={(e) => {
@@ -325,8 +325,8 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                                 className={`${isMobile ? 'w-11 h-11 -m-2' : 'w-6 h-6'} flex items-center justify-center cursor-pointer`}
                                 aria-label={`Show ${hiddenCount} more dietary preferences`}
                             >
-                                {/* Visual button - always 24x24 */}
-                                <div className="w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm border border-zinc-200/50 flex items-center justify-center dark:bg-zinc-800/90 dark:border-zinc-700/50 hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/30 dark:hover:border-blue-700/50 transition-colors">
+                                {/* Visual button - always 24x24, uses menu-dietary-icon for iOS fallback */}
+                                <div className="menu-dietary-icon w-6 h-6 rounded-full flex items-center justify-center">
                                     <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">
                                         +{hiddenCount}
                                     </span>
