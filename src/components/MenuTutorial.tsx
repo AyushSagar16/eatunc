@@ -202,6 +202,14 @@ export default function MenuTutorial() {
     const [isMobile, setIsMobile] = useState(false)
     const [isClient, setIsClient] = useState(false)
 
+    // iOS CRASH DEBUG: Disable react-joyride on iOS to test if it's causing crashes
+    // This overlay library is known to cause memory issues on iOS Safari
+    // TODO: Remove this after confirming the crash cause
+    if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
+        console.log('[MenuTutorial] Disabled on iOS for crash debugging');
+        return null;
+    }
+
     // Detect client-side rendering and viewport size
     useEffect(() => {
         setIsClient(true)
