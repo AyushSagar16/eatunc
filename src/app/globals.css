@@ -233,3 +233,66 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================================
+   iOS SAFARI WEBKIT STABILITY FIX
+   ============================================================
+   
+   iOS Safari has known issues with backdrop-filter: blur() 
+   causing WebKit crashes and "A problem repeatedly occurred" 
+   errors, especially when many blurred elements are rendered
+   simultaneously (e.g., 150+ food cards with glassmorphism).
+   
+   This uses @supports (-webkit-touch-callout: none) which
+   ONLY matches iOS Safari/Chrome, not desktop Safari or Android.
+   
+   The fallback uses solid/semi-transparent backgrounds that
+   maintain visual hierarchy without GPU-intensive blur effects.
+   
+   TODO: Remove once iOS WebKit fixes backdrop-filter stability
+   Reference: https://bugs.webkit.org/show_bug.cgi?id=270
+   ============================================================ */
+
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari detected - disable backdrop blur for stability */
+  
+  /* FoodCard dietary icons - rendered 2x per card (300-600 instances) */
+  .backdrop-blur-sm {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background-color: rgb(255 255 255 / 0.95) !important;
+  }
+  
+  /* Dark mode fallback for dietary icons */
+  .dark .backdrop-blur-sm {
+    background-color: rgb(39 39 42 / 0.95) !important;
+  }
+  
+  /* FoodDisplayLayout sticky header */
+  .backdrop-blur-xl {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background-color: rgb(255 255 255 / 0.98) !important;
+  }
+  
+  /* FoodModal and FilterSidebar overlays */
+  .dark .backdrop-blur-xl {
+    background-color: rgb(0 0 0 / 0.95) !important;
+  }
+  
+  /* LandingScreen cards (backdrop-blur-md) */
+  .backdrop-blur-md {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background-color: rgb(255 255 255 / 0.15) !important;
+  }
+  
+  /* Heavy blur glow effects - reduce to subtle or remove */
+  .blur-2xl,
+  .blur-3xl,
+  .blur-\[120px\] {
+    filter: none !important;
+    -webkit-filter: none !important;
+    opacity: 0.5;
+  }
+}
