@@ -212,6 +212,7 @@ body {
   0% {
     transform: translateX(-100%);
   }
+
   100% {
     transform: translateX(100%);
   }
@@ -235,64 +236,95 @@ body {
 }
 
 /* ============================================================
-   iOS SAFARI WEBKIT STABILITY FIX
+   LOW-CAPABILITY DEVICE / iOS SAFARI STABILITY FIX
    ============================================================
    
-   iOS Safari has known issues with backdrop-filter: blur() 
-   causing WebKit crashes and "A problem repeatedly occurred" 
-   errors, especially when many blurred elements are rendered
-   simultaneously (e.g., 150+ food cards with glassmorphism).
+   Problem: iOS Safari crashes with "A problem repeatedly occurred"
+   when rendering many backdrop-filter: blur() elements (e.g., 
+   150+ FoodCard dietary icons with glassmorphism).
    
-   This uses @supports (-webkit-touch-callout: none) which
-   ONLY matches iOS Safari/Chrome, not desktop Safari or Android.
+   Solution: Use targeted CSS classes for menu page elements that
+   can be safely disabled on low-capability devices, while keeping
+   landing page glassmorphism intact.
    
-   The fallback uses solid/semi-transparent backgrounds that
-   maintain visual hierarchy without GPU-intensive blur effects.
+   Detection methods:
+   1. @supports (-webkit-touch-callout: none) - iOS Safari only
+   2. prefers-reduced-motion: reduce - user/device preference
    
-   TODO: Remove once iOS WebKit fixes backdrop-filter stability
-   Reference: https://bugs.webkit.org/show_bug.cgi?id=270
+   These fallbacks use solid backgrounds that maintain visual
+   hierarchy without GPU-intensive blur effects.
    ============================================================ */
 
+/* ---------------------------------------------------------
+   Menu Page Dietary Icon - Custom class for FoodCard icons
+   Default: glassmorphism on capable devices
+   --------------------------------------------------------- */
+.menu-dietary-icon {
+  background-color: rgb(255 255 255 / 0.9);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgb(228 228 231 / 0.5);
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.dark .menu-dietary-icon {
+  background-color: rgb(39 39 42 / 0.9);
+  border-color: rgb(63 63 70 / 0.5);
+}
+
+.menu-dietary-icon:hover {
+  background-color: rgb(239 246 255);
+  border-color: rgb(191 219 254);
+}
+
+.dark .menu-dietary-icon:hover {
+  background-color: rgb(30 58 138 / 0.3);
+  border-color: rgb(29 78 216 / 0.5);
+}
+
+/* ---------------------------------------------------------
+   iOS Safari: Disable blur on menu dietary icons ONLY
+   Detected via -webkit-touch-callout (iOS-only property)
+   --------------------------------------------------------- */
 @supports (-webkit-touch-callout: none) {
-  /* iOS Safari detected - disable backdrop blur for stability */
-  
-  /* FoodCard dietary icons - rendered 2x per card (300-600 instances) */
-  .backdrop-blur-sm {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-    background-color: rgb(255 255 255 / 0.95) !important;
+
+  /* Menu dietary icons - use solid background, no blur */
+  .menu-dietary-icon {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: rgb(255 255 255);
+    border-color: rgb(212 212 216);
   }
-  
-  /* Dark mode fallback for dietary icons */
-  .dark .backdrop-blur-sm {
-    background-color: rgb(39 39 42 / 0.95) !important;
+
+  .dark .menu-dietary-icon {
+    background-color: rgb(39 39 42);
+    border-color: rgb(82 82 91);
   }
-  
-  /* FoodDisplayLayout sticky header */
-  .backdrop-blur-xl {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-    background-color: rgb(255 255 255 / 0.98) !important;
+
+  /* FoodCard glow effect - reduce to prevent GPU strain */
+  .menu-glow-effect {
+    display: none;
   }
-  
-  /* FoodModal and FilterSidebar overlays */
-  .dark .backdrop-blur-xl {
-    background-color: rgb(0 0 0 / 0.95) !important;
+}
+
+/* ---------------------------------------------------------
+   Reduced Motion: Additional fallback for users who prefer
+   reduced motion (often on low-power devices)
+   --------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .menu-dietary-icon {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: rgb(255 255 255);
+    border-color: rgb(212 212 216);
   }
-  
-  /* LandingScreen cards (backdrop-blur-md) */
-  .backdrop-blur-md {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-    background-color: rgb(255 255 255 / 0.15) !important;
+
+  .dark .menu-dietary-icon {
+    background-color: rgb(39 39 42);
+    border-color: rgb(82 82 91);
   }
-  
-  /* Heavy blur glow effects - reduce to subtle or remove */
-  .blur-2xl,
-  .blur-3xl,
-  .blur-\[120px\] {
-    filter: none !important;
-    -webkit-filter: none !important;
-    opacity: 0.5;
+
+  .menu-glow-effect {
+    display: none;
   }
 }
