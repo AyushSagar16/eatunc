@@ -127,6 +127,14 @@ function FooterContent() {
                                     Legal
                                 </Link>
                             </li>
+                            <li>
+                                <Link
+                                    href="/privacy"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    Privacy Policy
+                                </Link>
+                            </li>
                         </ul>
                     </div>
                 </div>

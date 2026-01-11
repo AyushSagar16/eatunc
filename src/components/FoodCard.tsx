@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { MasterFoodItem } from '@/lib/api'
 import { motion, AnimatePresence } from 'motion/react'
+import { usePostHog } from 'posthog-js/react'
 import { cn } from '@/lib/utils'
 import { DIETARY_ICON_MAP, parseDietaryPreferences } from '@/components/icons/DietaryIcons'
 
@@ -71,6 +72,8 @@ function getReasonStyle(reasonText: string): string {
 // PERFORMANCE: Wrap with React.memo to prevent re-renders when props haven't changed
 // This is especially important since FoodCard is rendered many times in lists
 const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPeriod, searchQuery = '', onClick, containsAllergen = false, matchesDietaryFilter = false }: FoodCardProps) {
+    const posthog = usePostHog()
+
     const {
         food_name,
         calories_kcal,
@@ -131,7 +134,22 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
 
     return (
         <motion.div
-            onClick={onClick}
+            onClick={() => {
+                // Track click event
+                posthog.capture('food_card_clicked', {
+                    food_name: item.food_name,
+                    recipe_number: item.recipe_number,
+                    calories: item.calories_kcal,
+                    protein: item.protein_g,
+                    station: station,
+                    meal_period: mealPeriod,
+                    has_allergens: !!item.allergens,
+                    dietary_preferences: item.dietary_preferences || 'none',
+                })
+
+                // Execute original onClick
+                onClick()
+            }}
             onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault()

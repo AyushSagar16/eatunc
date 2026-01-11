@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Joyride, { CallBackProps, STATUS, ACTIONS, Step, Styles } from 'react-joyride'
+import { usePostHog } from 'posthog-js/react'
 
 // UNC Brand Colors
 const UNC_NAVY = '#13294B'
@@ -198,6 +199,7 @@ const joyrideStyles: Partial<Styles> = {
  * - To trigger manually: window.dispatchEvent(new CustomEvent("restartTutorial"))
  */
 export default function MenuTutorial() {
+    const posthog = usePostHog()
     const [run, setRun] = useState(false)
     const [isMobile, setIsMobile] = useState(false)
     const [isClient, setIsClient] = useState(false)
@@ -250,22 +252,48 @@ export default function MenuTutorial() {
 
     // Handle Joyride callbacks
     const handleJoyrideCallback = useCallback((data: CallBackProps) => {
-        const { status, action } = data
+        const { status, action, type, index } = data
+        const steps = isMobile ? MOBILE_STEPS : DESKTOP_STEPS
+        const deviceType = window.innerWidth < 768 ? 'mobile' : 'desktop'
+
+        // Track step completion
+        if (type === 'step:after') {
+            posthog.capture('tutorial_step_completed', {
+                step_index: index,
+                step_count: steps.length,
+                device_type: deviceType,
+            })
+        }
 
         // Handle finish, skip, or close
         const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED]
 
         if (finishedStatuses.includes(status)) {
+            if (status === STATUS.FINISHED) {
+                posthog.capture('tutorial_completed', {
+                    device_type: deviceType,
+                    total_steps: steps.length,
+                })
+            } else if (status === STATUS.SKIPPED) {
+                posthog.capture('tutorial_skipped', {
+                    skipped_at_step: index,
+                    device_type: deviceType,
+                })
+            }
             setRun(false)
             localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true')
         }
 
         // Handle close button click
         if (action === ACTIONS.CLOSE) {
+            posthog.capture('tutorial_closed', {
+                closed_at_step: index,
+                device_type: deviceType,
+            })
             setRun(false)
             localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true')
         }
-    }, [])
+    }, [isMobile, posthog])
 
     // Don't render on server
     if (!isClient) return null

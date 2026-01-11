@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import { usePostHog } from 'posthog-js/react'
 import { MasterFoodItem } from '@/lib/api'
 import FoodCard from '@/components/FoodCard'
 import FoodModal from '@/components/FoodModal'
@@ -384,14 +385,16 @@ export default function MenuContainer({
     initialPeriod
 }: MenuContainerProps) {
     // iOS CRASH DEBUG: Log render counts and payload sizes
-    if (DEBUG_MENU && typeof window !== 'undefined') {
-        console.count('[MenuContainer] render');
-        console.log('[MenuContainer] allEntries:', allEntries.length);
-        console.log('[MenuContainer] availablePeriods:', availablePeriods.length);
-        console.log('[MenuContainer] payload size (bytes):',
-            JSON.stringify({ allEntries, availablePeriods }).length);
-    }
+//     if (DEBUG_MENU && typeof window !== 'undefined') {
+//         console.count('[MenuContainer] render');
+//         console.log('[MenuContainer] allEntries:', allEntries.length);
+//         console.log('[MenuContainer] availablePeriods:', availablePeriods.length);
+//         console.log('[MenuContainer] payload size (bytes):',
+//             JSON.stringify({ allEntries, availablePeriods }).length);
+//     }
 
+    // PostHog for analytics
+    const posthog = usePostHog()
     // Initialize selectedPeriod default - try initialPeriod first, then time-based (if today), then fallback
     const [selectedPeriod, setSelectedPeriod] = useState(() => {
         if (initialPeriod) {
@@ -500,14 +503,32 @@ export default function MenuContainer({
     }, [activeFilters, filtersLoaded, saveFiltersToStorage])
 
     const toggleFilter = (filter: FilterOption) => {
-        setActiveFilters(prev =>
-            prev.includes(filter)
-                ? prev.filter(f => f !== filter)
-                : [...prev, filter]
-        )
+        setActiveFilters(prev => {
+            const isAdding = !prev.includes(filter)
+
+            // Track event
+            posthog.capture('filter_toggled', {
+                filter_type: 'macro',
+                filter_name: filter,
+                action: isAdding ? 'added' : 'removed',
+                hall: selectedHall,
+                meal_period: selectedPeriod,
+            })
+
+            return isAdding ? [...prev, filter] : prev.filter(f => f !== filter)
+        })
     }
 
     const clearAllFilters = () => {
+        // Track event
+        posthog.capture('filters_cleared', {
+            macro_filters_count: activeFilters.length,
+            dietary_filters_count: activeDietaryPreferences.length,
+            allergen_filters_count: activeAllergens.length,
+            hall: selectedHall,
+            meal_period: selectedPeriod,
+        })
+
         setActiveFilters([])
         setActiveDietaryPreferences([])
         setActiveAllergens([])
@@ -567,11 +588,19 @@ export default function MenuContainer({
     }, [activeDietaryPreferences, filtersLoaded, saveDietaryPrefsToStorage])
 
     const toggleDietaryPreference = (pref: DietaryPreferenceOption) => {
-        setActiveDietaryPreferences(prev =>
-            prev.includes(pref)
-                ? prev.filter(p => p !== pref)
-                : [...prev, pref]
-        )
+        setActiveDietaryPreferences(prev => {
+            const isAdding = !prev.includes(pref)
+
+            posthog.capture('filter_toggled', {
+                filter_type: 'dietary_preference',
+                filter_name: pref,
+                action: isAdding ? 'added' : 'removed',
+                hall: selectedHall,
+                meal_period: selectedPeriod,
+            })
+
+            return isAdding ? [...prev, pref] : prev.filter(p => p !== pref)
+        })
     }
 
 
@@ -620,11 +649,19 @@ export default function MenuContainer({
     }, [activeAllergens, filtersLoaded, saveAllergensToStorage])
 
     const toggleAllergen = (allergen: AllergenOption) => {
-        setActiveAllergens(prev =>
-            prev.includes(allergen)
-                ? prev.filter(a => a !== allergen)
-                : [...prev, allergen]
-        )
+        setActiveAllergens(prev => {
+            const isAdding = !prev.includes(allergen)
+
+            posthog.capture('filter_toggled', {
+                filter_type: 'allergen',
+                filter_name: allergen,
+                action: isAdding ? 'added' : 'removed',
+                hall: selectedHall,
+                meal_period: selectedPeriod,
+            })
+
+            return isAdding ? [...prev, allergen] : prev.filter(a => a !== allergen)
+        })
     }
 
 
