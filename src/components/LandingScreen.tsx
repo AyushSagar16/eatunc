@@ -46,7 +46,7 @@ export default function LandingScreen() {
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/20 to-zinc-950/40" />
             </div>
 
-            <div className="max-w-7xl w-full px-6 pt-16 pb-8 relative z-10 flex flex-col items-center gap-16 md:gap-24">
+            <div className="max-w-7xl w-full px-6 py-8 md:py-12 relative z-10 flex flex-col items-center justify-center flex-1 gap-8 md:gap-12">
                 {/* Header content... (lines 48-241) */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}

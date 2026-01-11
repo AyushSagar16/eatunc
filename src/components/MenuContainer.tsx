@@ -567,8 +567,8 @@ export default function MenuContainer({
     // ========================================
     const ALLERGENS_STORAGE_KEY = 'eatunc_allergens'
     const VALID_ALLERGENS: AllergenOption[] = [
-        'milk', 'eggs', 'fish', 'shellfish', 'tree nuts',
-        'peanuts', 'wheat', 'soy', 'sesame'
+        'milk', 'egg', 'fish', 'shellfish', 'tree nuts',
+        'peanut', 'wheat', 'soy', 'sesame'
     ]
 
     const loadAllergensFromStorage = useCallback((): AllergenOption[] => {
@@ -681,23 +681,7 @@ export default function MenuContainer({
         return () => clearTimeout(timer)
     }, [searchQuery])
 
-    // DEBUG: Log entries with null master_food_items
-    // This helps identify data integrity issues where menu_entries exist but lack nutrition data
-    useEffect(() => {
-        if (process.env.NODE_ENV === 'development') {
-            const nullFoodItems = allEntries.filter(e =>
-                e.meal_period === selectedPeriod && !e.master_food_items
-            )
 
-            if (nullFoodItems.length > 0) {
-                console.error('[MENU] Entries with null master_food_items:', nullFoodItems.map(e => ({
-                    recipe_number: e.recipe_number,
-                    station: e.meal_station,
-                    period: e.meal_period
-                })))
-            }
-        }
-    }, [allEntries, selectedPeriod])
 
     const baseFilteredItems = useMemo(() => {
         const items: { item: MasterFoodItem; station: string }[] = []

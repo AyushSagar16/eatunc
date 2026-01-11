@@ -108,11 +108,11 @@ const dietaryPreferences: DietaryPreferenceItem[] = [
 
 const allergens: AllergenItem[] = [
     { id: 'milk', label: 'Milk' },
-    { id: 'eggs', label: 'Eggs' },
+    { id: 'egg', label: 'Egg' },
     { id: 'fish', label: 'Fish' },
     { id: 'shellfish', label: 'Shellfish' },
     { id: 'tree nuts', label: 'Tree Nuts' },
-    { id: 'peanuts', label: 'Peanuts' },
+    { id: 'peanut', label: 'Peanut' },
     { id: 'wheat', label: 'Wheat' },
     { id: 'soy', label: 'Soy' },
     { id: 'sesame', label: 'Sesame' },

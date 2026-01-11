@@ -169,29 +169,7 @@ async function MenuContent({ date, hallSlug }: { date: string, hallSlug: string 
         dining_hall: menu?.dining_hall
     }));
 
-    // DEBUG: Log entries grouped by period and station for visibility
-    if (process.env.NODE_ENV === 'development') {
-        console.log('[PAGE] Total entries for MenuContainer:', hallFilteredEntries.length)
 
-        // Group by meal period and station for visibility
-        const groupedEntries: Record<string, Record<string, number>> = {}
-        hallFilteredEntries.forEach(e => {
-            if (!groupedEntries[e.meal_period]) groupedEntries[e.meal_period] = {}
-            const station = e.meal_station || 'Unknown'
-            groupedEntries[e.meal_period][station] = (groupedEntries[e.meal_period][station] || 0) + 1
-        })
-        console.log('[PAGE] Entries by period and station:', groupedEntries)
-
-        // Also log entries with null master_food_items
-        const nullEntries = hallFilteredEntries.filter(e => !e.master_food_items)
-        if (nullEntries.length > 0) {
-            console.warn('[PAGE] Entries with null master_food_items:', nullEntries.map(e => ({
-                recipe_number: e.recipe_number,
-                station: e.meal_station,
-                period: e.meal_period
-            })))
-        }
-    }
 
     const availablePeriods = Array.from(new Set(hallFilteredEntries.map(e => e.meal_period)));
 

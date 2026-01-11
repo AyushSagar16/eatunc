@@ -53,11 +53,11 @@ export type DietaryPreferenceOption =
  */
 export type AllergenOption =
     | 'milk'
-    | 'eggs'
+    | 'egg'
     | 'fish'
     | 'shellfish'
     | 'tree nuts'
-    | 'peanuts'
+    | 'peanut'
     | 'wheat'
     | 'soy'
     | 'sesame';
