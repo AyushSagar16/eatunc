@@ -4,6 +4,8 @@ import "./globals.css";
 import { Footer } from "@/components/Footer";
 
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { PostHogProvider } from "@/providers/PostHogProvider";
+import CookieConsent from "@/components/CookieConsent";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 
@@ -133,10 +135,13 @@ export default function RootLayout({
         className={`${inter.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <ThemeProvider>
-          {children}
-          <Footer />
-        </ThemeProvider>
+        <PostHogProvider>
+          <ThemeProvider>
+            {children}
+            <Footer />
+          </ThemeProvider>
+          <CookieConsent />
+        </PostHogProvider>
         <SpeedInsights />
         <Analytics />
       </body>
