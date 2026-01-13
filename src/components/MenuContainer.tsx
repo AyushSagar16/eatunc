@@ -385,13 +385,13 @@ export default function MenuContainer({
     initialPeriod
 }: MenuContainerProps) {
     // iOS CRASH DEBUG: Log render counts and payload sizes
-//     if (DEBUG_MENU && typeof window !== 'undefined') {
-//         console.count('[MenuContainer] render');
-//         console.log('[MenuContainer] allEntries:', allEntries.length);
-//         console.log('[MenuContainer] availablePeriods:', availablePeriods.length);
-//         console.log('[MenuContainer] payload size (bytes):',
-//             JSON.stringify({ allEntries, availablePeriods }).length);
-//     }
+    //     if (DEBUG_MENU && typeof window !== 'undefined') {
+    //         console.count('[MenuContainer] render');
+    //         console.log('[MenuContainer] allEntries:', allEntries.length);
+    //         console.log('[MenuContainer] availablePeriods:', availablePeriods.length);
+    //         console.log('[MenuContainer] payload size (bytes):',
+    //             JSON.stringify({ allEntries, availablePeriods }).length);
+    //     }
 
     // PostHog for analytics
     const posthog = usePostHog()
@@ -970,12 +970,31 @@ export default function MenuContainer({
             // If only B is in priority list, it comes first
             if (indexB !== -1) return 1;
 
-            const bottomStations = ['beverages', 'condiments', 'spreads', 'cereal', 'breads', 'bakery', 'dessert']
+            const bottomStations = ['beverages', 'condiments', 'spreads', 'cereal', 'breads', 'bakery', 'dessert', 'stress less', 'cabinet']
             const isABottom = bottomStations.some(s => a.toLowerCase().includes(s))
             const isBBottom = bottomStations.some(s => b.toLowerCase().includes(s))
 
             if (isABottom && !isBBottom) return 1
             if (!isABottom && isBBottom) return -1
+
+            // Calculate average calories for each station
+            const getAvgCalories = (stationName: string) => {
+                const items = stationsMap[stationName] || []
+                if (items.length === 0) return 0
+                const total = items.reduce((sum, item) => sum + (item.calories_kcal ?? 0), 0)
+                return total / items.length
+            }
+
+            const avgA = getAvgCalories(a)
+            const avgB = getAvgCalories(b)
+
+            // Sort by average calories descending (Higher on top)
+            // Use a small epsilon for float comparison safety, though likely overkill here
+            if (Math.abs(avgA - avgB) > 0.1) {
+                return avgB - avgA
+            }
+
+            // Fallback to alphabetical if averages are roughly equal
             return a.localeCompare(b)
         })
 
