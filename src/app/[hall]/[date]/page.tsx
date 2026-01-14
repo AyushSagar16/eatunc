@@ -110,19 +110,21 @@ async function MenuContent({ date, hallSlug }: { date: string, hallSlug: string 
         notFound(); // Or handle error appropriately
     }
 
-    // TRUE parallel data fetching - fetch dates first to determine default date
-    const dateData = await getAvailableDates();
-    const availableDates = Array.from(new Set(dateData?.map(d => d.menu_date) || [])).sort();
-
-    // Fetch menu data
+    // Parallel data fetching
     let menu;
+    let dateData;
     let menuError;
 
     try {
-        menu = await getFullMenuByDateAndHall(date, selectedHall);
+        [dateData, menu] = await Promise.all([
+            getAvailableDates(),
+            getFullMenuByDateAndHall(date, selectedHall),
+        ]);
     } catch (error) {
         menuError = error as Error;
     }
+
+    const availableDates = Array.from(new Set(dateData?.map(d => d.menu_date) || [])).sort();
 
     if (menuError) {
         return (
