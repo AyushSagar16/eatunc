@@ -6,7 +6,6 @@ import { Footer } from "@/components/Footer";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { PostHogProvider } from "@/providers/PostHogProvider";
 import CookieConsent from "@/components/CookieConsent";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
@@ -142,7 +141,6 @@ export default function RootLayout({
           </ThemeProvider>
           <CookieConsent />
         </PostHogProvider>
-        <SpeedInsights />
         <Analytics />
       </body>
     </html>
