@@ -278,12 +278,24 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                                 className="relative"
                             >
                                 <div
-                                    className="menu-dietary-icon w-6 h-6 rounded-full flex items-center justify-center cursor-pointer"
+                                    className="menu-dietary-icon w-6 h-6 rounded-full flex items-center justify-center cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ring-offset-white dark:ring-offset-zinc-900"
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={DIETARY_DISPLAY_NAMES[pref] || pref}
                                     onMouseEnter={() => setActiveTooltip(pref)}
                                     onMouseLeave={() => setActiveTooltip(null)}
+                                    onFocus={() => setActiveTooltip(pref)}
+                                    onBlur={() => setActiveTooltip(null)}
                                     onClick={(e) => {
                                         e.stopPropagation()
                                         setActiveTooltip(activeTooltip === pref ? null : pref)
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault()
+                                            e.stopPropagation()
+                                            setActiveTooltip(activeTooltip === pref ? null : pref)
+                                        }
                                     }}
                                 >
                                     <IconComponent className="w-4 h-4" />
