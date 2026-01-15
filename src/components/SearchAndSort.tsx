@@ -40,6 +40,13 @@ export default function SearchAndSort({
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
+    const menuItemsRef = useRef<(HTMLButtonElement | null)[]>([])
+    const toggleButtonRef = useRef<HTMLButtonElement>(null)
+
+    // Reset refs when dropdown opens/closes or options change
+    useEffect(() => {
+        menuItemsRef.current = menuItemsRef.current.slice(0, SORT_OPTIONS.length)
+    }, [])
 
     // Close dropdown on outside click
     useEffect(() => {
@@ -51,6 +58,47 @@ export default function SearchAndSort({
         document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
+
+    const handleToggleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            if (!isDropdownOpen) {
+                setIsDropdownOpen(true)
+                // Wait for render to focus first item
+                setTimeout(() => {
+                    const selectedIndex = SORT_OPTIONS.findIndex(opt => opt.value === sortBy)
+                    const indexToFocus = selectedIndex >= 0 ? selectedIndex : 0
+                    menuItemsRef.current[indexToFocus]?.focus()
+                }, 0)
+            } else {
+                setIsDropdownOpen(false)
+            }
+        }
+    }
+
+    const handleMenuKeyDown = (e: React.KeyboardEvent, index: number) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            const nextIndex = (index + 1) % SORT_OPTIONS.length
+            menuItemsRef.current[nextIndex]?.focus()
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            const prevIndex = (index - 1 + SORT_OPTIONS.length) % SORT_OPTIONS.length
+            menuItemsRef.current[prevIndex]?.focus()
+        } else if (e.key === 'Home') {
+            e.preventDefault()
+            menuItemsRef.current[0]?.focus()
+        } else if (e.key === 'End') {
+            e.preventDefault()
+            menuItemsRef.current[SORT_OPTIONS.length - 1]?.focus()
+        } else if (e.key === 'Escape') {
+            e.preventDefault()
+            setIsDropdownOpen(false)
+            toggleButtonRef.current?.focus()
+        } else if (e.key === 'Tab') {
+            setIsDropdownOpen(false)
+        }
+    }
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -115,7 +163,9 @@ export default function SearchAndSort({
             {/* Sort Dropdown */}
             <div ref={dropdownRef} className="relative flex-shrink-0" data-tutorial-target="sort-dropdown">
                 <motion.button
+                    ref={toggleButtonRef}
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    onKeyDown={handleToggleKeyDown}
                     aria-label="Sort options"
                     aria-haspopup="true"
                     aria-expanded={isDropdownOpen}
@@ -144,9 +194,11 @@ export default function SearchAndSort({
                             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                             className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl overflow-hidden z-50"
                         >
-                            {SORT_OPTIONS.map((option) => (
+                            {SORT_OPTIONS.map((option, index) => (
                                 <button
                                     key={option.value}
+                                    ref={(el) => { menuItemsRef.current[index] = el }}
+                                    onKeyDown={(e) => handleMenuKeyDown(e, index)}
                                     role="menuitemradio"
                                     aria-checked={sortBy === option.value}
                                     onClick={() => {
