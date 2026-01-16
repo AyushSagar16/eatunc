@@ -116,10 +116,33 @@ async function MenuContent({ date, hallSlug }: { date: string, hallSlug: string 
     let menuError;
 
     try {
-        [dateData, menu] = await Promise.all([
+        const [datesResult, menuResult] = await Promise.allSettled([
             getAvailableDates(),
             getFullMenuByDateAndHall(date, selectedHall),
         ]);
+
+        const errorMessages: string[] = [];
+
+        if (datesResult.status === "fulfilled") {
+            dateData = datesResult.value;
+        } else {
+            errorMessages.push("Failed to load available dates");
+        }
+
+        if (menuResult.status === "fulfilled") {
+            menu = menuResult.value;
+        } else {
+            const reason = menuResult.reason;
+            if (reason instanceof Error) {
+                errorMessages.push(reason.message);
+            } else {
+                errorMessages.push("Failed to load menu data");
+            }
+        }
+
+        if (errorMessages.length > 0) {
+            menuError = new Error(errorMessages.join(" | "));
+        }
     } catch (error) {
         menuError = error as Error;
     }
