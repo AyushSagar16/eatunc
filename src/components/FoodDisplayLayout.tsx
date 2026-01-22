@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 
 import SearchAndSort, { SortOption } from '@/components/SearchAndSort'
+import CalendarPicker from '@/components/CalendarPicker'
 import type { FilterOption } from '@/lib/types'
 
 // PERFORMANCE: Move pure function outside component to prevent recreation on every render
@@ -151,6 +152,10 @@ export default function FoodDisplayLayout({
     const router = useRouter()
     const searchParams = useSearchParams()
 
+    // Calendar picker state
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+    const datePickerRef = useRef<HTMLDivElement>(null)
+
     // PERFORMANCE: Memoize date formatting to prevent re-running expensive toLocaleDateString
     // Only recalculate when selectedDate changes
     const formattedDate = useMemo(() => {
@@ -198,6 +203,41 @@ export default function FoodDisplayLayout({
         next.setUTCDate(next.getUTCDate() + 1)
         handleDateChange(next.toISOString().split('T')[0])
     }
+
+    // Calendar handlers
+    const handleCalendarToggle = () => {
+        setIsCalendarOpen(!isCalendarOpen)
+    }
+
+    const handleCalendarDateSelect = (date: string) => {
+        handleDateChange(date)
+        setIsCalendarOpen(false)
+    }
+
+    // Outside click and escape key handler for calendar
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+                setIsCalendarOpen(false)
+            }
+        }
+
+        const handleEscapeKey = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setIsCalendarOpen(false)
+            }
+        }
+
+        if (isCalendarOpen) {
+            document.addEventListener('mousedown', handleClickOutside)
+            document.addEventListener('keydown', handleEscapeKey)
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+            document.removeEventListener('keydown', handleEscapeKey)
+        }
+    }, [isCalendarOpen])
 
     // Dining hall switcher logic
     const getOppositeDiningHall = () => {
@@ -259,7 +299,7 @@ export default function FoodDisplayLayout({
                             </motion.button>
 
                             {/* Date Selector */}
-                            <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-zinc-100 rounded-xl border border-zinc-200/50 min-h-[52px] shrink-0" data-tutorial-target="date-nav">
+                            <div ref={datePickerRef} className="relative flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-zinc-100 rounded-xl border border-zinc-200/50 min-h-[52px] shrink-0" data-tutorial-target="date-nav">
                                 <motion.button
                                     onClick={handlePrevDate}
                                     disabled={!canGoBack}
@@ -270,9 +310,14 @@ export default function FoodDisplayLayout({
                                     <ChevronLeft className="w-5 h-5" />
                                 </motion.button>
 
-                                <div className="px-2 sm:px-4 min-w-[80px] sm:min-w-[120px] text-center font-bold text-md sm:text-base text-zinc-900">
+                                <motion.button
+                                    onClick={handleCalendarToggle}
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    className="px-2 sm:px-4 min-w-[80px] sm:min-w-[120px] text-center font-bold text-md sm:text-base text-zinc-900 hover:text-blue-600 transition-colors cursor-pointer"
+                                >
                                     {formattedDate}
-                                </div>
+                                </motion.button>
 
                                 <motion.button
                                     onClick={handleNextDate}
@@ -283,6 +328,20 @@ export default function FoodDisplayLayout({
                                 >
                                     <ChevronRight className="w-5 h-5" />
                                 </motion.button>
+
+                                {/* Calendar Popup */}
+                                <AnimatePresence>
+                                    {isCalendarOpen && (
+                                        <CalendarPicker
+                                            selectedDate={selectedDate}
+                                            availableDates={availableDates}
+                                            onDateSelect={handleCalendarDateSelect}
+                                            onClose={() => setIsCalendarOpen(false)}
+                                            minDate={minDate}
+                                            maxDate={maxDate}
+                                        />
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </div>
                     </div>
