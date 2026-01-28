@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { PostHogProvider } from "@/providers/PostHogProvider";
 import CookieConsent from "@/components/CookieConsent";
 import { Analytics } from "@vercel/analytics/next";
+import CDSBanner from "@/components/CDSBanner";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -42,6 +43,8 @@ export const metadata: Metadata = {
     "unc dining menu",
     "chase dining hall menu",
     "lenoir dining hall menu",
+    "lenoir",
+    "chase",
     "unc dining today",
     "unc campus dining",
     // Secondary keywords
@@ -136,6 +139,7 @@ export default function RootLayout({
       >
         <PostHogProvider>
           <ThemeProvider>
+            <CDSBanner />
             {children}
             <Footer />
           </ThemeProvider>
