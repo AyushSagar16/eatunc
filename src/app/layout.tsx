@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { PostHogProvider } from "@/providers/PostHogProvider";
+import { AuthProvider } from "@/providers/AuthProvider";
 import CookieConsent from "@/components/CookieConsent";
 import { Analytics } from "@vercel/analytics/next";
 import CDSBanner from "@/components/CDSBanner";
@@ -138,12 +139,14 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <PostHogProvider>
-          <ThemeProvider>
-            <CDSBanner />
-            {children}
-            <Footer />
-          </ThemeProvider>
-          <CookieConsent />
+          <AuthProvider>
+            <ThemeProvider>
+              <CDSBanner />
+              {children}
+              <Footer />
+            </ThemeProvider>
+            <CookieConsent />
+          </AuthProvider>
         </PostHogProvider>
         <Analytics />
       </body>

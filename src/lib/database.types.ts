@@ -97,6 +97,51 @@ export interface Database {
                     }
                 ]
             }
+            profiles: {
+                Row: {
+                    id: string
+                    email: string
+                    daily_calories_target: number
+                    daily_protein_target: number
+                    daily_carbs_target: number
+                    daily_fat_target: number
+                    dietary_preferences: string[]
+                    allergies: string[]
+                    onboarding_completed: boolean
+                    timezone: string
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id: string
+                    email: string
+                    daily_calories_target?: number
+                    daily_protein_target?: number
+                    daily_carbs_target?: number
+                    daily_fat_target?: number
+                    dietary_preferences?: string[]
+                    allergies?: string[]
+                    onboarding_completed?: boolean
+                    timezone?: string
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    email?: string
+                    daily_calories_target?: number
+                    daily_protein_target?: number
+                    daily_carbs_target?: number
+                    daily_fat_target?: number
+                    dietary_preferences?: string[]
+                    allergies?: string[]
+                    onboarding_completed?: boolean
+                    timezone?: string
+                    created_at?: string
+                    updated_at?: string
+                }
+                Relationships: []
+            }
         }
         Views: {
             [_ in never]: never
