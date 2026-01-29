@@ -5,6 +5,8 @@ import { getMealPeriodLabel } from '@/lib/utils'
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { DIETARY_ICON_MAP, parseDietaryPreferences } from '@/components/icons/DietaryIcons'
+import { IconPlus, IconCheck } from '@tabler/icons-react'
+import { useCartStore } from '@/stores/cartStore'
 
 // Mapping of dietary preference keys to display names
 const DIETARY_DISPLAY_NAMES: Record<string, string> = {
@@ -40,6 +42,10 @@ export default function FoodModal({
     isOpen,
     onClose
 }: FoodModalProps) {
+    const addItem = useCartStore((state) => state.addItem)
+    const hasItem = useCartStore((state) => state.hasItem)
+    const isInCart = hasItem(item.recipe_number)
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose()
@@ -71,6 +77,17 @@ export default function FoodModal({
 
     const allergens = parseAllergens(item.allergens)
     const dietaryPrefs = parseDietaryPreferences(item.dietary_preferences)
+
+    const handleAddToCart = () => {
+        addItem({
+            recipe_number: item.recipe_number,
+            food_name: item.food_name || 'Unknown Item',
+            calories_per_serving: item.calories_kcal || 0,
+            protein_per_serving: item.protein_g || 0,
+            carbs_per_serving: item.carbohydrates_g || 0,
+            fat_per_serving: item.fat_g || 0,
+        })
+    }
 
     return (
         <AnimatePresence>
@@ -234,6 +251,29 @@ export default function FoodModal({
                                     </p>
                                 </div>
                             )}
+
+                            {/* Add to Cart Button */}
+                            <motion.button
+                                onClick={handleAddToCart}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                className={`w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors ${isInCart
+                                        ? 'bg-green-600 hover:bg-green-500 text-white'
+                                        : 'bg-blue-600 hover:bg-blue-500 text-white'
+                                    }`}
+                            >
+                                {isInCart ? (
+                                    <>
+                                        <IconCheck className="w-5 h-5" />
+                                        Add Another Serving
+                                    </>
+                                ) : (
+                                    <>
+                                        <IconPlus className="w-5 h-5" />
+                                        Add to Cart
+                                    </>
+                                )}
+                            </motion.button>
                         </motion.div>
                     </motion.div>
                 </div>

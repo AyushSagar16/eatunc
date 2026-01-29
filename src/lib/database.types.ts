@@ -142,6 +142,89 @@ export interface Database {
                 }
                 Relationships: []
             }
+            meal_logs: {
+                Row: {
+                    id: string
+                    user_id: string
+                    log_date: string
+                    meal_type: string
+                    notes: string | null
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    log_date: string
+                    meal_type: string
+                    notes?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    log_date?: string
+                    meal_type?: string
+                    notes?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "meal_logs_user_id_fkey"
+                        columns: ["user_id"]
+                        referencedRelation: "profiles"
+                        referencedColumns: ["id"]
+                    }
+                ]
+            }
+            meal_log_items: {
+                Row: {
+                    id: string
+                    meal_log_id: string
+                    recipe_number: number
+                    servings: number
+                    food_name: string
+                    calories_per_serving: number
+                    protein_per_serving: number
+                    carbs_per_serving: number
+                    fat_per_serving: number
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    meal_log_id: string
+                    recipe_number: number
+                    servings?: number
+                    food_name: string
+                    calories_per_serving: number
+                    protein_per_serving: number
+                    carbs_per_serving: number
+                    fat_per_serving: number
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    meal_log_id?: string
+                    recipe_number?: number
+                    servings?: number
+                    food_name?: string
+                    calories_per_serving?: number
+                    protein_per_serving?: number
+                    carbs_per_serving?: number
+                    fat_per_serving?: number
+                    created_at?: string
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "meal_log_items_meal_log_id_fkey"
+                        columns: ["meal_log_id"]
+                        referencedRelation: "meal_logs"
+                        referencedColumns: ["id"]
+                    }
+                ]
+            }
         }
         Views: {
             [_ in never]: never

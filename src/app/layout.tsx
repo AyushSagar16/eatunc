@@ -9,6 +9,7 @@ import { AuthProvider } from "@/providers/AuthProvider";
 import CookieConsent from "@/components/CookieConsent";
 import { Analytics } from "@vercel/analytics/next";
 import CDSBanner from "@/components/CDSBanner";
+import { CartButton, CartDrawer } from "@/components/cart";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -144,6 +145,8 @@ export default function RootLayout({
               <CDSBanner />
               {children}
               <Footer />
+              <CartButton />
+              <CartDrawer />
             </ThemeProvider>
             <CookieConsent />
           </AuthProvider>
