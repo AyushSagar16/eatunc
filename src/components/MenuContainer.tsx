@@ -50,6 +50,7 @@ interface StationSectionProps {
 
 const BEVERAGE_KEYWORDS = ['beverage', 'drink', 'coffee', 'tea', 'soda', 'juice', 'condiment', 'sauce', 'dressing', 'toppings', 'packets']
 const FOOD_KEYWORDS = ['mustard', 'ketchup', 'mayo', 'relish', 'hot sauce', 'soy sauce', 'syrup', 'salt', 'pepper', 'sugar', 'creamer', 'dressing', 'vinaigrette', 'jam', 'jelly', 'honey', 'water', 'juice', 'milk', 'coffee', 'tea', 'coke', 'sprite']
+const TOPPING_KEYWORDS = ['lettuce', 'tomato', 'tomatoes', 'onion', 'onions', 'pickle', 'pickles', 'banana pepper', 'banana peppers', 'jalapeno', 'jalapenos', 'pepperoncini', 'sauerkraut']
 
 const isCondimentOrDrink = (item: MasterFoodItem, station: string) => {
     const s = station.toLowerCase()
@@ -64,6 +65,12 @@ const isCondimentOrDrink = (item: MasterFoodItem, station: string) => {
         return regex.test(name)
     })
 
+    // Common burger and sandwich toppings should stay compact even at main stations.
+    const toppingMatch = TOPPING_KEYWORDS.some(kw => {
+        const regex = new RegExp(`\\b${kw}\\b`, 'i')
+        return regex.test(name)
+    })
+
     // 3. Nutrient Match (Items with virtually no nutritional value that aren't at main stations)
     const mainFoodStations = ['kitchen table', 'grill', 'griddle', 'simply prepared', 'global']
     const isMainFoodStation = mainFoodStations.some(mfs => s.includes(mfs))
@@ -74,7 +81,7 @@ const isCondimentOrDrink = (item: MasterFoodItem, station: string) => {
         (item.fat_g ?? 0) <= 1 &&
         (item.carbohydrates_g ?? 0) <= 2
 
-    return stationMatch || foodMatch || nutrientMatch
+    return stationMatch || foodMatch || toppingMatch || nutrientMatch
 }
 
 // PERFORMANCE: Memoize MiniFoodCard to prevent re-renders when props haven't changed
