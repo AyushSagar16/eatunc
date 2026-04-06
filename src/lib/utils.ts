@@ -100,6 +100,41 @@ export function parseMealPeriodTimes(period: string): { startMinutes: number; en
     }
 }
 
+function getMealPeriodSortWeight(period: string): number {
+    const lower = period.toLowerCase().trim()
+
+    if (lower.includes('continental')) return 0
+    if (lower.includes('breakfast')) return 1
+    if (lower.includes('brunch')) return 2
+    if (lower.includes('lite-lunch') || lower.includes('lite lunch') || lower.includes('light lunch')) return 4
+    if (lower.includes('late-lunch') || lower.includes('late lunch')) return 5
+    if (lower.includes('lunch')) return 3
+    if (lower.includes('late-dinner') || lower.includes('late dinner')) return 7
+    if (lower.includes('dinner')) return 6
+    if (lower.includes('late-night') || lower.includes('late night')) return 8
+
+    return 99
+}
+
+export function compareMealPeriods(a: string, b: string): number {
+    const aTimes = parseMealPeriodTimes(a)
+    const bTimes = parseMealPeriodTimes(b)
+
+    if (aTimes && bTimes && aTimes.startMinutes !== bTimes.startMinutes) {
+        return aTimes.startMinutes - bTimes.startMinutes
+    }
+
+    if (aTimes && !bTimes) return -1
+    if (!aTimes && bTimes) return 1
+
+    const weightDiff = getMealPeriodSortWeight(a) - getMealPeriodSortWeight(b)
+    if (weightDiff !== 0) {
+        return weightDiff
+    }
+
+    return a.localeCompare(b)
+}
+
 /**
  * Finds which meal period is currently active based on the given time.
  * Falls back to the first available period if no match is found.

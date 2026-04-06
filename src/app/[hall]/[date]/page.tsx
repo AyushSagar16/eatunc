@@ -12,6 +12,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { compareMealPeriods } from "@/lib/utils";
 
 // Dynamic rendering - no caching, always fetch fresh data
 export const dynamic = 'force-dynamic';
@@ -198,20 +199,7 @@ async function MenuContent({ date, hallSlug }: { date: string, hallSlug: string 
 
     const availablePeriods = Array.from(new Set(hallFilteredEntries.map(e => e.meal_period)));
 
-    // Sort periods logically
-    availablePeriods.sort((a, b) => {
-        const getOrder = (p: string) => {
-            const lower = p.toLowerCase();
-            if (lower.includes('continental')) return 0;
-            if (lower.includes('breakfast')) return 1;
-            if (lower.includes('brunch')) return 2;
-            if (lower.includes('lunch') && !lower.includes('lite') && !lower.includes('light')) return 3;
-            if (lower.includes('lite') || lower.includes('light')) return 4;
-            if (lower.includes('dinner')) return 5;
-            return 99;
-        };
-        return getOrder(a) - getOrder(b);
-    });
+    availablePeriods.sort(compareMealPeriods);
 
     return (
         <div className="relative">
