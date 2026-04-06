@@ -2,14 +2,12 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Tabs } from '@/components/ui/tabs'
 import { ChevronLeft, ChevronRight, ArrowLeftRight } from 'lucide-react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 
 import SearchAndSort, { SortOption } from '@/components/SearchAndSort'
 import CalendarPicker from '@/components/CalendarPicker'
-import type { FilterOption } from '@/lib/types'
+import type { MenuViewMode } from '@/lib/types'
 
 // PERFORMANCE: Move pure function outside component to prevent recreation on every render
 // Capitalize first letter of each word in meal period
@@ -28,14 +26,12 @@ interface FoodDisplayLayoutProps {
     availablePeriods: string[]
     onPeriodChange: (period: string) => void
     onDateChange?: (date: string) => void
-    activeFilters?: FilterOption[]
-    onRemoveFilter?: (filter: FilterOption) => void
-    onClearFilters?: () => void
-    itemCount?: number
     searchQuery?: string
     onSearchChange?: (query: string) => void
     sortBy?: SortOption
     onSortChange?: (sort: SortOption) => void
+    viewMode?: MenuViewMode
+    onViewModeChange?: (mode: MenuViewMode) => void
     children?: React.ReactNode
 }
 
@@ -71,16 +67,20 @@ function MealTabsWithScrollIndicators({
     }, [])
 
     useEffect(() => {
-        checkScroll()
         const el = scrollRef.current
+        const animationFrame = window.requestAnimationFrame(checkScroll)
+
         if (el) {
             el.addEventListener('scroll', checkScroll, { passive: true })
             window.addEventListener('resize', checkScroll)
             return () => {
+                window.cancelAnimationFrame(animationFrame)
                 el.removeEventListener('scroll', checkScroll)
                 window.removeEventListener('resize', checkScroll)
             }
         }
+
+        return () => window.cancelAnimationFrame(animationFrame)
     }, [checkScroll, availablePeriods])
 
     return (
@@ -139,18 +139,15 @@ export default function FoodDisplayLayout({
     availablePeriods,
     onPeriodChange,
     onDateChange,
-    activeFilters = [],
-    onRemoveFilter,
-    onClearFilters,
-    itemCount,
     searchQuery = '',
     onSearchChange,
     sortBy = 'recommended',
     onSortChange,
+    viewMode,
+    onViewModeChange,
     children
 }: FoodDisplayLayoutProps) {
     const router = useRouter()
-    const searchParams = useSearchParams()
 
     // Calendar picker state
     const [isCalendarOpen, setIsCalendarOpen] = useState(false)
@@ -253,20 +250,6 @@ export default function FoodDisplayLayout({
         // Updated to path-based routing
         router.push(`/${oppositeSlug}/${selectedDate}`)
     }
-
-    // Meal tabs configuration for Aceternity Tabs
-    const mealTabs = availablePeriods.map((period, index) => ({
-        title: getMealLabel(period),
-        value: period.toLowerCase().replace(/\s+/g, '-'),
-        content: (
-            <div key={period} className="w-full min-h-[200px]">
-                {selectedPeriod === period && children}
-            </div>
-        ),
-    }))
-
-    // Find active tab based on selected period
-    const activeTabValue = selectedPeriod.toLowerCase().replace(/\s+/g, '-')
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-white">
@@ -374,6 +357,8 @@ export default function FoodDisplayLayout({
                             onSearchChange={onSearchChange}
                             sortBy={sortBy}
                             onSortChange={onSortChange}
+                            viewMode={viewMode}
+                            onViewModeChange={onViewModeChange}
                         />
                     )}
                 </div>
@@ -396,6 +381,8 @@ export default function FoodDisplayLayout({
                                 onSearchChange={onSearchChange}
                                 sortBy={sortBy}
                                 onSortChange={onSortChange}
+                                viewMode={viewMode}
+                                onViewModeChange={onViewModeChange}
                             />
                         </div>
                     )}

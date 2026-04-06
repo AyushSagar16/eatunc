@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Search, ChevronDown, X, ArrowUpDown } from 'lucide-react'
 
+import MenuViewToggle from '@/components/MenuViewToggle'
+import type { MenuViewMode } from '@/lib/types'
+
 export type SortOption = 'recommended' | 'calories' | 'protein' | 'fat' | 'alphabetical'
 
 interface SearchAndSortProps {
@@ -11,6 +14,8 @@ interface SearchAndSortProps {
     onSearchChange: (query: string) => void
     sortBy: SortOption
     onSortChange: (sort: SortOption) => void
+    viewMode?: MenuViewMode
+    onViewModeChange?: (mode: MenuViewMode) => void
     placeholder?: string
 }
 
@@ -35,6 +40,8 @@ export default function SearchAndSort({
     onSearchChange,
     sortBy,
     onSortChange,
+    viewMode,
+    onViewModeChange,
     placeholder = 'Search food items...',
 }: SearchAndSortProps) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -109,6 +116,13 @@ export default function SearchAndSort({
                     )}
                 </div>
             </div>
+
+            {viewMode && onViewModeChange && (
+                <MenuViewToggle
+                    viewMode={viewMode}
+                    onViewModeChange={onViewModeChange}
+                />
+            )}
 
             {/* Sort Dropdown */}
             <div ref={dropdownRef} className="relative flex-shrink-0" data-tutorial-target="sort-dropdown">

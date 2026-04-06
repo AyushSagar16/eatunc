@@ -63,6 +63,11 @@ export type AllergenOption =
     | 'sesame';
 
 /**
+ * Available menu browsing layouts
+ */
+export type MenuViewMode = 'compact' | 'regular'
+
+/**
  * Props for food display components
  */
 export interface FoodDisplayProps {
