@@ -50,16 +50,25 @@ interface StationSectionProps {
 
 const BEVERAGE_KEYWORDS = ['beverage', 'drink', 'coffee', 'tea', 'soda', 'juice', 'condiment', 'sauce', 'dressing', 'toppings', 'packets']
 const FOOD_KEYWORDS = ['mustard', 'ketchup', 'mayo', 'relish', 'hot sauce', 'soy sauce', 'syrup', 'salt', 'pepper', 'sugar', 'creamer', 'dressing', 'vinaigrette', 'jam', 'jelly', 'honey', 'water', 'juice', 'milk', 'coffee', 'tea', 'coke', 'sprite']
+const TOPPING_KEYWORDS = ['lettuce', 'tomato', 'tomatoes', 'onion', 'onions', 'pickle', 'pickles', 'banana pepper', 'banana peppers', 'jalapeno', 'jalapenos', 'pepperoncini', 'sauerkraut']
 
 const isCondimentOrDrink = (item: MasterFoodItem, station: string) => {
     const s = station.toLowerCase()
     const name = item.food_name?.toLowerCase() || ''
+    const calories = item.calories_kcal ?? 0
+    const matchesCompactCalorieThreshold = calories <= 50
 
     // 1. Station Match (Partial match is safer for stations)
     const stationMatch = BEVERAGE_KEYWORDS.some(kw => s.includes(kw))
 
     // 2. Food Name Match (Whole Word boundary to avoid false positives like "Jambalaya" matching "jam")
-    const foodMatch = FOOD_KEYWORDS.some(kw => {
+    const foodMatch = matchesCompactCalorieThreshold && FOOD_KEYWORDS.some(kw => {
+        const regex = new RegExp(`\\b${kw}\\b`, 'i')
+        return regex.test(name)
+    })
+
+    // Common burger and sandwich toppings should stay compact when they are genuinely small add-ons.
+    const toppingMatch = matchesCompactCalorieThreshold && TOPPING_KEYWORDS.some(kw => {
         const regex = new RegExp(`\\b${kw}\\b`, 'i')
         return regex.test(name)
     })
@@ -74,7 +83,7 @@ const isCondimentOrDrink = (item: MasterFoodItem, station: string) => {
         (item.fat_g ?? 0) <= 1 &&
         (item.carbohydrates_g ?? 0) <= 2
 
-    return stationMatch || foodMatch || nutrientMatch
+    return stationMatch || foodMatch || toppingMatch || nutrientMatch
 }
 
 // PERFORMANCE: Memoize MiniFoodCard to prevent re-renders when props haven't changed
