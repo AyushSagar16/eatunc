@@ -1,13 +1,22 @@
 {
   "name": "unc-dining-page",
   "version": "0.1.0",
+  "description": "A Next.js app for browsing UNC dining hall menus, filters, and nutrition details.",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
   },
+  "keywords": [
+    "nextjs",
+    "react",
+    "supabase",
+    "unc",
+    "dining"
+  ],
   "dependencies": {
     "@radix-ui/react-tabs": "^1.1.13",
     "@supabase/supabase-js": "^2.89.0",

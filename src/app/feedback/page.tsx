@@ -53,9 +53,16 @@ export default function FeedbackPage() {
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const feedbackEnabled = Boolean(process.env.NEXT_PUBLIC_WEB3FORMS_KEY);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!feedbackEnabled) {
+            setStatus('error');
+            return;
+        }
+
         setStatus('loading');
 
         try {
@@ -66,7 +73,6 @@ export default function FeedbackPage() {
                 },
                 body: JSON.stringify({
                     access_key: process.env.NEXT_PUBLIC_WEB3FORMS_KEY,
-                    to: 'ayushsagarcollege@gmail.com',
                     subject: `[Eat UNC] ${selectedType === 'bug' ? 'Bug Report' : selectedType === 'feature' ? 'Feature Request' : 'General Feedback'}`,
                     from_name: name || 'Anonymous User',
                     email: email || 'noreply@eatunc.com',
@@ -116,6 +122,13 @@ export default function FeedbackPage() {
                 Help us improve Eat UNC! Select a feedback type and share your thoughts.
             </p>
 
+            {!feedbackEnabled && (
+                <div className="mb-6 p-4 rounded-xl bg-amber-100 dark:bg-amber-500/20 border border-amber-200 dark:border-amber-500/30">
+                    <p className="font-medium text-amber-800 dark:text-amber-200">Feedback is not configured for this deployment.</p>
+                    <p className="text-sm text-amber-700 dark:text-amber-300">Add a Web3Forms key to enable this form.</p>
+                </div>
+            )}
+
             {/* Feedback Type Selector */}
             <div className="grid grid-cols-3 gap-3 mb-6">
                 {feedbackOptions.map((option) => (
@@ -154,7 +167,7 @@ export default function FeedbackPage() {
                     <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />
                     <div>
                         <p className="font-medium text-red-800 dark:text-red-200">Something went wrong</p>
-                        <p className="text-sm text-red-700 dark:text-red-300">Please try again or email us directly.</p>
+                        <p className="text-sm text-red-700 dark:text-red-300">Please try again later.</p>
                     </div>
                 </div>
             )}
@@ -213,7 +226,7 @@ export default function FeedbackPage() {
 
                 <button
                     type="submit"
-                    disabled={!message.trim() || status === 'loading'}
+                    disabled={!feedbackEnabled || !message.trim() || status === 'loading'}
                     className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#4B9CD3] hover:bg-[#4B9CD3]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition-all shadow-lg active:scale-[0.98]"
                 >
                     {status === 'loading' ? (
