@@ -55,18 +55,20 @@ const TOPPING_KEYWORDS = ['lettuce', 'tomato', 'tomatoes', 'onion', 'onions', 'p
 const isCondimentOrDrink = (item: MasterFoodItem, station: string) => {
     const s = station.toLowerCase()
     const name = item.food_name?.toLowerCase() || ''
+    const calories = item.calories_kcal ?? 0
+    const matchesCompactCalorieThreshold = calories <= 50
 
     // 1. Station Match (Partial match is safer for stations)
     const stationMatch = BEVERAGE_KEYWORDS.some(kw => s.includes(kw))
 
     // 2. Food Name Match (Whole Word boundary to avoid false positives like "Jambalaya" matching "jam")
-    const foodMatch = FOOD_KEYWORDS.some(kw => {
+    const foodMatch = matchesCompactCalorieThreshold && FOOD_KEYWORDS.some(kw => {
         const regex = new RegExp(`\\b${kw}\\b`, 'i')
         return regex.test(name)
     })
 
-    // Common burger and sandwich toppings should stay compact even at main stations.
-    const toppingMatch = TOPPING_KEYWORDS.some(kw => {
+    // Common burger and sandwich toppings should stay compact when they are genuinely small add-ons.
+    const toppingMatch = matchesCompactCalorieThreshold && TOPPING_KEYWORDS.some(kw => {
         const regex = new RegExp(`\\b${kw}\\b`, 'i')
         return regex.test(name)
     })
