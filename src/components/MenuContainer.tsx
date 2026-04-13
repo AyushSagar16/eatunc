@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { usePostHog } from 'posthog-js/react'
-import { MasterFoodItem } from '@/lib/api'
+import { MasterFoodItem, getFavorites, addFavorite, removeFavorite } from '@/lib/api'
 import FoodCard from '@/components/FoodCard'
 import FoodModal from '@/components/FoodModal'
 import FoodDisplayLayout from '@/components/FoodDisplayLayout'
@@ -13,6 +13,7 @@ import { FilterOption, DietaryPreferenceOption, AllergenOption } from '@/lib/typ
 import { calculateHealthyScore, getMealPeriodLabel, getActiveMealPeriod } from '@/lib/utils'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { parseDietaryPreferences, parseAllergens } from '@/components/icons/DietaryIcons'
+import { supabase } from '@/lib/supabase'
 
 // Debug flag: enable via NEXT_PUBLIC_DEBUG_MENU_PAGE=true in .env.local
 const DEBUG_MENU = process.env.NODE_ENV === 'development' ||
@@ -46,6 +47,7 @@ interface StationSectionProps {
     onItemClick: (item: MasterFoodItem, station: string) => void
     activeAllergens: AllergenOption[]
     activeDietaryPreferences: DietaryPreferenceOption[]
+    favoriteRecipeNumbers: Set<number>
 }
 
 const BEVERAGE_KEYWORDS = ['beverage', 'drink', 'coffee', 'tea', 'soda', 'juice', 'condiment', 'sauce', 'dressing', 'toppings', 'packets']
@@ -122,7 +124,8 @@ const StationSection = React.memo((({
     isFirstStation = false,
     onItemClick,
     activeAllergens,
-    activeDietaryPreferences
+    activeDietaryPreferences,
+    favoriteRecipeNumbers
 }: StationSectionProps) => {
     const [isCollapsed, setIsCollapsed] = useState(false)
     const parentRef = useRef<HTMLDivElement>(null)
@@ -327,6 +330,7 @@ const StationSection = React.memo((({
                                                                     onClick={() => onItemClick(item, station)}
                                                                     containsAllergen={itemContainsAllergens(item)}
                                                                     matchesDietaryFilter={!itemContainsAllergens(item) && itemMatchesDietaryFilter(item)}
+                                                                    isFavorited={favoriteRecipeNumbers.has(item.recipe_number)}
                                                                 />
                                                             )}
                                                         </div>
@@ -371,6 +375,7 @@ const StationSection = React.memo((({
                                                     onClick={() => onItemClick(item, station)}
                                                     containsAllergen={itemContainsAllergens(item)}
                                                     matchesDietaryFilter={!itemContainsAllergens(item) && itemMatchesDietaryFilter(item)}
+                                                    isFavorited={favoriteRecipeNumbers.has(item.recipe_number)}
                                                 />
                                             )}
                                         </motion.div>
@@ -456,7 +461,7 @@ export default function MenuContainer({
     // Testing: localStorage.removeItem("eatunc_active_filters") to reset
 
     const FILTERS_STORAGE_KEY = 'eatunc_active_filters'
-    const VALID_FILTERS: FilterOption[] = ['protein', 'calories', 'fat', 'carbs']
+    const VALID_FILTERS: FilterOption[] = ['protein', 'calories', 'fat', 'carbs', 'favorites']
 
     /**
      * Load filters from localStorage
@@ -496,6 +501,23 @@ export default function MenuContainer({
     // Initialize filter state from localStorage or empty array
     const [activeFilters, setActiveFilters] = useState<FilterOption[]>([])
     const [filtersLoaded, setFiltersLoaded] = useState(false)
+    const [favoriteRecipeNumbers, setFavoriteRecipeNumbers] = useState<Set<number>>(new Set())
+
+    // Load favorites if user is logged in
+    useEffect(() => {
+        const fetchFavs = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+                try {
+                    const favorites = await getFavorites(user.id)
+                    setFavoriteRecipeNumbers(new Set(favorites.map(f => f.recipe_number)))
+                } catch (err) {
+                    console.error('Error fetching favorites:', err)
+                }
+            }
+        }
+        fetchFavs()
+    }, [])
 
     // Load saved filters on mount (client-side only)
     useEffect(() => {
@@ -657,6 +679,34 @@ export default function MenuContainer({
         }
     }, [activeAllergens, filtersLoaded, saveAllergensToStorage])
 
+    const toggleFavorite = useCallback(async (recipeNumber: number) => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+            alert('Please log in to favorite items.')
+            return
+        }
+
+        try {
+            if (favoriteRecipeNumbers.has(recipeNumber)) {
+                await removeFavorite(user.id, recipeNumber)
+                setFavoriteRecipeNumbers(prev => {
+                    const next = new Set(prev)
+                    next.delete(recipeNumber)
+                    return next
+                })
+            } else {
+                await addFavorite(user.id, recipeNumber)
+                setFavoriteRecipeNumbers(prev => {
+                    const next = new Set(prev)
+                    next.add(recipeNumber)
+                    return next
+                })
+            }
+        } catch (error) {
+            console.error('Error toggling favorite:', error)
+        }
+    }, [favoriteRecipeNumbers])
+
     const toggleAllergen = (allergen: AllergenOption) => {
         setActiveAllergens(prev => {
             const isAdding = !prev.includes(allergen)
@@ -744,22 +794,22 @@ export default function MenuContainer({
 
     const baseFilteredItems = useMemo(() => {
         const items: { item: MasterFoodItem; station: string }[] = []
+        const showOnlyFavorites = activeFilters.includes('favorites')
 
         allEntries.forEach(entry => {
             if (entry.meal_period === selectedPeriod && entry.master_food_items) {
                 const item = entry.master_food_items
                 const station = entry.meal_station || 'Other'
 
+                // Favorites Filter
+                if (showOnlyFavorites && !favoriteRecipeNumbers.has(item.recipe_number)) {
+                    return
+                }
+
                 // Search Filter (using debounced query)
                 if (debouncedSearchQuery && !item.food_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) {
                     return
                 }
-
-                /*
-                if (hideCondiments && isCondimentOrDrink(item, station)) {
-                    return
-                }
-                */
 
                 // Deduplicate items by recipe_number across stations for the "Picks" logic
                 if (!items.find(it => it.item.recipe_number === item.recipe_number)) {
@@ -768,7 +818,7 @@ export default function MenuContainer({
             }
         })
         return items
-    }, [allEntries, selectedPeriod, debouncedSearchQuery])
+    }, [allEntries, selectedPeriod, debouncedSearchQuery, activeFilters, favoriteRecipeNumbers])
 
     const applyGlobalSort = (items: any[]) => {
         if (sortBy === 'recommended') return items;
@@ -793,7 +843,7 @@ export default function MenuContainer({
     };
 
     const healthyPicks = useMemo(() => {
-        // Show Top Picks if any macro filters or dietary preferences are active
+        // Show Top Picks if any macro filters, dietary preferences or favorites are active
         if (activeFilters.length === 0 && activeDietaryPreferences.length === 0) return []
 
         // Count how many filters each item matches
@@ -862,6 +912,12 @@ export default function MenuContainer({
                     if (matches) matchCount++
                 }
 
+                // Add favorite match to count
+                if (favoriteRecipeNumbers.has(item.recipe_number)) {
+                    matchCount++
+                    matchedFilters.push('Favorite')
+                }
+
                 // Need at least 1 match to appear in Top Picks
                 const totalFiltersActive = activeFilters.length + activeDietaryPreferences.length
                 const minMatches = totalFiltersActive === 1 ? 1 : Math.min(2, totalFiltersActive)
@@ -897,11 +953,17 @@ export default function MenuContainer({
         const map: Record<string, MasterFoodItem[]> = {}
         // Track processed combinations: "station:recipe_number"
         const processedIds = new Set<string>()
+        const showOnlyFavorites = activeFilters.includes('favorites')
 
         allEntries.forEach(entry => {
             if (entry.meal_period === selectedPeriod && entry.master_food_items) {
                 const item = entry.master_food_items
                 const station = entry.meal_station || 'Other'
+
+                // Favorites Filter
+                if (showOnlyFavorites && !favoriteRecipeNumbers.has(item.recipe_number)) {
+                    return
+                }
 
                 // Search Filter (using debounced query)
                 if (debouncedSearchQuery && !item.food_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) {
@@ -946,7 +1008,7 @@ export default function MenuContainer({
         });
 
         return map
-    }, [allEntries, selectedPeriod, debouncedSearchQuery, sortBy])
+    }, [allEntries, selectedPeriod, debouncedSearchQuery, sortBy, activeFilters, favoriteRecipeNumbers])
 
     // Initial visibility for stations (show first 3 immediately)
     const [visibleStationsCount, setVisibleStationsCount] = useState(3)
@@ -1138,6 +1200,7 @@ export default function MenuContainer({
                                         reason={reason}
                                         mealPeriod={selectedPeriod}
                                         searchQuery={debouncedSearchQuery}
+                                        isFavorited={favoriteRecipeNumbers.has(item.recipe_number)}
                                         onClick={() => {
                                             setSelectedItemForModal(item)
                                             setSelectedItemStation(station)
@@ -1170,6 +1233,7 @@ export default function MenuContainer({
                             }}
                             activeAllergens={activeAllergens}
                             activeDietaryPreferences={activeDietaryPreferences}
+                            favoriteRecipeNumbers={favoriteRecipeNumbers}
                         />
                     ))}
                 </div>
@@ -1216,6 +1280,8 @@ export default function MenuContainer({
                     mealPeriod={selectedPeriod}
                     isOpen={!!selectedItemForModal}
                     onClose={() => setSelectedItemForModal(null)}
+                    isFavorited={favoriteRecipeNumbers.has(selectedItemForModal.recipe_number)}
+                    onToggleFavorite={toggleFavorite}
                 />
             )}
         </FoodDisplayLayout>

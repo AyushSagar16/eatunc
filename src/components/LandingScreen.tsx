@@ -1,16 +1,27 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 
 import DitherShader from './ui/dither-shader'
 import { motion } from 'motion/react'
 import Image from 'next/image'
 import AnnouncementBanner from './AnnouncementBanner'
+import Link from 'next/link'
+import { Heart } from 'lucide-react'
 
 export default function LandingScreen() {
     const router = useRouter()
+    const [isLoggedIn, setIsLoggedIn] = useState(false)
 
-
+    useEffect(() => {
+        const checkAuth = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            setIsLoggedIn(!!user)
+        }
+        checkAuth()
+    }, [])
 
     const handleSelect = (hall: string) => {
         // Always navigate to today's date in EST (UNC Time)
@@ -30,6 +41,17 @@ export default function LandingScreen() {
         <div className="relative min-h-screen-ios-safe flex flex-col items-center" style={{ backgroundColor: '#3a4f5f' }}>
             {/* Temporary Feature Announcement Banner - expires Jan 15, 2026 */}
             <AnnouncementBanner expirationDate="2026-01-15" />
+
+            {/* Header Actions */}
+            <div className="absolute top-4 right-6 z-20 flex items-center gap-4">
+                <Link
+                    href="/favorites"
+                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 backdrop-blur-md text-white font-bold text-sm hover:bg-white/20 transition-all shadow-lg"
+                >
+                    <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
+                    <span className="hidden sm:inline">My Favorites</span>
+                </Link>
+            </div>
 
             {/* Dither Background with Overlay */}
             <div className="absolute inset-0 z-0 pointer-events-none">
