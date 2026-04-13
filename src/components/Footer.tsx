@@ -77,7 +77,32 @@ function FooterContent() {
                                     href="/today"
                                     className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
                                 >
-                                    Today's Menu
+                                    Today&apos;s Menu
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+
+                    {/* My Account Column */}
+                    <div className="space-y-4 sm:hidden md:block">
+                        <h4 className="text-xs font-semibold uppercase tracking-wider opacity-80">
+                            My Account
+                        </h4>
+                        <ul className="space-y-1.5 text-sm">
+                            <li>
+                                <Link
+                                    href="/login"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    Sign In
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href="/dashboard"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    Food Log Dashboard
                                 </Link>
                             </li>
                         </ul>

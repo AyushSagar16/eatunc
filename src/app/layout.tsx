@@ -8,6 +8,7 @@ import { PostHogProvider } from "@/providers/PostHogProvider";
 import CookieConsent from "@/components/CookieConsent";
 import { Analytics } from "@vercel/analytics/next";
 import CDSBanner from "@/components/CDSBanner";
+import { AuthProvider } from "@/providers/AuthProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -139,9 +140,11 @@ export default function RootLayout({
       >
         <PostHogProvider>
           <ThemeProvider>
-            <CDSBanner />
-            {children}
-            <Footer />
+            <AuthProvider>
+              <CDSBanner />
+              {children}
+              <Footer />
+            </AuthProvider>
           </ThemeProvider>
           <CookieConsent />
         </PostHogProvider>

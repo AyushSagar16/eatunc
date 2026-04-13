@@ -9,6 +9,7 @@ import Image from 'next/image'
 
 import SearchAndSort, { SortOption } from '@/components/SearchAndSort'
 import CalendarPicker from '@/components/CalendarPicker'
+import AuthNav from '@/components/AuthNav'
 import type { FilterOption } from '@/lib/types'
 
 // PERFORMANCE: Move pure function outside component to prevent recreation on every render
@@ -281,8 +282,9 @@ export default function FoodDisplayLayout({
                             </h1>
                         </div>
 
-                        {/* Right: Dining Hall Switcher & Date Selector */}
+                        {/* Right: Auth, Dining Hall Switcher & Date Selector */}
                         <div className="flex flex-row items-center justify-between sm:justify-center gap-3 sm:gap-4">
+                            <AuthNav />
                             {/* Dining Hall Switcher Button */}
                             <motion.button
                                 data-tutorial-target="hall-switcher"

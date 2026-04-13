@@ -323,6 +323,7 @@ const StationSection = React.memo((({
                                                                     item={item}
                                                                     station={station}
                                                                     mealPeriod={selectedPeriod}
+                                                                    diningHall={selectedHall}
                                                                     searchQuery={searchQuery}
                                                                     onClick={() => onItemClick(item, station)}
                                                                     containsAllergen={itemContainsAllergens(item)}
@@ -367,6 +368,7 @@ const StationSection = React.memo((({
                                                     item={item}
                                                     station={station}
                                                     mealPeriod={selectedPeriod}
+                                                    diningHall={selectedHall}
                                                     searchQuery={searchQuery}
                                                     onClick={() => onItemClick(item, station)}
                                                     containsAllergen={itemContainsAllergens(item)}
@@ -1137,6 +1139,7 @@ export default function MenuContainer({
                                         station={station}
                                         reason={reason}
                                         mealPeriod={selectedPeriod}
+                                        diningHall={selectedHall}
                                         searchQuery={debouncedSearchQuery}
                                         onClick={() => {
                                             setSelectedItemForModal(item)
@@ -1214,6 +1217,7 @@ export default function MenuContainer({
                     item={selectedItemForModal}
                     station={selectedItemStation}
                     mealPeriod={selectedPeriod}
+                    diningHall={selectedHall}
                     isOpen={!!selectedItemForModal}
                     onClose={() => setSelectedItemForModal(null)}
                 />
