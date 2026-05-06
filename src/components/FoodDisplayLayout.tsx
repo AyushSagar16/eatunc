@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Tabs } from '@/components/ui/tabs'
-import { ChevronLeft, ChevronRight, ArrowLeftRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ArrowLeftRight, ClipboardList } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 
 import SearchAndSort, { SortOption } from '@/components/SearchAndSort'
 import CalendarPicker from '@/components/CalendarPicker'
@@ -276,13 +277,31 @@ export default function FoodDisplayLayout({
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         {/* Left: Back Button & Dining Hall Name */}
                         <div className="flex items-center gap-4 justify-start flex-1">
-                            <h1 className="text-3xl sm:text-4xl font-black text-zinc-800">
-                                {diningHall}
-                            </h1>
+                            <div className="flex items-center gap-3">
+                                <span className="hidden h-8 w-1 rounded-full bg-carolina-500 sm:block" aria-hidden="true" />
+                                <h1 className="font-display text-3xl sm:text-4xl font-black tracking-tight text-navy-900">
+                                    {diningHall}
+                                </h1>
+                            </div>
+                            <Link
+                                href="/log"
+                                aria-label="View today's plate"
+                                className="ml-1 hidden items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-navy-900 shadow-sm transition-colors hover:border-carolina-500 hover:text-carolina-700 sm:inline-flex"
+                            >
+                                <ClipboardList className="h-3.5 w-3.5" />
+                                Today&apos;s plate
+                            </Link>
                         </div>
 
                         {/* Right: Dining Hall Switcher & Date Selector */}
                         <div className="flex flex-row items-center justify-between sm:justify-center gap-3 sm:gap-4">
+                            <Link
+                                href="/log"
+                                aria-label="View today's plate"
+                                className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-ink-200 bg-white text-navy-900 shadow-sm transition-colors hover:border-carolina-500 hover:bg-carolina-50 hover:text-carolina-700 sm:hidden"
+                            >
+                                <ClipboardList className="h-5 w-5" />
+                            </Link>
                             {/* Dining Hall Switcher Button */}
                             <motion.button
                                 data-tutorial-target="hall-switcher"

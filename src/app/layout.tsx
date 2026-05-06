@@ -8,6 +8,7 @@ import { PostHogProvider } from "@/providers/PostHogProvider";
 import CookieConsent from "@/components/CookieConsent";
 import { Analytics } from "@vercel/analytics/next";
 import CDSBanner from "@/components/CDSBanner";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -144,6 +145,7 @@ export default function RootLayout({
             <Footer />
           </ThemeProvider>
           <CookieConsent />
+          <Toaster richColors closeButton position="top-center" />
         </PostHogProvider>
         <Analytics />
       </body>

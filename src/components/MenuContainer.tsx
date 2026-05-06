@@ -3,16 +3,21 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { usePostHog } from 'posthog-js/react'
+import { Plus, Check } from 'lucide-react'
+import { toast } from 'sonner'
 import { MasterFoodItem } from '@/lib/api'
 import FoodCard from '@/components/FoodCard'
 import FoodModal from '@/components/FoodModal'
 import FoodDisplayLayout from '@/components/FoodDisplayLayout'
 import FilterSidebar from '@/components/FilterSidebar'
+import CartButton from '@/components/CartButton'
+import CartDrawer from '@/components/CartDrawer'
 import { FoodGridSkeleton, ContentLoader } from '@/components/LoadingStates'
 import { FilterOption, DietaryPreferenceOption, AllergenOption } from '@/lib/types'
-import { calculateHealthyScore, getMealPeriodLabel, getActiveMealPeriod } from '@/lib/utils'
+import { calculateHealthyScore, getMealPeriodLabel, getActiveMealPeriod, normalizeMealPeriod } from '@/lib/utils'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { parseDietaryPreferences, parseAllergens } from '@/components/icons/DietaryIcons'
+import { useCart } from '@/lib/stores/cart'
 
 // Debug flag: enable via NEXT_PUBLIC_DEBUG_MENU_PAGE=true in .env.local
 const DEBUG_MENU = process.env.NODE_ENV === 'development' ||
@@ -44,6 +49,7 @@ interface StationSectionProps {
     hasActiveFilters: boolean
     isFirstStation?: boolean
     onItemClick: (item: MasterFoodItem, station: string) => void
+    onAddToCart: (item: MasterFoodItem, station: string) => void
     activeAllergens: AllergenOption[]
     activeDietaryPreferences: DietaryPreferenceOption[]
 }
@@ -87,7 +93,16 @@ const isCondimentOrDrink = (item: MasterFoodItem, station: string) => {
 }
 
 // PERFORMANCE: Memoize MiniFoodCard to prevent re-renders when props haven't changed
-const MiniFoodCard = React.memo(({ item, onClick, containsAllergen = false }: { item: MasterFoodItem; onClick: () => void; containsAllergen?: boolean }) => {
+const MiniFoodCard = React.memo(({ item, onClick, onAddToCart, containsAllergen = false }: { item: MasterFoodItem; onClick: () => void; onAddToCart?: () => void; containsAllergen?: boolean }) => {
+    const [justAdded, setJustAdded] = useState(false)
+    const handleAdd = (e: React.MouseEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (containsAllergen || !onAddToCart) return
+        onAddToCart()
+        setJustAdded(true)
+        setTimeout(() => setJustAdded(false), 900)
+    }
     return (
         <motion.div
             onClick={onClick}
@@ -95,7 +110,7 @@ const MiniFoodCard = React.memo(({ item, onClick, containsAllergen = false }: { 
             animate={{ opacity: 1 }}
             whileHover={containsAllergen ? {} : { backgroundColor: "rgba(250, 250, 250, 1)" }}
             whileTap={{ scale: 0.99 }}
-            className={`flex items-center justify-between p-3 rounded-xl border bg-white/50 dark:bg-zinc-900/30 cursor-pointer transition-all group h-full min-h-[42px] ${containsAllergen
+            className={`relative flex items-center justify-between p-3 rounded-xl border bg-white/50 dark:bg-zinc-900/30 cursor-pointer transition-all group h-full min-h-[42px] ${containsAllergen
                 ? 'border-2 border-dashed border-zinc-300 dark:border-zinc-700 opacity-60'
                 : 'border-zinc-200/50 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
                 }`}
@@ -106,6 +121,18 @@ const MiniFoodCard = React.memo(({ item, onClick, containsAllergen = false }: { 
                 }`}>
                 {item.food_name}
             </span>
+            {onAddToCart && !containsAllergen && (
+                <button
+                    type="button"
+                    aria-label={justAdded ? 'Added' : `Add ${item.food_name} to plate`}
+                    onClick={handleAdd}
+                    className={`ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-colors ${justAdded
+                        ? 'border-carolina-500 bg-carolina-500 text-white'
+                        : 'border-ink-200 text-ink-600 hover:border-carolina-500 hover:bg-carolina-500 hover:text-white dark:border-ink-700 dark:text-ink-200 dark:hover:bg-carolina-500 dark:hover:text-navy-900'}`}
+                >
+                    {justAdded ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />}
+                </button>
+            )}
         </motion.div>
     )
 })
@@ -121,6 +148,7 @@ const StationSection = React.memo((({
     hasActiveFilters,
     isFirstStation = false,
     onItemClick,
+    onAddToCart,
     activeAllergens,
     activeDietaryPreferences
 }: StationSectionProps) => {
@@ -316,6 +344,7 @@ const StationSection = React.memo((({
                                                                 <MiniFoodCard
                                                                     item={item}
                                                                     onClick={() => onItemClick(item, station)}
+                                                                    onAddToCart={() => onAddToCart(item, station)}
                                                                     containsAllergen={itemContainsAllergens(item)}
                                                                 />
                                                             ) : (
@@ -325,6 +354,7 @@ const StationSection = React.memo((({
                                                                     mealPeriod={selectedPeriod}
                                                                     searchQuery={searchQuery}
                                                                     onClick={() => onItemClick(item, station)}
+                                                                    onAddToCart={() => onAddToCart(item, station)}
                                                                     containsAllergen={itemContainsAllergens(item)}
                                                                     matchesDietaryFilter={!itemContainsAllergens(item) && itemMatchesDietaryFilter(item)}
                                                                 />
@@ -360,6 +390,7 @@ const StationSection = React.memo((({
                                                 <MiniFoodCard
                                                     item={item}
                                                     onClick={() => onItemClick(item, station)}
+                                                    onAddToCart={() => onAddToCart(item, station)}
                                                     containsAllergen={itemContainsAllergens(item)}
                                                 />
                                             ) : (
@@ -369,6 +400,7 @@ const StationSection = React.memo((({
                                                     mealPeriod={selectedPeriod}
                                                     searchQuery={searchQuery}
                                                     onClick={() => onItemClick(item, station)}
+                                                    onAddToCart={() => onAddToCart(item, station)}
                                                     containsAllergen={itemContainsAllergens(item)}
                                                     matchesDietaryFilter={!itemContainsAllergens(item) && itemMatchesDietaryFilter(item)}
                                                 />
@@ -727,6 +759,45 @@ export default function MenuContainer({
 
     const [selectedItemForModal, setSelectedItemForModal] = useState<MasterFoodItem | null>(null)
     const [selectedItemStation, setSelectedItemStation] = useState<string>('')
+
+    // Cart wiring — single handler for all FoodCard / MiniFoodCard add-to-cart events
+    const cartAdd = useCart((s) => s.add)
+    const handleAddToCart = useCallback((item: MasterFoodItem, _station: string) => {
+        if (!item.food_name) return
+        const result = cartAdd(
+            {
+                source: 'menu',
+                recipe_number: item.recipe_number,
+                custom_food_id: null,
+                food_name: item.food_name,
+                calories_kcal: item.calories_kcal ?? 0,
+                protein_g: item.protein_g ?? 0,
+                fat_g: item.fat_g ?? 0,
+                carbohydrates_g: item.carbohydrates_g ?? 0,
+                fiber_g: null,
+                sodium_mg: null,
+                amount_per_serving: item.amount_per_serving ?? null,
+                dining_hall: selectedHall,
+            },
+            {
+                date: selectedDate,
+                meal_period: normalizeMealPeriod(selectedPeriod),
+                dining_hall: selectedHall,
+            },
+        )
+        if (result.ok) {
+            posthog?.capture('cart_item_added', {
+                food_name: item.food_name,
+                recipe_number: item.recipe_number,
+                meal_period: normalizeMealPeriod(selectedPeriod),
+                dining_hall: selectedHall,
+            })
+            toast.success('Added to plate', {
+                description: item.food_name,
+                duration: 1800,
+            })
+        }
+    }, [cartAdd, selectedDate, selectedHall, selectedPeriod, posthog])
 
     const [searchQuery, setSearchQuery] = useState('')
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
@@ -1090,6 +1161,10 @@ export default function MenuContainer({
                 onToggleAllergen={toggleAllergen}
             />
 
+            {/* Cart — floating button + slide-in drawer */}
+            <CartButton />
+            <CartDrawer />
+
             {/* Main Content - Full Width */}
             <div className="w-full flex flex-col gap-8 transition-all duration-500 ease-in-out animate-in fade-in slide-in-from-bottom-2">
 
@@ -1142,6 +1217,7 @@ export default function MenuContainer({
                                             setSelectedItemForModal(item)
                                             setSelectedItemStation(station)
                                         }}
+                                        onAddToCart={() => handleAddToCart(item, station)}
                                     />
                                 </motion.div>
                             ))}
@@ -1168,6 +1244,7 @@ export default function MenuContainer({
                                 setSelectedItemForModal(item)
                                 setSelectedItemStation(stat)
                             }}
+                            onAddToCart={handleAddToCart}
                             activeAllergens={activeAllergens}
                             activeDietaryPreferences={activeDietaryPreferences}
                         />

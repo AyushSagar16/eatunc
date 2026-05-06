@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { MasterFoodItem } from '@/lib/api'
 import { motion, AnimatePresence } from 'motion/react'
 import { usePostHog } from 'posthog-js/react'
+import { Plus, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { DIETARY_ICON_MAP, parseDietaryPreferences } from '@/components/icons/DietaryIcons'
 
@@ -27,6 +28,7 @@ interface FoodCardProps {
     mealPeriod: string
     searchQuery?: string
     onClick: () => void
+    onAddToCart?: () => void
     containsAllergen?: boolean
     matchesDietaryFilter?: boolean
 }
@@ -71,8 +73,26 @@ function getReasonStyle(reasonText: string): string {
 
 // PERFORMANCE: Wrap with React.memo to prevent re-renders when props haven't changed
 // This is especially important since FoodCard is rendered many times in lists
-const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPeriod, searchQuery = '', onClick, containsAllergen = false, matchesDietaryFilter = false }: FoodCardProps) {
+const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPeriod, searchQuery = '', onClick, onAddToCart, containsAllergen = false, matchesDietaryFilter = false }: FoodCardProps) {
     const posthog = usePostHog()
+    const [justAdded, setJustAdded] = useState(false)
+    const addedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    useEffect(() => {
+        return () => {
+            if (addedTimerRef.current) clearTimeout(addedTimerRef.current)
+        }
+    }, [])
+
+    const handleAdd = (e: React.MouseEvent | React.KeyboardEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (containsAllergen || !onAddToCart) return
+        onAddToCart()
+        setJustAdded(true)
+        if (addedTimerRef.current) clearTimeout(addedTimerRef.current)
+        addedTimerRef.current = setTimeout(() => setJustAdded(false), 1100)
+    }
 
     const {
         food_name,
@@ -202,6 +222,56 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                 whileHover={{ opacity: 0.3 }}
                 transition={{ duration: 0.3 }}
             />
+
+            {/* + Add to plate button (top-right) */}
+            {onAddToCart && !containsAllergen && (
+                <motion.button
+                    type="button"
+                    aria-label={justAdded ? 'Added to plate' : `Add ${food_name} to plate`}
+                    onClick={handleAdd}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            handleAdd(e)
+                        }
+                    }}
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
+                    className={cn(
+                        'absolute right-2.5 top-2.5 z-20 flex h-8 w-8 items-center justify-center rounded-full transition-colors',
+                        'border border-ink-200 bg-white/95 text-ink-700 shadow-sm backdrop-blur-sm',
+                        'hover:border-carolina-500 hover:bg-carolina-500 hover:text-white',
+                        'focus:outline-none focus-visible:ring-2 focus-visible:ring-carolina-500 focus-visible:ring-offset-2',
+                        'dark:border-ink-700 dark:bg-ink-900/90 dark:text-ink-200 dark:hover:bg-carolina-500 dark:hover:text-navy-900',
+                        justAdded && 'border-carolina-500 bg-carolina-500 text-white dark:bg-carolina-500 dark:text-navy-900'
+                    )}
+                >
+                    <AnimatePresence mode="wait" initial={false}>
+                        {justAdded ? (
+                            <motion.span
+                                key="check"
+                                initial={{ scale: 0.6, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.6, opacity: 0 }}
+                                transition={{ duration: 0.15 }}
+                                aria-hidden="true"
+                            >
+                                <Check className="h-4 w-4" strokeWidth={2.75} />
+                            </motion.span>
+                        ) : (
+                            <motion.span
+                                key="plus"
+                                initial={{ scale: 0.6, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.6, opacity: 0 }}
+                                transition={{ duration: 0.15 }}
+                                aria-hidden="true"
+                            >
+                                <Plus className="h-4 w-4" strokeWidth={2.5} />
+                            </motion.span>
+                        )}
+                    </AnimatePresence>
+                </motion.button>
+            )}
 
             <div className="flex flex-col gap-3 flex-1 relative z-10">
                 {/* Reason badge - color-coded */}
