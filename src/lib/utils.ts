@@ -5,13 +5,16 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
 }
 
-export function normalizeMealPeriod(period: string): string {
-    const p = period.toLowerCase().trim();
-    if (p.includes('breakfast')) return 'breakfast';
-    if (p.includes('lite-lunch') || p.includes('lite lunch') || p.includes('light lunch')) return 'lite-lunch';
-    if (p.includes('lunch')) return 'lunch';
-    if (p.includes('dinner')) return 'dinner';
-    return p;
+/**
+ * Serializes data as a JSON-LD-safe string for inline <script> children.
+ * Escapes <, >, & as unicode so React's text rendering can't corrupt it and
+ * a "</script>" inside a string value can't break out of the tag.
+ */
+export function toJsonLd(data: unknown): string {
+    return JSON.stringify(data)
+        .replace(/</g, '\\u003c')
+        .replace(/>/g, '\\u003e')
+        .replace(/&/g, '\\u0026')
 }
 
 export function getMealPeriodLabel(period: string): string {
@@ -42,23 +45,6 @@ export function calculateHealthyScore(item: any, preset: string): number {
     }
 }
 
-export function getClosestDate(availableDates: string[]): string {
-    if (availableDates.length === 0) return new Date().toISOString().split('T')[0];
-
-    const today = new Date().toISOString().split('T')[0];
-    if (availableDates.includes(today)) {
-        return today;
-    }
-
-    // Find closest date
-    const todayTime = new Date(today).getTime();
-    return availableDates.reduce((prev, curr) => {
-        const prevDiff = Math.abs(new Date(prev).getTime() - todayTime);
-        const currDiff = Math.abs(new Date(curr).getTime() - todayTime);
-        return currDiff < prevDiff ? curr : prev;
-    });
-}
-
 /**
  * Parses time ranges from meal period strings.
  * Handles formats like:
@@ -67,7 +53,7 @@ export function getClosestDate(availableDates: string[]): string {
  *   - "Brunch (11am-3pm)"
  * Returns start and end times as minutes since midnight, or null if parsing fails.
  */
-export function parseMealPeriodTimes(period: string): { startMinutes: number; endMinutes: number } | null {
+function parseMealPeriodTimes(period: string): { startMinutes: number; endMinutes: number } | null {
     // More flexible regex to match various time formats:
     // - Optional colons and minutes (:00)
     // - Optional spaces around AM/PM

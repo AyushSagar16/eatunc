@@ -1,9 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
+import { m, AnimatePresence } from 'motion/react'
 import { MessageSquare, X } from 'lucide-react'
 import Link from 'next/link'
+
+// SSR-safe is-client detection (no effect, no hydration flicker)
+const emptySubscribe = () => () => {}
 
 // Storage key for tracking when popup was last shown
 const FEEDBACK_POPUP_STORAGE_KEY = 'eatunc_feedback_popup_last_shown'
@@ -26,11 +29,7 @@ const POPUP_DELAY_MS = 10000
  */
 export default function FeedbackPopup() {
     const [isVisible, setIsVisible] = useState(false)
-    const [isClient, setIsClient] = useState(false)
-
-    useEffect(() => {
-        setIsClient(true)
-    }, [])
+    const isClient = useSyncExternalStore(emptySubscribe, () => true, () => false)
 
     useEffect(() => {
         if (!isClient) return
@@ -70,7 +69,7 @@ export default function FeedbackPopup() {
     return (
         <AnimatePresence>
             {isVisible && (
-                <motion.div
+                <m.div
                     initial={{ y: -100, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: -100, opacity: 0 }}
@@ -79,8 +78,8 @@ export default function FeedbackPopup() {
                 >
                     <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-4 flex items-center gap-3">
                         {/* Icon */}
-                        <div className="w-10 h-10 rounded-xl bg-[#4B9CD3]/10 flex items-center justify-center shrink-0">
-                            <MessageSquare className="w-5 h-5 text-[#4B9CD3]" />
+                        <div className="size-10 rounded-xl bg-[#4B9CD3]/10 flex items-center justify-center shrink-0">
+                            <MessageSquare className="size-5 text-[#4B9CD3]" />
                         </div>
 
                         {/* Text */}
@@ -104,14 +103,15 @@ export default function FeedbackPopup() {
 
                         {/* Dismiss Button */}
                         <button
+                            type="button"
                             onClick={handleDismiss}
                             className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
                             aria-label="Dismiss"
                         >
-                            <X className="w-4 h-4 text-zinc-400" />
+                            <X className="size-4 text-zinc-400" />
                         </button>
                     </div>
-                </motion.div>
+                </m.div>
             )}
         </AnimatePresence>
     )

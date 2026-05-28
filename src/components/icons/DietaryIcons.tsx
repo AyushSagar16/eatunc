@@ -7,7 +7,7 @@ interface IconProps {
 /**
  * Vegan Icon - Indicates a dish is suitable for vegans (no animal products)
  */
-export const VeganIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) => {
+export const VeganIcon: React.FC<IconProps> = ({ className = "size-5" }) => {
     return (
         <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img">
             <title>Vegan</title>
@@ -26,7 +26,7 @@ export const VeganIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) => {
 /**
  * Vegetarian Icon - Indicates a dish is suitable for vegetarians (no meat)
  */
-export const VegetarianIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) => {
+export const VegetarianIcon: React.FC<IconProps> = ({ className = "size-5" }) => {
     return (
         <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" focusable="false">
             <title>Vegetarian</title>
@@ -44,7 +44,7 @@ export const VegetarianIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) =
 /**
  * Gluten Free Icon - Indicates a dish is made without gluten
  */
-export const GlutenFreeIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) => {
+export const GlutenFreeIcon: React.FC<IconProps> = ({ className = "size-5" }) => {
     return (
         <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" focusable="false">
             <title>Made Without Gluten</title>
@@ -63,7 +63,7 @@ export const GlutenFreeIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) =
 /**
  * Halal Icon - Indicates a dish is prepared according to Islamic dietary laws
  */
-export const HalalIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) => {
+export const HalalIcon: React.FC<IconProps> = ({ className = "size-5" }) => {
     return (
         <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" focusable="false">
             <title>Halal</title>
@@ -81,7 +81,7 @@ export const HalalIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) => {
 /**
  * Local Icon - Indicates ingredients are locally sourced
  */
-export const LocalIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) => {
+export const LocalIcon: React.FC<IconProps> = ({ className = "size-5" }) => {
     return (
         <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" focusable="false">
             <title>Local</title>
@@ -99,7 +99,7 @@ export const LocalIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) => {
 /**
  * Organic Icon - Indicates organic ingredients
  */
-export const OrganicIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) => {
+export const OrganicIcon: React.FC<IconProps> = ({ className = "size-5" }) => {
     return (
         <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" focusable="false">
             <title>Organic</title>
@@ -117,7 +117,7 @@ export const OrganicIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) => {
 /**
  * Smart Choice Icon - Indicates a nutritionally balanced option
  */
-export const SmartChoiceIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) => {
+export const SmartChoiceIcon: React.FC<IconProps> = ({ className = "size-5" }) => {
     return (
         <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" focusable="false">
             <title>Smart Choice</title>
@@ -135,7 +135,7 @@ export const SmartChoiceIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) 
 /**
  * Sustainable Seafood Icon - Indicates sustainably sourced seafood
  */
-export const SustainableSeafoodIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) => {
+export const SustainableSeafoodIcon: React.FC<IconProps> = ({ className = "size-5" }) => {
     return (
         <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" focusable="false">
             <title>Sustainable Seafood</title>
@@ -153,53 +153,17 @@ export const SustainableSeafoodIcon: React.FC<IconProps> = ({ className = "w-5 h
 /**
  * Coolfood Icon - Indicates a climate-friendly food choice
  */
-export const CoolfoodIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) => {
+export const CoolfoodIcon: React.FC<IconProps> = ({ className = "size-5" }) => {
     return (
         <svg className={className} width="100%" height="100%" viewBox="0 0 592 592" role="img" focusable="false" xmlns="http://www.w3.org/2000/svg" style={{ fillRule: "evenodd", clipRule: "evenodd", strokeLinejoin: "round", strokeMiterlimit: 2 }}>
             <title>Coolfood</title>
-            <g transform="matrix(4.16667,0,0,4.16667,0,0)">
-                <path d="M32.349,38.463C30.054,38.463 28.562,40.243 28.562,42.652C28.562,44.775 29.94,46.611 32.235,46.611C34.588,46.611 36.08,44.775 36.08,42.308C36.08,40.243 34.702,38.463 32.349,38.463ZM32.062,52.579C25.865,52.579 21.906,48.045 21.906,42.938C21.906,37.085 26.152,32.553 32.521,32.553C38.775,32.553 42.734,37.028 42.734,42.078C42.734,47.988 38.49,52.579 32.062,52.579Z" style={{ fill: "#fff", fillRule: "nonzero" }}></path>
-                <path d="M66.651,66.895C64.253,64.68 61.208,63.574 58.255,63.574C52.258,63.574 48.568,67.633 48.568,72.983C48.568,79.535 53.643,82.763 58.993,82.763C62.592,82.763 65.359,81.564 68.68,78.427L68.219,94.481C64.345,96.602 59.916,97.895 54.381,97.895C37.59,97.895 28.364,87.007 28.364,74.736C28.364,60.16 38.973,48.812 55.395,48.812C60.193,48.812 65.545,50.104 69.419,52.687L66.651,66.895Z" style={{ fill: "#fff", fillRule: "nonzero" }}></path>
-                <path d="M99.206,66.679L95.607,98.23C93.854,113.731 87.58,121.111 75.31,121.111C72.359,121.111 68.76,120.556 65.899,119.634L64.978,105.612C66.546,106.165 68.76,106.626 70.236,106.626C73.926,106.626 76.049,104.965 76.602,100.352L80.568,66.679L70.975,66.679L75.218,52.933L82.139,52.933C84.168,38.816 92.193,30.884 106.217,30.884C109.538,30.884 112.307,31.529 114.244,32.174L113.136,46.381C111.476,45.828 109.909,45.367 107.786,45.367C103.911,45.367 101.512,47.673 100.959,51.917L100.774,52.933L111.752,52.933C111.201,54.962 110.093,63.358 109.631,66.679L99.206,66.679Z" style={{ fill: "#fff", fillRule: "nonzero" }}></path>
-                <path d="M36.08,42.308C36.08,40.243 34.702,38.463 32.349,38.463C30.054,38.463 28.562,40.243 28.562,42.652C28.562,44.775 29.94,46.611 32.235,46.611C34.588,46.611 36.08,44.775 36.08,42.308Z" style={{ fill: "#4eb848", fillRule: "nonzero" }}></path>
-                <path d="M113.136,46.381C111.477,45.828 109.909,45.367 107.786,45.367C103.911,45.367 101.512,47.673 100.959,51.917L100.774,52.932L111.752,52.932C111.201,54.962 110.093,63.358 109.631,66.679L99.206,66.679L95.607,98.23C93.854,113.731 87.58,121.111 75.31,121.111C72.359,121.111 68.76,120.556 65.899,119.634L64.978,105.612C66.546,106.165 68.76,106.626 70.236,106.626C73.926,106.626 76.049,104.965 76.602,100.352L80.568,66.679L70.975,66.679L75.218,52.932L82.139,52.932C84.168,38.816 92.193,30.884 106.217,30.884C109.538,30.884 112.307,31.529 114.244,32.174L113.136,46.381ZM28.364,74.736C28.364,60.16 38.973,48.812 55.395,48.812C60.193,48.812 65.545,50.104 69.419,52.687L66.651,66.895C64.253,64.68 61.208,63.574 58.255,63.574C52.258,63.574 48.568,67.633 48.568,72.983C48.568,79.534 53.643,82.763 58.993,82.763C62.592,82.763 65.359,81.564 68.68,78.427L68.219,94.48C64.345,96.602 59.916,97.895 54.381,97.895C37.59,97.895 28.364,87.007 28.364,74.736ZM21.906,42.938C21.906,37.085 26.152,32.553 32.521,32.553C38.775,32.553 42.734,37.028 42.734,42.078C42.734,47.988 38.49,52.579 32.062,52.579C25.865,52.579 21.906,48.045 21.906,42.938ZM70.866,0.268C31.789,0.268 0,32.058 0,71.135C0,110.21 31.789,142 70.866,142C109.942,142 141.732,110.21 141.732,71.135C141.732,32.058 109.942,0.268 70.866,0.268Z" style={{ fill: "#4eb848", fillRule: "nonzero" }}></path>
+            <g transform="matrix(4.17,0,0,4.17,0,0)">
+                <path d="M32.35,38.46C30.05,38.46 28.56,40.24 28.56,42.65C28.56,44.78 29.94,46.61 32.24,46.61C34.59,46.61 36.08,44.78 36.08,42.31C36.08,40.24 34.7,38.46 32.35,38.46ZM32.06,52.58C25.87,52.58 21.91,48.05 21.91,42.94C21.91,37.09 26.15,32.55 32.52,32.55C38.78,32.55 42.73,37.03 42.73,42.08C42.73,47.99 38.49,52.58 32.06,52.58Z" style={{ fill: "#fff", fillRule: "nonzero" }}></path>
+                <path d="M66.65,66.9C64.25,64.68 61.21,63.57 58.26,63.57C52.26,63.57 48.57,67.63 48.57,72.98C48.57,79.54 53.64,82.76 58.99,82.76C62.59,82.76 65.36,81.56 68.68,78.43L68.22,94.48C64.35,96.6 59.92,97.9 54.38,97.9C37.59,97.9 28.36,87.01 28.36,74.74C28.36,60.16 38.97,48.81 55.4,48.81C60.19,48.81 65.55,50.1 69.42,52.69L66.65,66.9Z" style={{ fill: "#fff", fillRule: "nonzero" }}></path>
+                <path d="M99.21,66.68L95.61,98.23C93.85,113.73 87.58,121.11 75.31,121.11C72.36,121.11 68.76,120.56 65.9,119.63L64.98,105.61C66.55,106.17 68.76,106.63 70.24,106.63C73.93,106.63 76.05,104.97 76.6,100.35L80.57,66.68L70.98,66.68L75.22,52.93L82.14,52.93C84.17,38.82 92.19,30.88 106.22,30.88C109.54,30.88 112.31,31.53 114.24,32.17L113.14,46.38C111.48,45.83 109.91,45.37 107.79,45.37C103.91,45.37 101.51,47.67 100.96,51.92L100.77,52.93L111.75,52.93C111.2,54.96 110.09,63.36 109.63,66.68L99.21,66.68Z" style={{ fill: "#fff", fillRule: "nonzero" }}></path>
+                <path d="M36.08,42.31C36.08,40.24 34.7,38.46 32.35,38.46C30.05,38.46 28.56,40.24 28.56,42.65C28.56,44.78 29.94,46.61 32.24,46.61C34.59,46.61 36.08,44.78 36.08,42.31Z" style={{ fill: "#4eb848", fillRule: "nonzero" }}></path>
+                <path d="M113.14,46.38C111.48,45.83 109.91,45.37 107.79,45.37C103.91,45.37 101.51,47.67 100.96,51.92L100.77,52.93L111.75,52.93C111.2,54.96 110.09,63.36 109.63,66.68L99.21,66.68L95.61,98.23C93.85,113.73 87.58,121.11 75.31,121.11C72.36,121.11 68.76,120.56 65.9,119.63L64.98,105.61C66.55,106.17 68.76,106.63 70.24,106.63C73.93,106.63 76.05,104.97 76.6,100.35L80.57,66.68L70.98,66.68L75.22,52.93L82.14,52.93C84.17,38.82 92.19,30.88 106.22,30.88C109.54,30.88 112.31,31.53 114.24,32.17L113.14,46.38ZM28.36,74.74C28.36,60.16 38.97,48.81 55.4,48.81C60.19,48.81 65.55,50.1 69.42,52.69L66.65,66.9C64.25,64.68 61.21,63.57 58.26,63.57C52.26,63.57 48.57,67.63 48.57,72.98C48.57,79.53 53.64,82.76 58.99,82.76C62.59,82.76 65.36,81.56 68.68,78.43L68.22,94.48C64.35,96.6 59.92,97.9 54.38,97.9C37.59,97.9 28.36,87.01 28.36,74.74ZM21.91,42.94C21.91,37.09 26.15,32.55 32.52,32.55C38.78,32.55 42.73,37.03 42.73,42.08C42.73,47.99 38.49,52.58 32.06,52.58C25.87,52.58 21.91,48.05 21.91,42.94ZM70.87,0.27C31.79,0.27 0,32.06 0,71.14C0,110.21 31.79,142 70.87,142C109.94,142 141.73,110.21 141.73,71.14C141.73,32.06 109.94,0.27 70.87,0.27Z" style={{ fill: "#4eb848", fillRule: "nonzero" }}></path>
             </g>
         </svg>
     )
-}
-
-/**
- * Maps database dietary preference strings to their corresponding icon components.
- * Keys are lowercase and match the format stored in the database.
- */
-export const DIETARY_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-    'vegan': VeganIcon,
-    'vegetarian': VegetarianIcon,
-    'made without gluten': GlutenFreeIcon,
-    'halal': HalalIcon,
-    'local': LocalIcon,
-    'organic': OrganicIcon,
-    'smart choice': SmartChoiceIcon,
-    'sustainable seafood': SustainableSeafoodIcon,
-    'coolfood': CoolfoodIcon,
-}
-
-/**
- * Parses a comma-separated string of dietary preferences into an array of lowercase strings.
- * @param preferencesString - The raw dietary preferences string from the database (e.g., "Vegan, Organic, Local")
- * @returns An array of lowercase preference strings, or an empty array if input is null/empty
- */
-export function parseDietaryPreferences(preferencesString: string | null): string[] {
-    if (!preferencesString) return []
-    return preferencesString.split(',').map(p => p.trim().toLowerCase())
-}
-
-/**
- * Parses a comma-separated string of allergens into an array of lowercase strings.
- * @param allergensString - The raw allergens string from the database (e.g., "Milk, Eggs, Wheat")
- * @returns An array of lowercase allergen strings, or an empty array if input is null/empty
- */
-export function parseAllergens(allergensString: string | null): string[] {
-    if (!allergensString) return []
-    return allergensString.split(',').map(a => a.trim().toLowerCase())
 }

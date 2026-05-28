@@ -1,15 +1,19 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { m, AnimatePresence } from 'motion/react'
 import { Tabs } from '@/components/ui/tabs'
 import { ChevronLeft, ChevronRight, ArrowLeftRight } from 'lucide-react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 
 import SearchAndSort, { SortOption } from '@/components/SearchAndSort'
 import CalendarPicker from '@/components/CalendarPicker'
 import type { FilterOption } from '@/lib/types'
+
+// PERFORMANCE: Stable empty-array reference so the activeFilters default does not
+// create a new array on every render (which would defeat memoization downstream).
+const EMPTY_FILTERS: FilterOption[] = []
 
 // PERFORMANCE: Move pure function outside component to prevent recreation on every render
 // Capitalize first letter of each word in meal period
@@ -70,18 +74,35 @@ function MealTabsWithScrollIndicators({
         setShowRightFade(isScrollable && scrollLeft < scrollWidth - clientWidth - 5)
     }, [])
 
+    // Keep the latest checkScroll in a ref so the listeners can stay subscribed
+    // for the lifetime of the component instead of re-subscribing on every change.
+    const checkScrollRef = useRef(checkScroll)
     useEffect(() => {
-        checkScroll()
+        checkScrollRef.current = checkScroll
+    }, [checkScroll])
+
+    // Subscribe stable scroll/resize listeners once. They read the latest handler
+    // from the ref, so identity changes never force a re-subscription.
+    useEffect(() => {
         const el = scrollRef.current
-        if (el) {
-            el.addEventListener('scroll', checkScroll, { passive: true })
-            window.addEventListener('resize', checkScroll)
-            return () => {
-                el.removeEventListener('scroll', checkScroll)
-                window.removeEventListener('resize', checkScroll)
-            }
+        if (!el) return
+
+        const handleScroll = () => checkScrollRef.current()
+        const handleResize = () => checkScrollRef.current()
+
+        el.addEventListener('scroll', handleScroll, { passive: true })
+        window.addEventListener('resize', handleResize)
+        // A ResizeObserver recomputes the fades when the scroll container's size
+        // changes — including when the tab list changes its content width — and
+        // fires once on observe, so no separate prop-driven effect is needed.
+        const observer = new ResizeObserver(() => checkScrollRef.current())
+        observer.observe(el)
+        return () => {
+            el.removeEventListener('scroll', handleScroll)
+            window.removeEventListener('resize', handleResize)
+            observer.disconnect()
         }
-    }, [checkScroll, availablePeriods])
+    }, [])
 
     return (
         <div className="relative max-w-full" data-tutorial-target="meal-tabs">
@@ -101,7 +122,7 @@ function MealTabsWithScrollIndicators({
                 {availablePeriods.map((period) => {
                     const isActive = selectedPeriod === period
                     return (
-                        <motion.button
+                        <m.button
                             key={period}
                             onClick={() => onPeriodChange(period)}
                             whileHover={{ scale: 1.02 }}
@@ -115,7 +136,7 @@ function MealTabsWithScrollIndicators({
                             `}
                         >
                             {getMealLabel(period)}
-                        </motion.button>
+                        </m.button>
                     )
                 })}
             </div>
@@ -139,7 +160,7 @@ export default function FoodDisplayLayout({
     availablePeriods,
     onPeriodChange,
     onDateChange,
-    activeFilters = [],
+    activeFilters = EMPTY_FILTERS,
     onRemoveFilter,
     onClearFilters,
     itemCount,
@@ -149,8 +170,7 @@ export default function FoodDisplayLayout({
     onSortChange,
     children
 }: FoodDisplayLayoutProps) {
-    const router = useRouter()
-    const searchParams = useSearchParams()
+    const { push } = useRouter()
 
     // Calendar picker state
     const [isCalendarOpen, setIsCalendarOpen] = useState(false)
@@ -188,7 +208,7 @@ export default function FoodDisplayLayout({
         } else {
             // Updated to path-based routing: /{diningHall}/{date}
             const hallSlug = diningHall === 'Chase' ? 'chase' : 'lenoir'
-            router.push(`/${hallSlug}/${date}`)
+            push(`/${hallSlug}/${date}`)
         }
     }
 
@@ -251,7 +271,7 @@ export default function FoodDisplayLayout({
     const handleSwitchHall = () => {
         const oppositeSlug = getOppositeHallSlug()
         // Updated to path-based routing
-        router.push(`/${oppositeSlug}/${selectedDate}`)
+        push(`/${oppositeSlug}/${selectedDate}`)
     }
 
     // Meal tabs configuration for Aceternity Tabs
@@ -284,50 +304,50 @@ export default function FoodDisplayLayout({
                         {/* Right: Dining Hall Switcher & Date Selector */}
                         <div className="flex flex-row items-center justify-between sm:justify-center gap-3 sm:gap-4">
                             {/* Dining Hall Switcher Button */}
-                            <motion.button
+                            <m.button
                                 data-tutorial-target="hall-switcher"
                                 onClick={handleSwitchHall}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 className="flex items-center justify-center gap-1.5 px-3 sm:px-6 py-1.5 min-h-[52px] rounded-xl bg-zinc-100 text-zinc-900 border border-zinc-200/50 font-bold text-md sm:text-base hover:bg-zinc-200 active:bg-zinc-300 transition-all touch-manipulation"
                             >
-                                <ArrowLeftRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-500 shrink-0" />
+                                <ArrowLeftRight className="size-3.5 sm:w-4 sm:h-4 text-zinc-500 shrink-0" />
                                 <span className="whitespace-nowrap">
                                     <span className="hidden sm:inline">Switch to </span>
                                     {getOppositeDiningHall()}
                                 </span>
-                            </motion.button>
+                            </m.button>
 
                             {/* Date Selector */}
                             <div ref={datePickerRef} className="relative flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-zinc-100 rounded-xl border border-zinc-200/50 min-h-[52px] shrink-0" data-tutorial-target="date-nav">
-                                <motion.button
+                                <m.button
                                     onClick={handlePrevDate}
                                     disabled={!canGoBack}
                                     whileHover={{ scale: 1.1 }}
                                     whileTap={{ scale: 0.9 }}
                                     className="p-3 min-w-[44px] min-h-[44px] rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-white active:bg-zinc-200 disabled:opacity-30 disabled:pointer-events-none transition-all touch-manipulation flex items-center justify-center"
                                 >
-                                    <ChevronLeft className="w-5 h-5" />
-                                </motion.button>
+                                    <ChevronLeft className="size-5" />
+                                </m.button>
 
-                                <motion.button
+                                <m.button
                                     onClick={handleCalendarToggle}
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                     className="px-2 sm:px-4 min-w-[80px] sm:min-w-[120px] text-center font-bold text-md sm:text-base text-zinc-900 hover:text-blue-600 transition-colors cursor-pointer"
                                 >
                                     {formattedDate}
-                                </motion.button>
+                                </m.button>
 
-                                <motion.button
+                                <m.button
                                     onClick={handleNextDate}
                                     disabled={!canGoForward}
                                     whileHover={{ scale: 1.1 }}
                                     whileTap={{ scale: 0.9 }}
                                     className="p-3 min-w-[44px] min-h-[44px] rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-white active:bg-zinc-200 disabled:opacity-30 disabled:pointer-events-none transition-all touch-manipulation flex items-center justify-center"
                                 >
-                                    <ChevronRight className="w-5 h-5" />
-                                </motion.button>
+                                    <ChevronRight className="size-5" />
+                                </m.button>
 
                                 {/* Calendar Popup */}
                                 <AnimatePresence>
@@ -365,7 +385,7 @@ export default function FoodDisplayLayout({
                             ))}
                         </select>
                         <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-white">
-                            <ChevronRight className="w-5 h-5 rotate-90" />
+                            <ChevronRight className="size-5 rotate-90" />
                         </div>
                     </div>
                     {onSearchChange && onSortChange && (

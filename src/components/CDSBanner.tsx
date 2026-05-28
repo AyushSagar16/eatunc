@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { m, AnimatePresence } from 'motion/react'
 import { X, AlertTriangle, Clock } from 'lucide-react'
 
 interface CDSBannerProps {
@@ -41,7 +41,7 @@ export default function CDSBanner({ className = '' }: CDSBannerProps) {
 
     return (
         <AnimatePresence>
-            <motion.div
+            <m.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
@@ -52,13 +52,13 @@ export default function CDSBanner({ className = '' }: CDSBannerProps) {
                 <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 relative z-10">
                     <div className="flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <motion.div
+                            <m.div
                                 animate={{ scale: [1, 1.1, 1] }}
                                 transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
                                 className="flex-shrink-0"
                             >
-                                <AlertTriangle className="w-5 h-5 text-yellow-200" />
-                            </motion.div>
+                                <AlertTriangle className="size-5 text-yellow-200" />
+                            </m.div>
                             <div className="flex items-center gap-2 min-w-0">
                                 <p className="text-sm font-medium">
                                     <span className="font-bold">Message from UNC CDS:</span>{' '}
@@ -68,15 +68,16 @@ export default function CDSBanner({ className = '' }: CDSBannerProps) {
                         </div>
 
                         <button
+                            type="button"
                             onClick={handleDismiss}
                             className="p-1.5 hover:bg-white/20 rounded-full transition-colors flex-shrink-0"
                             aria-label="Dismiss CDS announcement"
                         >
-                            <X className="w-4 h-4" />
+                            <X className="size-4" />
                         </button>
                     </div>
                 </div>
-            </motion.div>
+            </m.div>
         </AnimatePresence>
     )
 }

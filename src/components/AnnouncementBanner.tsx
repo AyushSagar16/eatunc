@@ -1,9 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { useState, useSyncExternalStore } from 'react'
+import { m, AnimatePresence } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { X, Sparkles } from 'lucide-react'
+
+// SSR-safe client detection: false on the server, true after mount, no effect.
+const emptySubscribe = () => () => {}
+
+// PERFORMANCE: Hoist the formatter to module scope so it is created once and reused
+const diningDayFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+})
 
 interface AnnouncementBannerProps {
     /**
@@ -22,35 +33,28 @@ export default function AnnouncementBanner({
     expirationDate,
     className = ''
 }: AnnouncementBannerProps) {
-    const router = useRouter()
-    const [isVisible, setIsVisible] = useState(false)
-    const [isDismissed, setIsDismissed] = useState(false)
+    const { push } = useRouter()
+    // Decide visibility on the client only (server renders nothing), so reading
+    // sessionStorage / the current date can't cause a hydration mismatch.
+    const isClient = useSyncExternalStore(emptySubscribe, () => true, () => false)
+    const [justDismissed, setJustDismissed] = useState(false)
 
-    useEffect(() => {
-        // Check if already dismissed in this session
-        const dismissed = sessionStorage.getItem('announcement_dismissed')
-        if (dismissed) {
-            setIsDismissed(true)
-            return
-        }
+    const isDismissed = justDismissed ||
+        (isClient && sessionStorage.getItem('announcement_dismissed') === 'true')
 
-        // Check if current date is past expiration (in Eastern Time)
-        const now = new Date()
-        const estTimeString = now.toLocaleDateString('en-CA', {
+    // Show the banner on or before the expiration date (Eastern Time).
+    const withinWindow = isClient &&
+        new Date().toLocaleDateString('en-CA', {
             timeZone: 'America/New_York',
             year: 'numeric',
             month: '2-digit',
-            day: '2-digit'
-        }) // Returns YYYY-MM-DD
+            day: '2-digit',
+        }) <= expirationDate
 
-        // Compare dates - show banner if today is on or before expiration date
-        if (estTimeString <= expirationDate) {
-            setIsVisible(true)
-        }
-    }, [expirationDate])
+    const isVisible = isClient && !isDismissed && withinWindow
 
     const handleDismiss = () => {
-        setIsDismissed(true)
+        setJustDismissed(true)
         sessionStorage.setItem('announcement_dismissed', 'true')
     }
 
@@ -61,21 +65,16 @@ export default function AnnouncementBanner({
 
         // Navigate to lenoir menu with openFilter query param
         const now = new Date()
-        const today = new Intl.DateTimeFormat('en-CA', {
-            timeZone: 'America/New_York',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        }).format(now)
+        const today = diningDayFormatter.format(now)
 
-        router.push(`/lenoir/${today}?openFilter=true`)
+        push(`/lenoir/${today}?openFilter=true`)
     }
 
     if (!isVisible || isDismissed) return null
 
     return (
         <AnimatePresence>
-            <motion.div
+            <m.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
@@ -88,40 +87,41 @@ export default function AnnouncementBanner({
                 <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 relative z-10">
                     <div className="flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <motion.div
+                            <m.div
                                 animate={{ rotate: [0, 10, -10, 0] }}
                                 transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
                                 className="flex-shrink-0"
                             >
-                                <Sparkles className="w-5 h-5 text-yellow-200" />
-                            </motion.div>
+                                <Sparkles className="size-5 text-yellow-200" />
+                            </m.div>
                             <p className="text-sm font-medium">
                                 <span className="font-bold">New!</span>{' '}
-                                Eat UNC now has dietary preference and allergen filters — find exactly what works for you!
+                                Eat UNC now has dietary preference and allergen filters: find exactly what works for you!
                             </p>
                         </div>
 
                         <div className="flex items-center gap-2 flex-shrink-0">
-                            <motion.button
+                            <m.button
                                 onClick={handleCheckItOut}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 className="px-4 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full text-sm font-bold transition-colors whitespace-nowrap"
                             >
                                 Check it out →
-                            </motion.button>
+                            </m.button>
 
                             <button
+                                type="button"
                                 onClick={handleDismiss}
                                 className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
                                 aria-label="Dismiss announcement"
                             >
-                                <X className="w-4 h-4" />
+                                <X className="size-4" />
                             </button>
                         </div>
                     </div>
                 </div>
-            </motion.div>
+            </m.div>
         </AnimatePresence>
     )
 }

@@ -1,4 +1,4 @@
-import Script from 'next/script';
+import { toJsonLd } from '@/lib/utils';
 
 interface StructuredDataProps {
     hall: string;
@@ -58,16 +58,14 @@ export default function StructuredData({ hall, date }: StructuredDataProps) {
 
     return (
         <>
-            <Script
+            <script
                 id="structured-data-restaurant"
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-            />
-            <Script
+            >{toJsonLd(structuredData)}</script>
+            <script
                 id="structured-data-website"
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteData) }}
-            />
+            >{toJsonLd(websiteData)}</script>
         </>
     );
 }

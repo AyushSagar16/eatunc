@@ -7,10 +7,12 @@ import { cn } from "@/lib/utils";
 import { Suspense } from "react";
 import { HelpCircle } from "lucide-react";
 
+const currentYear = new Date().getFullYear();
+
 function FooterContent() {
     const pathname = usePathname();
-    const searchParams = useSearchParams();
-    const isLanding = pathname === "/" && !searchParams.get("hall");
+    const hallParam = useSearchParams().get("hall");
+    const isLanding = pathname === "/" && !hallParam;
     const isMenuPage = pathname.includes("/chase") || pathname.includes("/lenoir");
 
     const handleRestartTutorial = () => {
@@ -46,7 +48,7 @@ function FooterContent() {
                             }
                         </p>
                         <p className={cn("text-xs pt-2", isLanding ? "text-blue-100/40" : "text-muted-foreground")}>
-                            &copy; {new Date().getFullYear()} Eat UNC. All rights reserved.
+                            &copy; {currentYear} Eat UNC. All rights reserved.
                         </p>
                     </div>
 
@@ -108,13 +110,14 @@ function FooterContent() {
                             {isMenuPage && (
                                 <li>
                                     <button
+                                        type="button"
                                         onClick={handleRestartTutorial}
                                         className={cn(
                                             "flex items-center gap-2 transition-colors",
                                             isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground"
                                         )}
                                     >
-                                        <HelpCircle className="w-3.5 h-3.5" />
+                                        <HelpCircle className="size-3.5" />
                                         Tutorial
                                     </button>
                                 </li>

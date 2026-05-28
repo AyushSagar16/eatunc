@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import Script from "next/script";
+import { toJsonLd } from "@/lib/utils";
 import { ArrowRight, Clock, MapPin, Utensils, Leaf } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -78,14 +78,16 @@ const structuredData = {
     ]
 };
 
+const dateFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+});
+
 function getTodayDate() {
     const now = new Date();
-    return new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/New_York',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    }).format(now);
+    return dateFormatter.format(now);
 }
 
 export default function ChaseMenuPage() {
@@ -93,11 +95,10 @@ export default function ChaseMenuPage() {
 
     return (
         <>
-            <Script
+            <script
                 id="chase-structured-data"
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-            />
+            >{toJsonLd(structuredData)}</script>
             <main className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
                 {/* Hero Section */}
                 <div className="relative overflow-hidden">
@@ -111,15 +112,15 @@ export default function ChaseMenuPage() {
                         </Link>
 
                         <div className="flex items-start gap-6 mb-8">
-                            <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center shrink-0">
-                                <Utensils className="w-8 h-8 md:w-10 md:h-10 text-blue-500" />
+                            <div className="size-16 md:w-20 md:h-20 rounded-2xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center shrink-0">
+                                <Utensils className="size-8 md:w-10 md:h-10 text-blue-500" />
                             </div>
                             <div>
                                 <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2">
                                     Chase Dining Hall Menu
                                 </h1>
                                 <p className="text-lg text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-                                    <MapPin className="w-4 h-4" />
+                                    <MapPin className="size-4" />
                                     UNC Chapel Hill · South Campus
                                 </p>
                             </div>
@@ -136,7 +137,7 @@ export default function ChaseMenuPage() {
                             className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg transition-all shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-0.5"
                         >
                             View Today&apos;s Menu
-                            <ArrowRight className="w-5 h-5" />
+                            <ArrowRight className="size-5" />
                         </Link>
                     </div>
                 </div>
@@ -147,8 +148,8 @@ export default function ChaseMenuPage() {
                         {/* Meal Times */}
                         <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
                             <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                                    <Clock className="w-5 h-5 text-amber-600" />
+                                <div className="size-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                                    <Clock className="size-5 text-amber-600" />
                                 </div>
                                 <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
                                     Chase Dining Hall Hours
@@ -176,8 +177,8 @@ export default function ChaseMenuPage() {
                         {/* Dietary Options */}
                         <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
                             <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-                                    <Leaf className="w-5 h-5 text-green-600" />
+                                <div className="size-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                                    <Leaf className="size-5 text-green-600" />
                                 </div>
                                 <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
                                     Dietary Options
@@ -185,19 +186,19 @@ export default function ChaseMenuPage() {
                             </div>
                             <ul className="space-y-2 text-zinc-600 dark:text-zinc-400">
                                 <li className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                    <span className="size-2 rounded-full bg-green-500"></span>
                                     Vegetarian and vegan options daily
                                 </li>
                                 <li className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                    <span className="size-2 rounded-full bg-blue-500"></span>
                                     Allergen information available
                                 </li>
                                 <li className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                                    <span className="size-2 rounded-full bg-amber-500"></span>
                                     Nutrition facts for every item
                                 </li>
                                 <li className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                                    <span className="size-2 rounded-full bg-purple-500"></span>
                                     High protein and low calorie filters
                                 </li>
                             </ul>
@@ -227,7 +228,7 @@ export default function ChaseMenuPage() {
                             className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 font-medium transition-colors"
                         >
                             View Lenoir Dining Hall Menu
-                            <ArrowRight className="w-4 h-4" />
+                            <ArrowRight className="size-4" />
                         </Link>
                     </div>
                 </div>

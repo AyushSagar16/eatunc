@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useCallback, useState } from "react";
+import React, { useEffect, useRef, useCallback, useSyncExternalStore, useEffectEvent } from "react";
 import { cn } from "@/lib/utils";
 
 type DitheringMode = "bayer" | "halftone" | "noise" | "crosshatch";
@@ -95,6 +95,224 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+// Compute the per-pixel dither threshold for a given pattern mode.
+function computeDitherThreshold(
+  ditherMode: DitheringMode,
+  x: number,
+  y: number,
+  gridSize: number,
+  bayerMatrix: number[][],
+  matrixSize: number,
+  matrixScale: number,
+  time: number,
+): number {
+  const matrixX = Math.floor(x / gridSize) % matrixSize;
+  const matrixY = Math.floor(y / gridSize) % matrixSize;
+
+  switch (ditherMode) {
+    case "bayer":
+      return bayerMatrix[matrixY][matrixX] / matrixScale;
+    case "halftone": {
+      const angle = Math.PI / 4;
+      const scale = gridSize * 2;
+      const rotX = x * Math.cos(angle) + y * Math.sin(angle);
+      const rotY = -x * Math.sin(angle) + y * Math.cos(angle);
+      return (Math.sin(rotX / scale) + Math.sin(rotY / scale) + 2) / 4;
+    }
+    case "noise": {
+      const noiseVal =
+        Math.sin(x * 12.9898 + y * 78.233 + time * 100) * 43758.5453;
+      return noiseVal - Math.floor(noiseVal);
+    }
+    case "crosshatch": {
+      const line1 = (x + y) % (gridSize * 2) < gridSize ? 1 : 0;
+      const line2 =
+        (x - y + gridSize * 4) % (gridSize * 2) < gridSize ? 1 : 0;
+      return (line1 + line2) / 2;
+    }
+    default:
+      return bayerMatrix[matrixY][matrixX] / matrixScale;
+  }
+}
+
+// Determine the output color for a pixel based on the color mode.
+function computeOutputColor(
+  colorMode: ColorMode,
+  r: number,
+  g: number,
+  b: number,
+  luminance: number,
+  ditherThreshold: number,
+  parsedPrimaryColor: [number, number, number],
+  parsedSecondaryColor: [number, number, number],
+  parsedCustomPalette: [number, number, number][],
+): [number, number, number] {
+  switch (colorMode) {
+    case "grayscale": {
+      const shouldBeDark = luminance < ditherThreshold;
+      return shouldBeDark ? [0, 0, 0] : [255, 255, 255];
+    }
+    case "duotone": {
+      const shouldBeDark = luminance < ditherThreshold;
+      return shouldBeDark ? parsedPrimaryColor : parsedSecondaryColor;
+    }
+    case "custom": {
+      if (parsedCustomPalette.length === 2) {
+        const shouldBeDark = luminance < ditherThreshold;
+        return shouldBeDark
+          ? parsedCustomPalette[0]
+          : parsedCustomPalette[1];
+      }
+      // Quantize to closest palette color with dithering
+      const adjustedLuminance = luminance + (ditherThreshold - 0.5) * 0.5;
+      const paletteIndex = Math.floor(
+        clamp(adjustedLuminance, 0, 1) * (parsedCustomPalette.length - 1),
+      );
+      return parsedCustomPalette[paletteIndex];
+    }
+    case "original":
+    default: {
+      // Apply dithering while preserving colors
+      const ditherAmount = ditherThreshold - 0.5;
+      const adjustedR = clamp(r + ditherAmount * 64, 0, 255);
+      const adjustedG = clamp(g + ditherAmount * 64, 0, 255);
+      const adjustedB = clamp(b + ditherAmount * 64, 0, 255);
+
+      // Quantize to fewer levels for dithered look
+      const levels = 4;
+      return [
+        Math.round(adjustedR / (255 / levels)) * (255 / levels),
+        Math.round(adjustedG / (255 / levels)) * (255 / levels),
+        Math.round(adjustedB / (255 / levels)) * (255 / levels),
+      ];
+    }
+  }
+}
+
+interface DitherRenderConfig {
+  gridSize: number;
+  ditherMode: DitheringMode;
+  colorMode: ColorMode;
+  invert: boolean;
+  pixelRatio: number;
+  parsedPrimaryColor: [number, number, number];
+  parsedSecondaryColor: [number, number, number];
+  parsedCustomPalette: [number, number, number][];
+  brightness: number;
+  contrast: number;
+  backgroundColor: string;
+  threshold: number;
+}
+
+// Render the dithered image to the canvas context. Pure given its inputs:
+// the same imageData + config + time always produce the same pixels.
+function renderDithering(
+  ctx: CanvasRenderingContext2D,
+  imageData: ImageData,
+  displayWidth: number,
+  displayHeight: number,
+  time: number,
+  config: DitherRenderConfig,
+): void {
+  const {
+    gridSize,
+    ditherMode,
+    colorMode,
+    invert,
+    pixelRatio,
+    parsedPrimaryColor,
+    parsedSecondaryColor,
+    parsedCustomPalette,
+    brightness,
+    contrast,
+    backgroundColor,
+    threshold,
+  } = config;
+
+  // Clear with background
+  if (backgroundColor !== "transparent") {
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, displayWidth, displayHeight);
+  } else {
+    ctx.clearRect(0, 0, displayWidth, displayHeight);
+  }
+
+  const sourceData = imageData.data;
+  const sourceWidth = imageData.width;
+  const sourceHeight = imageData.height;
+
+  const effectivePixelSize = Math.max(1, Math.floor(gridSize * pixelRatio));
+  const matrixSize = gridSize <= 4 ? 4 : 8;
+  const bayerMatrix = gridSize <= 4 ? BAYER_MATRIX_4x4 : BAYER_MATRIX_8x8;
+  const matrixScale = matrixSize === 4 ? 16 : 64;
+
+  // Process pixels
+  for (let y = 0; y < displayHeight; y += effectivePixelSize) {
+    for (let x = 0; x < displayWidth; x += effectivePixelSize) {
+      // Map display coordinates to source image coordinates
+      const srcX = Math.floor((x / displayWidth) * sourceWidth);
+      const srcY = Math.floor((y / displayHeight) * sourceHeight);
+      const srcIdx = (srcY * sourceWidth + srcX) * 4;
+
+      let r = sourceData[srcIdx] || 0;
+      let g = sourceData[srcIdx + 1] || 0;
+      let b = sourceData[srcIdx + 2] || 0;
+      const a = sourceData[srcIdx + 3] || 0;
+
+      if (a < 10) continue; // Skip fully transparent pixels
+
+      // Apply brightness and contrast
+      r = clamp((r - 128) * contrast + 128 + brightness * 255, 0, 255);
+      g = clamp((g - 128) * contrast + 128 + brightness * 255, 0, 255);
+      b = clamp((b - 128) * contrast + 128 + brightness * 255, 0, 255);
+
+      // Calculate luminance
+      const luminance = getLuminance(r, g, b) / 255;
+
+      // Get dither threshold based on mode
+      let ditherThreshold = computeDitherThreshold(
+        ditherMode,
+        x,
+        y,
+        gridSize,
+        bayerMatrix,
+        matrixSize,
+        matrixScale,
+        time,
+      );
+
+      // Adjust threshold with user setting
+      ditherThreshold = ditherThreshold * (1 - threshold) + threshold * 0.5;
+
+      // Determine output color based on color mode
+      let outputColor = computeOutputColor(
+        colorMode,
+        r,
+        g,
+        b,
+        luminance,
+        ditherThreshold,
+        parsedPrimaryColor,
+        parsedSecondaryColor,
+        parsedCustomPalette,
+      );
+
+      // Apply inversion
+      if (invert) {
+        outputColor = [
+          255 - outputColor[0],
+          255 - outputColor[1],
+          255 - outputColor[2],
+        ];
+      }
+
+      // Draw the pixel
+      ctx.fillStyle = `rgb(${outputColor[0]}, ${outputColor[1]}, ${outputColor[2]})`;
+      ctx.fillRect(x, y, effectivePixelSize, effectivePixelSize);
+    }
+  }
+}
+
 export const DitherShader: React.FC<DitherShaderProps> = ({
   src,
   gridSize = 4,
@@ -121,19 +339,43 @@ export const DitherShader: React.FC<DitherShaderProps> = ({
   const timeRef = useRef<number>(0);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const imageDataRef = useRef<ImageData | null>(null);
-  const dimensionsRef = useRef<{ width: number; height: number }>({
-    width: 0,
-    height: 0,
-  });
+  const sizeRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
 
-  const [dimensions, setDimensions] = useState<{
-    width: number;
-    height: number;
-  }>({ width: 0, height: 0 });
+  // Container size via useSyncExternalStore (ResizeObserver-backed). getSnapshot
+  // returns a stable ref that only changes when the size actually changes, so it
+  // still drives the re-process effect — without a setState inside the observer.
+  const subscribeSize = useCallback((onStoreChange: () => void) => {
+    const container = containerRef.current;
+    if (!container) return () => {};
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (
+          width > 0 &&
+          height > 0 &&
+          (width !== sizeRef.current.width || height !== sizeRef.current.height)
+        ) {
+          sizeRef.current = { width, height };
+          onStoreChange();
+        }
+      }
+    });
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, []);
+
+  const getSizeSnapshot = useCallback(() => sizeRef.current, []);
+
+  const dimensions = useSyncExternalStore(subscribeSize, getSizeSnapshot, getSizeSnapshot);
 
   const parsedPrimaryColor = parseColor(primaryColor);
   const parsedSecondaryColor = parseColor(secondaryColor);
   const parsedCustomPalette = customPalette.map(parseColor);
+
+  // Read the latest onLoad without making the render effect depend on it.
+  const onLoadEvent = useEffectEvent(() => {
+    onLoad?.();
+  });
 
   const applyDithering = useCallback(
     (
@@ -145,152 +387,20 @@ export const DitherShader: React.FC<DitherShaderProps> = ({
       const canvas = canvasRef.current;
       if (!canvas || !imageDataRef.current) return;
 
-      // Clear with background
-      if (backgroundColor !== "transparent") {
-        ctx.fillStyle = backgroundColor;
-        ctx.fillRect(0, 0, displayWidth, displayHeight);
-      } else {
-        ctx.clearRect(0, 0, displayWidth, displayHeight);
-      }
-
-      const sourceData = imageDataRef.current.data;
-      const sourceWidth = imageDataRef.current.width;
-      const sourceHeight = imageDataRef.current.height;
-
-      const effectivePixelSize = Math.max(1, Math.floor(gridSize * pixelRatio));
-      const matrixSize = gridSize <= 4 ? 4 : 8;
-      const bayerMatrix = gridSize <= 4 ? BAYER_MATRIX_4x4 : BAYER_MATRIX_8x8;
-      const matrixScale = matrixSize === 4 ? 16 : 64;
-
-      // Process pixels
-      for (let y = 0; y < displayHeight; y += effectivePixelSize) {
-        for (let x = 0; x < displayWidth; x += effectivePixelSize) {
-          // Map display coordinates to source image coordinates
-          const srcX = Math.floor((x / displayWidth) * sourceWidth);
-          const srcY = Math.floor((y / displayHeight) * sourceHeight);
-          const srcIdx = (srcY * sourceWidth + srcX) * 4;
-
-          let r = sourceData[srcIdx] || 0;
-          let g = sourceData[srcIdx + 1] || 0;
-          let b = sourceData[srcIdx + 2] || 0;
-          const a = sourceData[srcIdx + 3] || 0;
-
-          if (a < 10) continue; // Skip fully transparent pixels
-
-          // Apply brightness and contrast
-          r = clamp((r - 128) * contrast + 128 + brightness * 255, 0, 255);
-          g = clamp((g - 128) * contrast + 128 + brightness * 255, 0, 255);
-          b = clamp((b - 128) * contrast + 128 + brightness * 255, 0, 255);
-
-          // Calculate luminance
-          const luminance = getLuminance(r, g, b) / 255;
-
-          // Get dither threshold based on mode
-          let ditherThreshold: number;
-          const matrixX = Math.floor(x / gridSize) % matrixSize;
-          const matrixY = Math.floor(y / gridSize) % matrixSize;
-
-          switch (ditherMode) {
-            case "bayer":
-              ditherThreshold = bayerMatrix[matrixY][matrixX] / matrixScale;
-              break;
-            case "halftone": {
-              const angle = Math.PI / 4;
-              const scale = gridSize * 2;
-              const rotX = x * Math.cos(angle) + y * Math.sin(angle);
-              const rotY = -x * Math.sin(angle) + y * Math.cos(angle);
-              const pattern =
-                (Math.sin(rotX / scale) + Math.sin(rotY / scale) + 2) / 4;
-              ditherThreshold = pattern;
-              break;
-            }
-            case "noise": {
-              const noiseVal =
-                Math.sin(x * 12.9898 + y * 78.233 + time * 100) * 43758.5453;
-              ditherThreshold = noiseVal - Math.floor(noiseVal);
-              break;
-            }
-            case "crosshatch": {
-              const line1 = (x + y) % (gridSize * 2) < gridSize ? 1 : 0;
-              const line2 =
-                (x - y + gridSize * 4) % (gridSize * 2) < gridSize ? 1 : 0;
-              ditherThreshold = (line1 + line2) / 2;
-              break;
-            }
-            default:
-              ditherThreshold = bayerMatrix[matrixY][matrixX] / matrixScale;
-          }
-
-          // Adjust threshold with user setting
-          ditherThreshold = ditherThreshold * (1 - threshold) + threshold * 0.5;
-
-          // Determine output color based on color mode
-          let outputColor: [number, number, number];
-
-          switch (colorMode) {
-            case "grayscale": {
-              const shouldBeDark = luminance < ditherThreshold;
-              outputColor = shouldBeDark ? [0, 0, 0] : [255, 255, 255];
-              break;
-            }
-            case "duotone": {
-              const shouldBeDark = luminance < ditherThreshold;
-              outputColor = shouldBeDark
-                ? parsedPrimaryColor
-                : parsedSecondaryColor;
-              break;
-            }
-            case "custom": {
-              if (parsedCustomPalette.length === 2) {
-                const shouldBeDark = luminance < ditherThreshold;
-                outputColor = shouldBeDark
-                  ? parsedCustomPalette[0]
-                  : parsedCustomPalette[1];
-              } else {
-                // Quantize to closest palette color with dithering
-                const adjustedLuminance =
-                  luminance + (ditherThreshold - 0.5) * 0.5;
-                const paletteIndex = Math.floor(
-                  clamp(adjustedLuminance, 0, 1) *
-                  (parsedCustomPalette.length - 1),
-                );
-                outputColor = parsedCustomPalette[paletteIndex];
-              }
-              break;
-            }
-            case "original":
-            default: {
-              // Apply dithering while preserving colors
-              const ditherAmount = ditherThreshold - 0.5;
-              const adjustedR = clamp(r + ditherAmount * 64, 0, 255);
-              const adjustedG = clamp(g + ditherAmount * 64, 0, 255);
-              const adjustedB = clamp(b + ditherAmount * 64, 0, 255);
-
-              // Quantize to fewer levels for dithered look
-              const levels = 4;
-              outputColor = [
-                Math.round(adjustedR / (255 / levels)) * (255 / levels),
-                Math.round(adjustedG / (255 / levels)) * (255 / levels),
-                Math.round(adjustedB / (255 / levels)) * (255 / levels),
-              ];
-              break;
-            }
-          }
-
-          // Apply inversion
-          if (invert) {
-            outputColor = [
-              255 - outputColor[0],
-              255 - outputColor[1],
-              255 - outputColor[2],
-            ];
-          }
-
-          // Draw the pixel
-          ctx.fillStyle = `rgb(${outputColor[0]}, ${outputColor[1]}, ${outputColor[2]})`;
-          ctx.fillRect(x, y, effectivePixelSize, effectivePixelSize);
-        }
-      }
+      renderDithering(ctx, imageDataRef.current, displayWidth, displayHeight, time, {
+        gridSize,
+        ditherMode,
+        colorMode,
+        invert,
+        pixelRatio,
+        parsedPrimaryColor,
+        parsedSecondaryColor,
+        parsedCustomPalette,
+        brightness,
+        contrast,
+        backgroundColor,
+        threshold,
+      });
     },
     [
       gridSize,
@@ -308,34 +418,13 @@ export const DitherShader: React.FC<DitherShaderProps> = ({
     ],
   );
 
-  // Setup resize observer for responsive sizing
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect;
-        if (width > 0 && height > 0) {
-          dimensionsRef.current = { width, height };
-          setDimensions({ width, height });
-        }
-      }
-    });
-
-    resizeObserver.observe(container);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, []);
-
   // Process image and apply dithering when dimensions or settings change
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || dimensions.width === 0 || dimensions.height === 0) return;
 
     let isCancelled = false;
+    let rafId: number | null = null;
 
     const processImage = (img: HTMLImageElement) => {
       if (isCancelled) return;
@@ -413,9 +502,11 @@ export const DitherShader: React.FC<DitherShaderProps> = ({
           if (isCancelled) return;
           timeRef.current += animationSpeed;
           applyDithering(ctx, displayWidth, displayHeight, timeRef.current);
-          animationRef.current = requestAnimationFrame(animate);
+          rafId = requestAnimationFrame(animate);
+          animationRef.current = rafId;
         };
-        animationRef.current = requestAnimationFrame(animate);
+        rafId = requestAnimationFrame(animate);
+        animationRef.current = rafId;
       }
     };
 
@@ -432,7 +523,7 @@ export const DitherShader: React.FC<DitherShaderProps> = ({
         if (isCancelled) return;
         imageRef.current = img;
         processImage(img);
-        onLoad?.();
+        onLoadEvent();
       };
 
       img.onerror = () => {
@@ -442,17 +533,17 @@ export const DitherShader: React.FC<DitherShaderProps> = ({
 
     return () => {
       isCancelled = true;
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
       }
     };
   }, [src, dimensions, objectFit, animated, animationSpeed, applyDithering]);
 
   return (
-    <div ref={containerRef} className={cn("relative h-full w-full", className)}>
+    <div ref={containerRef} className={cn("relative size-full", className)}>
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 h-full w-full"
+        className="absolute inset-0 size-full"
         style={{ imageRendering: "pixelated" }}
         aria-label="Dithered image"
         role="img"

@@ -1,11 +1,11 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useSyncExternalStore } from 'react'
 import { MasterFoodItem } from '@/lib/api'
-import { motion, AnimatePresence } from 'motion/react'
+import { m, AnimatePresence } from 'motion/react'
 import { usePostHog } from 'posthog-js/react'
 import { cn } from '@/lib/utils'
-import { DIETARY_ICON_MAP, parseDietaryPreferences } from '@/components/icons/DietaryIcons'
+import { DIETARY_ICON_MAP, parseDietaryPreferences } from '@/components/icons/dietary'
 
 // Mapping of dietary preference keys to display names
 const DIETARY_DISPLAY_NAMES: Record<string, string> = {
@@ -18,6 +18,13 @@ const DIETARY_DISPLAY_NAMES: Record<string, string> = {
     'smart choice': 'Smart Choice',
     'sustainable seafood': 'Sustainable Seafood',
     'coolfood': 'Coolfood',
+}
+
+// SSR-safe subscription for the mobile breakpoint (< 640px)
+function subscribeMobile(callback: () => void) {
+    const mql = window.matchMedia('(max-width: 639px)')
+    mql.addEventListener('change', callback)
+    return () => mql.removeEventListener('change', callback)
 }
 
 interface FoodCardProps {
@@ -40,11 +47,11 @@ function highlightText(text: string, query: string): React.ReactNode {
 
     return parts.map((part, i) =>
         part.toLowerCase() === query.toLowerCase() ? (
-            <mark key={i} className="bg-yellow-200 dark:bg-yellow-800/50 text-zinc-900 dark:text-zinc-100 rounded px-0.5">
+            <mark key={`${i}-${part}`} className="bg-yellow-200 dark:bg-yellow-800/50 text-yellow-900 dark:text-yellow-100 rounded px-0.5">
                 {part}
             </mark>
         ) : (
-            <span key={i}>{part}</span>
+            <span key={`${i}-${part}`}>{part}</span>
         )
     )
 }
@@ -87,18 +94,12 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
     // State for card hover (for z-index)
     const [isHovered, setIsHovered] = useState(false)
 
-    // State for responsive icon display (2 on mobile, 3 on desktop)
-    const [isMobile, setIsMobile] = useState(false)
-
-    // Detect mobile breakpoint
-    useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 640)
-        }
-        checkMobile()
-        window.addEventListener('resize', checkMobile)
-        return () => window.removeEventListener('resize', checkMobile)
-    }, [])
+    // Responsive icon display (2 on mobile, 3 on desktop) — SSR-safe via matchMedia
+    const isMobile = useSyncExternalStore(
+        subscribeMobile,
+        () => window.matchMedia('(max-width: 639px)').matches,
+        () => false
+    )
 
     // State and refs for dietary preferences popover
     const [showDietaryPopover, setShowDietaryPopover] = useState(false)
@@ -133,7 +134,7 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
     const hiddenCount = dietaryPrefs.length - VISIBLE_ICONS_LIMIT
 
     return (
-        <motion.div
+        <m.div
             onClick={() => {
                 // Track click event
                 posthog.capture('food_card_clicked', {
@@ -196,8 +197,8 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
             )}
         >
             {/* Animated glow effect - hidden on low-capability devices via menu-glow-effect */}
-            <motion.div
-                className="menu-glow-effect absolute -right-12 -top-12 h-28 w-28 rounded-full bg-gradient-to-br from-blue-400/10 to-purple-400/5 blur-3xl pointer-events-none"
+            <m.div
+                className="menu-glow-effect absolute -right-12 -top-12 size-28 rounded-full bg-gradient-to-br from-blue-400/10 to-purple-400/5 blur-3xl pointer-events-none"
                 initial={{ opacity: 0 }}
                 whileHover={{ opacity: 0.3 }}
                 transition={{ duration: 0.3 }}
@@ -206,7 +207,7 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
             <div className="flex flex-col gap-3 flex-1 relative z-10">
                 {/* Reason badge - color-coded */}
                 {reason && (
-                    <motion.div
+                    <m.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.2 }}
@@ -224,7 +225,7 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                                 {r.trim()}
                             </span>
                         ))}
-                    </motion.div>
+                    </m.div>
                 )}
 
                 {/* Food name - larger, prominent, with search highlighting */}
@@ -244,7 +245,7 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
 
 
                 {/* Calories - prominent with gradient */}
-                <motion.div
+                <m.div
                     className="flex items-baseline gap-1.5 mt-1"
                     initial={{ opacity: 0.8 }}
                     whileHover={{ opacity: 1 }}
@@ -261,7 +262,7 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                     <span className="text-xs text-zinc-400 dark:text-zinc-500 font-semibold tracking-wide">
                         kcal
                     </span>
-                </motion.div>
+                </m.div>
             </div>
 
             {/* Dietary Preference Icons - Bottom Right */}
@@ -277,8 +278,9 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                                 key={pref}
                                 className="relative"
                             >
-                                <div
-                                    className="menu-dietary-icon w-6 h-6 rounded-full flex items-center justify-center cursor-pointer"
+                                <button
+                                    type="button"
+                                    className="menu-dietary-icon size-6 rounded-full flex items-center justify-center cursor-pointer"
                                     onMouseEnter={() => setActiveTooltip(pref)}
                                     onMouseLeave={() => setActiveTooltip(null)}
                                     onClick={(e) => {
@@ -286,12 +288,12 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                                         setActiveTooltip(activeTooltip === pref ? null : pref)
                                     }}
                                 >
-                                    <IconComponent className="w-4 h-4" />
-                                </div>
+                                    <IconComponent className="size-4" />
+                                </button>
                                 {/* Tooltip */}
                                 <AnimatePresence>
                                     {activeTooltip === pref && (
-                                        <motion.div
+                                        <m.div
                                             initial={{ opacity: 0, y: 4 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: 4 }}
@@ -300,7 +302,7 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                                         >
                                             {DIETARY_DISPLAY_NAMES[pref] || pref}
                                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-900 dark:border-t-zinc-100" />
-                                        </motion.div>
+                                        </m.div>
                                     )}
                                 </AnimatePresence>
                             </div>
@@ -311,6 +313,7 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                         <div className="relative">
                             {/* Larger touch target wrapper on mobile */}
                             <button
+                                type="button"
                                 ref={triggerRef}
                                 onClick={(e) => {
                                     e.preventDefault()
@@ -322,11 +325,11 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                                     e.stopPropagation()
                                     setShowDietaryPopover(!showDietaryPopover)
                                 }}
-                                className={`${isMobile ? 'w-11 h-11 -m-2' : 'w-6 h-6'} flex items-center justify-center cursor-pointer`}
+                                className={`${isMobile ? 'size-11 -m-2' : 'size-6'} flex items-center justify-center cursor-pointer`}
                                 aria-label={`Show ${hiddenCount} more dietary preferences`}
                             >
                                 {/* Visual button - always 24x24, uses menu-dietary-icon for iOS fallback */}
-                                <div className="menu-dietary-icon w-6 h-6 rounded-full flex items-center justify-center">
+                                <div className="menu-dietary-icon size-6 rounded-full flex items-center justify-center">
                                     <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">
                                         +{hiddenCount}
                                     </span>
@@ -336,7 +339,7 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                             {/* Popover with all dietary preferences */}
                             <AnimatePresence>
                                 {showDietaryPopover && (
-                                    <motion.div
+                                    <m.div
                                         ref={popoverRef}
                                         initial={{ opacity: 0, scale: 0.95, y: 5 }}
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -358,8 +361,8 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                                                         key={pref}
                                                         className="flex items-center gap-2"
                                                     >
-                                                        <div className="w-5 h-5 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
-                                                            <IconComponent className="w-3.5 h-3.5" />
+                                                        <div className="size-5 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                                                            <IconComponent className="size-3.5" />
                                                         </div>
                                                         <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
                                                             {DIETARY_DISPLAY_NAMES[pref] || pref}
@@ -368,14 +371,14 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                                                 )
                                             })}
                                         </div>
-                                    </motion.div>
+                                    </m.div>
                                 )}
                             </AnimatePresence>
                         </div>
                     )}
                 </div>
             )}
-        </motion.div>
+        </m.div>
     )
 })
 
