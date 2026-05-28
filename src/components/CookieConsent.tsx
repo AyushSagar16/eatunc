@@ -1,17 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
+import { m, AnimatePresence } from 'motion/react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
 
+const emptySubscribe = () => () => {}
+
 export default function CookieConsent() {
     const [showBanner, setShowBanner] = useState(false)
-    const [mounted, setMounted] = useState(false)
+    const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
 
     useEffect(() => {
-        setMounted(true)
-
         const consent = localStorage.getItem('cookie_consent')
 
         if (!consent) {
@@ -33,7 +33,7 @@ export default function CookieConsent() {
     return (
         <AnimatePresence>
             {showBanner && (
-                <motion.div
+                <m.div
                     initial={{ y: 50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 50, opacity: 0 }}
@@ -50,30 +50,15 @@ export default function CookieConsent() {
                             </Link>
                         </p>
                         <button
+                            type="button"
                             onClick={handleAccept}
                             className="w-full px-4 py-2 rounded-lg bg-[#4B9CD3] text-white text-sm font-semibold hover:bg-[#3d8bc2] transition-colors"
                         >
                             Got it
                         </button>
                     </div>
-                </motion.div>
+                </m.div>
             )}
         </AnimatePresence>
-    )
-}
-
-export function CookieSettingsLink() {
-    const handleOpenSettings = () => {
-        localStorage.removeItem('cookie_consent')
-        window.location.reload()
-    }
-
-    return (
-        <button
-            onClick={handleOpenSettings}
-            className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 underline underline-offset-2 transition-colors"
-        >
-            Cookie Settings
-        </button>
     )
 }

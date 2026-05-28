@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { m, AnimatePresence } from 'motion/react'
 import { Search, ChevronDown, X, ArrowUpDown } from 'lucide-react'
 
 export type SortOption = 'recommended' | 'calories' | 'protein' | 'fat' | 'alphabetical'
@@ -77,7 +77,7 @@ export default function SearchAndSort({
             {/* Search Input */}
             <div className="relative flex-1 min-w-0 hidden sm:block" data-tutorial-target="search-bar">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="w-4 h-4 text-zinc-400" />
+                    <Search className="size-4 text-zinc-400" />
                 </div>
                 <input
                     ref={inputRef}
@@ -85,19 +85,20 @@ export default function SearchAndSort({
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
                     placeholder={placeholder}
+                    aria-label="Search food items"
                     className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
                 />
                 <AnimatePresence>
                     {searchQuery && (
-                        <motion.button
+                        <m.button
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.8 }}
                             onClick={() => onSearchChange('')}
                             className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
                         >
-                            <X className="w-4 h-4" />
-                        </motion.button>
+                            <X className="size-4" />
+                        </m.button>
                     )}
                 </AnimatePresence>
                 {/* Keyboard hint */}
@@ -112,7 +113,7 @@ export default function SearchAndSort({
 
             {/* Sort Dropdown */}
             <div ref={dropdownRef} className="relative flex-shrink-0" data-tutorial-target="sort-dropdown">
-                <motion.button
+                <m.button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -124,14 +125,14 @@ export default function SearchAndSort({
                         }
                     `}
                 >
-                    <ArrowUpDown className="w-4 h-4" />
+                    <ArrowUpDown className="size-4" />
                     <span className="hidden sm:inline">{currentSort.label}</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                </motion.button>
+                    <ChevronDown className={`size-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </m.button>
 
                 <AnimatePresence>
                     {isDropdownOpen && (
-                        <motion.div
+                        <m.div
                             initial={{ opacity: 0, y: -10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -141,6 +142,7 @@ export default function SearchAndSort({
                             {SORT_OPTIONS.map((option) => (
                                 <button
                                     key={option.value}
+                                    type="button"
                                     onClick={() => {
                                         onSortChange(option.value)
                                         setIsDropdownOpen(false)
@@ -156,7 +158,7 @@ export default function SearchAndSort({
                                     {option.label}
                                 </button>
                             ))}
-                        </motion.div>
+                        </m.div>
                     )}
                 </AnimatePresence>
             </div>

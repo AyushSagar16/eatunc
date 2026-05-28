@@ -1,10 +1,19 @@
 
+import type { Metadata } from "next";
 import LandingScreen from "@/components/LandingScreen";
 import { redirect } from "next/navigation";
-import Script from "next/script";
+import { toJsonLd } from "@/lib/utils";
 
 // Dynamic rendering - no caching
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: {
+    absolute: 'UNC Dining Menu Today | Chase & Lenoir Dining Halls',
+  },
+  description: "Check today's UNC dining menus for Chase and Top of Lenoir — meal times, nutrition facts, and healthy picks at UNC Chapel Hill.",
+  alternates: { canonical: 'https://eatunc.com' },
+};
 
 interface PageProps {
   searchParams: Promise<{ date?: string, hall?: string }>;
@@ -53,11 +62,10 @@ export default async function Home({ searchParams }: PageProps) {
 
   return (
     <>
-      <Script
+      <script
         id="homepage-structured-data"
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageStructuredData) }}
-      />
+      >{toJsonLd(homepageStructuredData)}</script>
       <main className="min-h-screen-ios-safe bg-transparent overflow-hidden">
         <LandingScreen />
       </main>

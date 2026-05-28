@@ -14,57 +14,6 @@ export type FullMenu = Menu & {
 }
 
 /**
- * Fetch all menus, optionally filtered by date and dining hall.
- */
-export async function getMenus(date?: string, diningHall?: string) {
-    let query = supabase.from('menus').select('*')
-
-    if (date) {
-        query = query.eq('menu_date', date)
-    }
-    if (diningHall) {
-        query = query.eq('dining_hall', diningHall)
-    }
-
-    return await query
-}
-
-/**
- * Fetch a specific menu by ID, including all its entries and associated food details.
- */
-export async function getMenuById(menuId: string) {
-    return await supabase
-        .from('menus')
-        .select(`
-      *,
-      menu_entries (
-        *,
-        master_food_items (*)
-      )
-    `)
-        .eq('id', menuId)
-        .single()
-}
-
-/**
- * Fetch a menu by date and dining hall, including all entries and food details.
- */
-export async function getMenuByDateAndHall(date: string, diningHall: string) {
-    return await supabase
-        .from('menus')
-        .select(`
-      *,
-      menu_entries (
-        *,
-        master_food_items (*)
-      )
-    `)
-        .eq('menu_date', date)
-        .eq('dining_hall', diningHall)
-        .maybeSingle()
-}
-
-/**
  * Fetch a full menu by date and dining hall with selective field fetching.
  * No caching - always fetches fresh data from Supabase.
  */
@@ -180,13 +129,6 @@ export async function getFullMenuByDateAndHall(date: string, diningHall: string)
 
     if (error) throw error
     return data
-}
-
-/**
- * Fetch all food items.
- */
-export async function getAllFoodItems() {
-    return await supabase.from('master_food_items').select('*')
 }
 
 /**

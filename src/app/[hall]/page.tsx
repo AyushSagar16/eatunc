@@ -1,14 +1,26 @@
-
+import type { Metadata } from "next";
 import { getAvailableDates } from "@/lib/api";
 import { redirect, notFound } from "next/navigation";
 
 // Dynamic rendering - no caching
 export const dynamic = 'force-dynamic';
 
+export const metadata: Metadata = {
+    title: "Dining Hall Menu | UNC Chapel Hill",
+    description: "Browse the latest dining hall menu at UNC Chapel Hill, with daily breakfast, lunch, and dinner offerings.",
+};
+
 const HALL_MAP: Record<string, string> = {
     chase: 'Chase',
     lenoir: 'Top of Lenoir',
 };
+
+const dateFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+});
 
 export default async function Page({ params }: { params: Promise<{ hall: string }> }) {
     const { hall } = await params;
@@ -27,12 +39,7 @@ export default async function Page({ params }: { params: Promise<{ hall: string 
     let defaultDate = availableDates[0];
     if (availableDates.length > 0) {
         const now = new Date();
-        const today = new Intl.DateTimeFormat('en-CA', {
-            timeZone: 'America/New_York',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        }).format(now);
+        const today = dateFormatter.format(now);
 
         if (availableDates.includes(today)) {
             defaultDate = today;
@@ -50,12 +57,7 @@ export default async function Page({ params }: { params: Promise<{ hall: string 
     if (!defaultDate) {
         // Fallback if no dates whatsoever (unlikely but safe)
         const now = new Date();
-        defaultDate = new Intl.DateTimeFormat('en-CA', {
-            timeZone: 'America/New_York',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        }).format(now);
+        defaultDate = dateFormatter.format(now);
     }
 
     redirect(`/${hall}/${defaultDate}`);

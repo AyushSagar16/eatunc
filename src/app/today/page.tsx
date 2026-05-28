@@ -25,25 +25,29 @@ export const metadata: Metadata = {
     },
 };
 
+const todayDateFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+});
+
+const formattedDateFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+});
+
 function getTodayDate() {
     const now = new Date();
-    return new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/New_York',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    }).format(now);
+    return todayDateFormatter.format(now);
 }
 
 function getFormattedDate() {
     const now = new Date();
-    return new Intl.DateTimeFormat('en-US', {
-        timeZone: 'America/New_York',
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-    }).format(now);
+    return formattedDateFormatter.format(now);
 }
 
 export default function TodayPage() {
@@ -69,8 +73,8 @@ export default function TodayPage() {
                         href={`/chase/${today}`}
                         className="group p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all hover:-translate-y-1"
                     >
-                        <div className="w-14 h-14 rounded-xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                            <svg className="w-7 h-7 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="size-14 rounded-xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                            <svg className="size-7 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
                         </div>
@@ -79,7 +83,7 @@ export default function TodayPage() {
                         </h2>
                         <p className="text-sm text-zinc-500 mb-4">South Campus</p>
                         <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium text-sm group-hover:gap-2 transition-all">
-                            View Menu <ArrowRight className="w-4 h-4" />
+                            View Menu <ArrowRight className="size-4" />
                         </span>
                     </Link>
 
@@ -88,8 +92,8 @@ export default function TodayPage() {
                         href={`/lenoir/${today}`}
                         className="group p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-lg hover:border-teal-300 dark:hover:border-teal-700 transition-all hover:-translate-y-1"
                     >
-                        <div className="w-14 h-14 rounded-xl bg-teal-500/10 border border-teal-400/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                            <svg className="w-7 h-7 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="size-14 rounded-xl bg-teal-500/10 border border-teal-400/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                            <svg className="size-7 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
@@ -98,7 +102,7 @@ export default function TodayPage() {
                         </h2>
                         <p className="text-sm text-zinc-500 mb-4">North Campus</p>
                         <span className="inline-flex items-center gap-1 text-teal-600 dark:text-teal-400 font-medium text-sm group-hover:gap-2 transition-all">
-                            View Menu <ArrowRight className="w-4 h-4" />
+                            View Menu <ArrowRight className="size-4" />
                         </span>
                     </Link>
                 </div>

@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import React, { useState, useMemo, useEffect, useCallback, useRef, useReducer } from 'react'
+import { m, AnimatePresence } from 'motion/react'
 import { usePostHog } from 'posthog-js/react'
 import { MasterFoodItem } from '@/lib/api'
 import FoodCard from '@/components/FoodCard'
@@ -12,7 +12,8 @@ import { FoodGridSkeleton, ContentLoader } from '@/components/LoadingStates'
 import { FilterOption, DietaryPreferenceOption, AllergenOption } from '@/lib/types'
 import { calculateHealthyScore, getMealPeriodLabel, getActiveMealPeriod } from '@/lib/utils'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { parseDietaryPreferences, parseAllergens } from '@/components/icons/DietaryIcons'
+import { parseDietaryPreferences, parseAllergens } from '@/components/icons/dietary'
+import { useFilters } from '@/hooks/useFilters'
 
 // Debug flag: enable via NEXT_PUBLIC_DEBUG_MENU_PAGE=true in .env.local
 const DEBUG_MENU = process.env.NODE_ENV === 'development' ||
@@ -46,6 +47,41 @@ interface StationSectionProps {
     onItemClick: (item: MasterFoodItem, station: string) => void
     activeAllergens: AllergenOption[]
     activeDietaryPreferences: DietaryPreferenceOption[]
+}
+
+// Maps dietary preference IDs to the values stored in the database.
+const PREF_ID_TO_DB: Record<DietaryPreferenceOption, string> = {
+    'vegan': 'vegan',
+    'vegetarian': 'vegetarian',
+    'gluten-free': 'made without gluten',
+    'halal': 'halal',
+    'local': 'local',
+    'organic': 'organic',
+    'smart-choice': 'smart choice',
+    'sustainable-seafood': 'sustainable seafood',
+    'coolfood': 'coolfood',
+}
+
+// Intl constructors are expensive; build the date-key formatter once.
+const NY_DATE_FORMATTER = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+})
+
+// Search input and its debounced value, grouped as one reducer (related state).
+interface SearchState {
+    input: string
+    debounced: string
+}
+type SearchAction = { type: 'input'; value: string } | { type: 'commit' }
+function searchReducer(state: SearchState, action: SearchAction): SearchState {
+    switch (action.type) {
+        case 'input': return { ...state, input: action.value }
+        case 'commit': return { ...state, debounced: state.input }
+        default: return state
+    }
 }
 
 const BEVERAGE_KEYWORDS = ['beverage', 'drink', 'coffee', 'tea', 'soda', 'juice', 'condiment', 'sauce', 'dressing', 'toppings', 'packets']
@@ -86,11 +122,247 @@ const isCondimentOrDrink = (item: MasterFoodItem, station: string) => {
     return stationMatch || foodMatch || toppingMatch || nutrientMatch
 }
 
+// Pick scoring for the "Top Picks" panel. Pure module-scope computation so it
+// stays out of the MenuContainer render body. Mirrors the prior useMemo logic
+// exactly: the allergen / dietary checks use the same module-level parsers.
+const computeHealthyPicks = (
+    baseFilteredItems: { item: MasterFoodItem; station: string }[],
+    activeFilters: FilterOption[],
+    activeDietaryPreferences: DietaryPreferenceOption[],
+    activeAllergens: AllergenOption[],
+    applyGlobalSort: (items: any[]) => any[]
+) => {
+    // Show Top Picks if any macro filters or dietary preferences are active
+    if (activeFilters.length === 0 && activeDietaryPreferences.length === 0) return []
+
+    // Count how many filters each item matches
+    const picks = baseFilteredItems
+        .map(({ item, station }) => {
+            // Exclude items with missing nutrition
+            const cal = item.calories_kcal
+            const protein = item.protein_g
+            const fat = item.fat_g
+            const carbs = item.carbohydrates_g
+
+            if (cal === null || protein === null || fat === null || carbs === null) {
+                return null
+            }
+
+            if (isCondimentOrDrink(item, station)) {
+                return null
+            }
+
+            // Skip items containing allergens to avoid
+            if (activeAllergens.length > 0) {
+                const itemAllergens = parseAllergens(item.allergens)
+                const hasAllergen = activeAllergens.some(allergen =>
+                    itemAllergens.some(itemAllergen =>
+                        itemAllergen.toLowerCase() === allergen.toLowerCase()
+                    )
+                )
+                if (hasAllergen) {
+                    return null
+                }
+            }
+
+            // Skip items that don't match dietary preferences
+            if (activeDietaryPreferences.length > 0) {
+                const itemPrefs = parseDietaryPreferences(item.dietary_preferences)
+                const matchesAll = activeDietaryPreferences.every(pref =>
+                    itemPrefs.includes(PREF_ID_TO_DB[pref])
+                )
+                if (!matchesAll) {
+                    return null
+                }
+            }
+
+            // Count matched macro filters
+            let matchCount = 0
+            const matchedFilters: string[] = []
+
+            // Add matched dietary preferences to reason
+            if (activeDietaryPreferences.length > 0) {
+                const itemPrefs = parseDietaryPreferences(item.dietary_preferences)
+                activeDietaryPreferences.forEach(pref => {
+                    if (itemPrefs.includes(PREF_ID_TO_DB[pref])) {
+                        matchedFilters.push(pref.charAt(0).toUpperCase() + pref.slice(1).replace('-', ' '))
+                        matchCount++
+                    }
+                })
+            }
+
+            for (const filter of activeFilters) {
+                let matches = false
+                switch (filter) {
+                    case 'protein':
+                        matches = (protein ?? 0) >= 20
+                        if (matches) matchedFilters.push('High Protein')
+                        break
+                    case 'calories':
+                        matches = (cal ?? 0) > 0 && (cal ?? 0) <= 350
+                        if (matches) matchedFilters.push('Low Calorie')
+                        break
+                    case 'fat':
+                        matches = (cal ?? 0) > 0 && (fat ?? 0) <= 8
+                        if (matches) matchedFilters.push('Low Fat')
+                        break
+                    case 'carbs':
+                        // Low Carbohydrate: Under 15g carbs
+                        matches = (carbs ?? 0) <= 15
+                        if (matches) matchedFilters.push('Low Carbohydrate')
+                        break
+                }
+                if (matches) matchCount++
+            }
+
+            // Need at least 1 match to appear in Top Picks
+            const totalFiltersActive = activeFilters.length + activeDietaryPreferences.length
+            const minMatches = totalFiltersActive === 1 ? 1 : Math.min(2, totalFiltersActive)
+            if (matchCount < minMatches) return null
+
+            const score = matchCount + calculateHealthyScore(item, activeFilters[0] || 'protein') / 100
+            const reason = matchedFilters.join(' + ')
+
+            return { item, station, score, matchCount, reason }
+        })
+        .filter((pick): pick is NonNullable<typeof pick> => pick !== null)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 8)
+
+    return applyGlobalSort(picks);
+}
+
+/**
+ * Groups food items by their station for display. Pure module-scope helper so the
+ * grouping/dedup logic stays out of the MenuContainer render body.
+ *
+ * Deduplication Logic:
+ * - Each station can only have ONE instance of each recipe_number
+ * - This is necessary because the database may have duplicate entries for the same item at the same station
+ * - We use a Set to track processed station+recipe combinations
+ *
+ * Items are ONLY skipped if:
+ * 1. They don't match the selected meal period
+ * 2. They have null master_food_items (no nutrition data in database)
+ * 3. They don't match the search query
+ * 4. They are a duplicate (same recipe_number at the same station)
+ */
+const buildStationsMap = (
+    allEntries: MenuEntry[],
+    selectedPeriod: string,
+    debouncedSearchQuery: string,
+    applyGlobalSort: (items: any[]) => any[]
+): Record<string, MasterFoodItem[]> => {
+    const map: Record<string, MasterFoodItem[]> = {}
+    // Track processed combinations: "station:recipe_number"
+    const processedIds = new Set<string>()
+
+    allEntries.forEach(entry => {
+        if (entry.meal_period === selectedPeriod && entry.master_food_items) {
+            const item = entry.master_food_items
+            const station = entry.meal_station || 'Other'
+
+            // Search Filter (using debounced query)
+            if (debouncedSearchQuery && !item.food_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) {
+                return
+            }
+
+            // Create a unique key combining station and recipe_number
+            // This ensures we only skip TRUE duplicates (same item at same station)
+            const uniqueKey = `${station}:${entry.recipe_number}`
+
+            // Only skip if this exact station+recipe combo was already processed
+            if (processedIds.has(uniqueKey)) {
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`[MENU] Skipping duplicate: ${item.food_name} (${entry.recipe_number}) at ${station}`)
+                }
+                return
+            }
+
+            processedIds.add(uniqueKey)
+
+            if (!map[station]) {
+                map[station] = []
+            }
+            map[station].push(item)
+        }
+    })
+
+    // Log final counts for debugging
+    if (process.env.NODE_ENV === 'development') {
+        console.log('[MENU] Final station item counts:',
+            Object.entries(map).map(([station, items]) => ({
+                station,
+                count: items.length,
+                recipes: items.map(i => i.recipe_number)
+            }))
+        )
+    }
+
+    // Apply global sort to each station
+    Object.keys(map).forEach(station => {
+        map[station] = applyGlobalSort(map[station]);
+    });
+
+    return map
+}
+
+// Orders stations: priority stations first, "bottom" stations last, the rest by
+// descending average calories (then alphabetical). Pure module-scope helper.
+const sortStations = (stationsMap: Record<string, MasterFoodItem[]>): string[] => {
+    return Object.keys(stationsMap).sort((a, b) => {
+        // Priority stations in order
+        const priorityStations = [
+            'The Kitchen Table',
+            'Simply Prepared',
+            'The Grill',
+            'The Griddle'
+        ];
+
+        const indexA = priorityStations.findIndex(s => s.toLowerCase() === a.toLowerCase());
+        const indexB = priorityStations.findIndex(s => s.toLowerCase() === b.toLowerCase());
+
+        // If both are in priority list, sort by their order in that list
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        // If only A is in priority list, it comes first
+        if (indexA !== -1) return -1;
+        // If only B is in priority list, it comes first
+        if (indexB !== -1) return 1;
+
+        const bottomStations = ['beverages', 'condiments', 'spreads', 'cereal', 'breads', 'bakery', 'dessert', 'stress less', 'cabinet']
+        const isABottom = bottomStations.some(s => a.toLowerCase().includes(s))
+        const isBBottom = bottomStations.some(s => b.toLowerCase().includes(s))
+
+        if (isABottom && !isBBottom) return 1
+        if (!isABottom && isBBottom) return -1
+
+        // Calculate average calories for each station
+        const getAvgCalories = (stationName: string) => {
+            const items = stationsMap[stationName] || []
+            if (items.length === 0) return 0
+            const total = items.reduce((sum, item) => sum + (item.calories_kcal ?? 0), 0)
+            return total / items.length
+        }
+
+        const avgA = getAvgCalories(a)
+        const avgB = getAvgCalories(b)
+
+        // Sort by average calories descending (Higher on top)
+        // Use a small epsilon for float comparison safety, though likely overkill here
+        if (Math.abs(avgA - avgB) > 0.1) {
+            return avgB - avgA
+        }
+
+        // Fallback to alphabetical if averages are roughly equal
+        return a.localeCompare(b)
+    })
+}
+
 // PERFORMANCE: Memoize MiniFoodCard to prevent re-renders when props haven't changed
-const MiniFoodCard = React.memo(({ item, onClick, containsAllergen = false }: { item: MasterFoodItem; onClick: () => void; containsAllergen?: boolean }) => {
+const MiniFoodCard = React.memo(({ item, station, onSelect, containsAllergen = false }: { item: MasterFoodItem; station: string; onSelect: (item: MasterFoodItem, station: string) => void; containsAllergen?: boolean }) => {
     return (
-        <motion.div
-            onClick={onClick}
+        <m.div
+            onClick={() => onSelect(item, station)}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             whileHover={containsAllergen ? {} : { backgroundColor: "rgba(250, 250, 250, 1)" }}
@@ -106,7 +378,7 @@ const MiniFoodCard = React.memo(({ item, onClick, containsAllergen = false }: { 
                 }`}>
                 {item.food_name}
             </span>
-        </motion.div>
+        </m.div>
     )
 })
 
@@ -124,7 +396,14 @@ const StationSection = React.memo((({
     activeAllergens,
     activeDietaryPreferences
 }: StationSectionProps) => {
-    const [isCollapsed, setIsCollapsed] = useState(false)
+    const collapseKey = `collapsed_${selectedHall}_${station.replace(/[^a-zA-Z0-9]/g, '_')}`
+    // User's saved collapse preference for this station (read once on mount).
+    const [userCollapsed, setUserCollapsed] = useState(() => {
+        if (typeof window === 'undefined') return false
+        return localStorage.getItem(collapseKey) === 'true'
+    })
+    // Filtering forces the section open so matching items stay visible.
+    const isCollapsed = userCollapsed && !(hasActiveFilters && items.length > 0)
     const parentRef = useRef<HTMLDivElement>(null)
 
     // Helper to check if item contains allergens to avoid
@@ -138,19 +417,6 @@ const StationSection = React.memo((({
         )
     }, [activeAllergens])
 
-    // Map preference IDs to database values
-    const PREF_ID_TO_DB: Record<string, string> = {
-        'vegan': 'vegan',
-        'vegetarian': 'vegetarian',
-        'gluten-free': 'made without gluten',
-        'halal': 'halal',
-        'local': 'local',
-        'organic': 'organic',
-        'smart-choice': 'smart choice',
-        'sustainable-seafood': 'sustainable seafood',
-        'coolfood': 'coolfood',
-    }
-
     // Helper to check if item matches ALL selected dietary preferences
     const itemMatchesDietaryFilter = useCallback((item: MasterFoodItem): boolean => {
         if (activeDietaryPreferences.length === 0) return false
@@ -160,30 +426,10 @@ const StationSection = React.memo((({
         )
     }, [activeDietaryPreferences])
 
-    // Load saved state
-    useEffect(() => {
-        // Sanitize station name for key
-        const safeStation = station.replace(/[^a-zA-Z0-9]/g, '_')
-        const key = `collapsed_${selectedHall}_${safeStation}`
-        const saved = localStorage.getItem(key)
-        if (saved !== null) {
-            setIsCollapsed(saved === 'true')
-        }
-    }, [selectedHall, station])
-
-    // Auto-expand when filters are active
-    useEffect(() => {
-        if (hasActiveFilters && items.length > 0) {
-            setIsCollapsed(false)
-        }
-    }, [hasActiveFilters, items.length])
-
     const toggle = () => {
-        const safeStation = station.replace(/[^a-zA-Z0-9]/g, '_')
-        const key = `collapsed_${selectedHall}_${safeStation}`
         const newState = !isCollapsed
-        setIsCollapsed(newState)
-        localStorage.setItem(key, String(newState))
+        setUserCollapsed(newState)
+        localStorage.setItem(collapseKey, String(newState))
     }
 
     // Sort items: Main items first, then Condiments
@@ -221,25 +467,27 @@ const StationSection = React.memo((({
         if (!shouldVirtualize) return
 
         const handleResize = () => {
-            setItemsPerRow(getItemsPerRow())
+            const width = window.innerWidth
+            setItemsPerRow(width >= 1280 ? 4 : width >= 1024 ? 3 : 2)
         }
 
         window.addEventListener('resize', handleResize)
         return () => window.removeEventListener('resize', handleResize)
-    }, [shouldVirtualize, getItemsPerRow])
+    }, [shouldVirtualize])
 
     // VIRTUAL SCROLLING: Setup virtualizer for large lists
     // Virtualizes rows instead of individual items to maintain grid layout
-    const rowVirtualizer = shouldVirtualize ? useVirtualizer({
-        count: Math.ceil(sortedItems.length / itemsPerRow),
+    const rowVirtualizer = useVirtualizer({
+        count: shouldVirtualize ? Math.ceil(sortedItems.length / itemsPerRow) : 0,
         getScrollElement: () => parentRef.current,
         estimateSize: () => 240, // Estimated row height in pixels
         overscan: 5, // Render 5 extra rows above/below viewport for smooth scrolling
-    }) : null
+    })
 
     return (
         <section className="flex flex-col gap-6">
             <button
+                type="button"
                 onClick={toggle}
                 className="flex items-center gap-4 group w-full outline-none"
             >
@@ -251,7 +499,7 @@ const StationSection = React.memo((({
                     <span className="text-xs font-medium text-zinc-300 dark:text-zinc-600">
                         ({items.length})
                     </span>
-                    <motion.div
+                    <m.div
                         animate={{ rotate: isCollapsed ? 0 : 180 }}
                         transition={{ duration: 0.2, ease: 'easeInOut' }}
                         className="text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400"
@@ -259,21 +507,21 @@ const StationSection = React.memo((({
                         <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M5 7l5 5 5-5" />
                         </svg>
-                    </motion.div>
+                    </m.div>
                 </div>
                 <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800 group-hover:bg-zinc-300 dark:group-hover:bg-zinc-700 transition-colors" />
             </button>
 
             <AnimatePresence initial={false}>
                 {!isCollapsed && (
-                    <motion.div
+                    <m.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.3, ease: 'easeInOut' }}
                     >
                         {/* VIRTUAL SCROLLING: Use virtualized rendering for large lists (50+ items) */}
-                        {shouldVirtualize && rowVirtualizer ? (
+                        {shouldVirtualize ? (
                             <div
                                 ref={parentRef}
                                 className="relative"
@@ -315,7 +563,8 @@ const StationSection = React.memo((({
                                                             {isCondimentOrDrink(item, station) ? (
                                                                 <MiniFoodCard
                                                                     item={item}
-                                                                    onClick={() => onItemClick(item, station)}
+                                                                    station={station}
+                                                                    onSelect={onItemClick}
                                                                     containsAllergen={itemContainsAllergens(item)}
                                                                 />
                                                             ) : (
@@ -345,7 +594,7 @@ const StationSection = React.memo((({
                                     // Add tutorial target to first non-condiment card in first station
                                     const shouldAddTutorialTarget = isFirstStation && index === 0 && !isCondiment
                                     return (
-                                        <motion.div
+                                        <m.div
                                             key={item.recipe_number}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
@@ -359,7 +608,8 @@ const StationSection = React.memo((({
                                             {isCondiment ? (
                                                 <MiniFoodCard
                                                     item={item}
-                                                    onClick={() => onItemClick(item, station)}
+                                                    station={station}
+                                                    onSelect={onItemClick}
                                                     containsAllergen={itemContainsAllergens(item)}
                                                 />
                                             ) : (
@@ -373,17 +623,187 @@ const StationSection = React.memo((({
                                                     matchesDietaryFilter={!itemContainsAllergens(item) && itemMatchesDietaryFilter(item)}
                                                 />
                                             )}
-                                        </motion.div>
+                                        </m.div>
                                     )
                                 })}
                             </div>
                         )}
-                    </motion.div>
+                    </m.div>
                 )}
             </AnimatePresence>
         </section>
     )
 }))
+
+// Shown when the dining hall has no menu entries for the selected date.
+const ClosedHallNotice = ({
+    diningHall,
+    selectedDate,
+    availableDates,
+}: {
+    diningHall: string
+    selectedDate: string
+    availableDates: string[]
+}) => {
+    const formattedDate = new Date(selectedDate).toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+        timeZone: 'UTC',
+    })
+
+    return (
+        <FoodDisplayLayout
+            diningHall={diningHall}
+            selectedDate={selectedDate}
+            availableDates={availableDates}
+            selectedPeriod=""
+            availablePeriods={[]}
+            onPeriodChange={() => { }}
+        >
+            <div className="max-w-2xl mx-auto py-12 text-center">
+                <div className="p-8 rounded-3xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                    <div className="size-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                        <svg className="size-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 mb-3">
+                        {diningHall} isn't open on {formattedDate}
+                    </h2>
+                    <p className="text-zinc-500 mb-8 leading-relaxed">
+                        We couldn't find any menu items for this date. It looks like the dining hall might be closed.
+                    </p>
+                    <a
+                        href="https://dining.unc.edu/menu-hours/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors w-full sm:w-auto"
+                    >
+                        <span>Double Check Official Schedule</span>
+                        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </FoodDisplayLayout>
+    )
+}
+
+// "Top Picks" panel: highest-scoring items matching the active filters.
+const TopPicksSection = ({
+    picks,
+    activeFilters,
+    selectedPeriod,
+    debouncedSearchQuery,
+    onItemClick,
+}: {
+    picks: { item: MasterFoodItem; station: string; reason: string }[]
+    activeFilters: FilterOption[]
+    selectedPeriod: string
+    debouncedSearchQuery: string
+    onItemClick: (item: MasterFoodItem, station: string) => void
+}) => {
+    return (
+        <section className="flex flex-col gap-6 p-6 -mx-4 sm:-mx-6 bg-gradient-to-br from-emerald-50/80 to-teal-50/50 dark:from-emerald-950/30 dark:to-teal-950/20 border-y border-emerald-100 dark:border-emerald-900/30 rounded-none sm:rounded-2xl sm:mx-0 sm:border">
+            <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="size-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
+                        <svg className="size-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-black tracking-tight text-emerald-700 dark:text-emerald-400">
+                            Top Picks
+                        </h2>
+                        <p className="text-xs text-emerald-600/70 dark:text-emerald-500/70 font-medium">
+                            {picks.length} items matching your filters
+                        </p>
+                    </div>
+                </div>
+                <div className="h-px flex-1 bg-emerald-200/50 dark:bg-emerald-800/30" />
+            </div>
+            <m.div
+                key={activeFilters.join('-') + '-picks'}
+                className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
+            >
+                {picks.map(({ item, station, reason }, index) => (
+                    <m.div
+                        key={item.recipe_number}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                            delay: Math.min(index * 0.03, 0.3),
+                            duration: 0.2
+                        }}
+                        className="h-full"
+                        {...(index === 0 ? { 'data-tutorial-target': 'food-card' } : {})}
+                    >
+                        <FoodCard
+                            item={item}
+                            station={station}
+                            reason={reason}
+                            mealPeriod={selectedPeriod}
+                            searchQuery={debouncedSearchQuery}
+                            onClick={() => onItemClick(item, station)}
+                        />
+                    </m.div>
+                ))}
+            </m.div>
+        </section>
+    )
+}
+
+// Empty state shown when no stations match the current filters / search.
+const NoMatchingItems = ({
+    hasFilters,
+    mealPeriodLabel,
+    onClearFilters,
+}: {
+    hasFilters: boolean
+    mealPeriodLabel: string
+    onClearFilters: () => void
+}) => {
+    return (
+        <m.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-16 px-6 rounded-3xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800"
+        >
+            <div className="size-16 mx-auto mb-4 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center">
+                <svg className="size-8 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+            <h3 className="text-lg font-bold text-zinc-700 dark:text-zinc-300 mb-2">
+                No items match your filters
+            </h3>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+                {hasFilters ? (
+                    <>Try removing some filters or adjusting your search to see more options.</>
+                ) : (
+                    <>No food items found for <span className="font-bold text-zinc-700 dark:text-zinc-200">{mealPeriodLabel}</span> on this date.</>
+                )}
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+                {hasFilters && (
+                    <button
+                        type="button"
+                        onClick={onClearFilters}
+                        className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors"
+                    >
+                        Clear All Filters
+                    </button>
+                )}
+            </div>
+        </m.div>
+    )
+}
 
 export default function MenuContainer({
     allEntries,
@@ -418,12 +838,7 @@ export default function MenuContainer({
 
         // Only auto-select based on current time if viewing today's date
         const now = new Date()
-        const todayStr = new Intl.DateTimeFormat('en-CA', {
-            timeZone: 'America/New_York',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        }).format(now)
+        const todayStr = NY_DATE_FORMATTER.format(now)
 
         if (selectedDate === todayStr) {
             return getActiveMealPeriod(availablePeriods, now) || availablePeriods[0] || ''
@@ -434,308 +849,61 @@ export default function MenuContainer({
     })
 
 
-    useEffect(() => {
-        if (initialPeriod) {
-            const normalizedInitial = initialPeriod.split('(')[0].trim().toLowerCase()
-            const match = availablePeriods.find(p => {
-                const normalizedP = p.split('(')[0].trim().toLowerCase()
-                return normalizedP === normalizedInitial
-            })
-            if (match) {
-                setSelectedPeriod(match)
-            }
-        }
-    }, [initialPeriod, availablePeriods])
-
-
     // ========================================
-    // PERSISTENT FILTERS (localStorage)
+    // PERSISTENT FILTERS (macro / dietary / allergens)
     // ========================================
-    // Filters are saved to localStorage and restored on page load
-    // Key: "eatunc_active_filters"
-    // Testing: localStorage.removeItem("eatunc_active_filters") to reset
-
-    const FILTERS_STORAGE_KEY = 'eatunc_active_filters'
-    const VALID_FILTERS: FilterOption[] = ['protein', 'calories', 'fat', 'carbs']
-
-    /**
-     * Load filters from localStorage
-     * Returns saved filters or empty array if none saved/error
-     */
-    const loadFiltersFromStorage = useCallback((): FilterOption[] => {
-        try {
-            if (typeof window === 'undefined') return []
-            const saved = localStorage.getItem(FILTERS_STORAGE_KEY)
-            if (!saved) return []
-
-            const parsed = JSON.parse(saved)
-            if (!Array.isArray(parsed)) return []
-
-            // Validate each filter ID is still valid
-            return parsed.filter((f): f is FilterOption => VALID_FILTERS.includes(f))
-        } catch {
-            // Corrupted data or localStorage unavailable
-            return []
-        }
-    }, [])
-
-    /**
-     * Save filters to localStorage
-     * Silently fails if localStorage unavailable
-     */
-    const saveFiltersToStorage = useCallback((filters: FilterOption[]) => {
-        try {
-            if (typeof window === 'undefined') return
-            localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters))
-        } catch {
-            // localStorage unavailable (e.g., Safari private mode)
-            console.warn('Could not save filters to localStorage')
-        }
-    }, [])
-
-    // Initialize filter state from localStorage or empty array
-    const [activeFilters, setActiveFilters] = useState<FilterOption[]>([])
-    const [filtersLoaded, setFiltersLoaded] = useState(false)
-
-    // Load saved filters on mount (client-side only)
-    useEffect(() => {
-        const savedFilters = loadFiltersFromStorage()
-        setActiveFilters(savedFilters)
-        setFiltersLoaded(true)
-    }, [loadFiltersFromStorage])
-
-    // Save filters to localStorage whenever they change (after initial load)
-    useEffect(() => {
-        if (filtersLoaded) {
-            saveFiltersToStorage(activeFilters)
-        }
-    }, [activeFilters, filtersLoaded, saveFiltersToStorage])
-
-    const toggleFilter = (filter: FilterOption) => {
-        setActiveFilters(prev => {
-            const isAdding = !prev.includes(filter)
-
-            // Track event
+    // State + localStorage persistence live in the useFilters hook; analytics
+    // stay here via callbacks so the hook needn't know about PostHog.
+    const {
+        activeFilters,
+        activeDietaryPreferences,
+        activeAllergens,
+        toggleFilter,
+        toggleDietaryPreference,
+        toggleAllergen,
+        clearMacroFilters,
+        clearAllFilters,
+    } = useFilters({
+        onToggle: (filter_type, filter_name, action) => {
             posthog.capture('filter_toggled', {
-                filter_type: 'macro',
-                filter_name: filter,
-                action: isAdding ? 'added' : 'removed',
+                filter_type,
+                filter_name,
+                action,
                 hall: selectedHall,
                 meal_period: selectedPeriod,
             })
-
-            return isAdding ? [...prev, filter] : prev.filter(f => f !== filter)
-        })
-    }
-
-    const clearAllFilters = () => {
-        // Track event
-        posthog.capture('filters_cleared', {
-            macro_filters_count: activeFilters.length,
-            dietary_filters_count: activeDietaryPreferences.length,
-            allergen_filters_count: activeAllergens.length,
-            hall: selectedHall,
-            meal_period: selectedPeriod,
-        })
-
-        setActiveFilters([])
-        setActiveDietaryPreferences([])
-        setActiveAllergens([])
-        // Also clear from localStorage
-        try {
-            localStorage.removeItem(FILTERS_STORAGE_KEY)
-            localStorage.removeItem(DIETARY_PREFS_STORAGE_KEY)
-            localStorage.removeItem(ALLERGENS_STORAGE_KEY)
-        } catch {
-            // Ignore errors
-        }
-    }
-
-
-    // ========================================
-    // DIETARY PREFERENCES (localStorage)
-    // ========================================
-    const DIETARY_PREFS_STORAGE_KEY = 'eatunc_dietary_prefs'
-    const VALID_DIETARY_PREFS: DietaryPreferenceOption[] = [
-        'vegan', 'vegetarian', 'gluten-free', 'halal', 'local',
-        'organic', 'smart-choice', 'sustainable-seafood', 'coolfood'
-    ]
-
-    const loadDietaryPrefsFromStorage = useCallback((): DietaryPreferenceOption[] => {
-        try {
-            if (typeof window === 'undefined') return []
-            const saved = localStorage.getItem(DIETARY_PREFS_STORAGE_KEY)
-            if (!saved) return []
-            const parsed = JSON.parse(saved)
-            if (!Array.isArray(parsed)) return []
-            return parsed.filter((f): f is DietaryPreferenceOption => VALID_DIETARY_PREFS.includes(f))
-        } catch {
-            return []
-        }
-    }, [])
-
-    const saveDietaryPrefsToStorage = useCallback((prefs: DietaryPreferenceOption[]) => {
-        try {
-            if (typeof window === 'undefined') return
-            localStorage.setItem(DIETARY_PREFS_STORAGE_KEY, JSON.stringify(prefs))
-        } catch {
-            console.warn('Could not save dietary preferences to localStorage')
-        }
-    }, [])
-
-    const [activeDietaryPreferences, setActiveDietaryPreferences] = useState<DietaryPreferenceOption[]>([])
-
-    useEffect(() => {
-        const savedPrefs = loadDietaryPrefsFromStorage()
-        setActiveDietaryPreferences(savedPrefs)
-    }, [loadDietaryPrefsFromStorage])
-
-    useEffect(() => {
-        if (filtersLoaded) {
-            saveDietaryPrefsToStorage(activeDietaryPreferences)
-        }
-    }, [activeDietaryPreferences, filtersLoaded, saveDietaryPrefsToStorage])
-
-    const toggleDietaryPreference = (pref: DietaryPreferenceOption) => {
-        setActiveDietaryPreferences(prev => {
-            const isAdding = !prev.includes(pref)
-
-            posthog.capture('filter_toggled', {
-                filter_type: 'dietary_preference',
-                filter_name: pref,
-                action: isAdding ? 'added' : 'removed',
+        },
+        onClear: (counts) => {
+            posthog.capture('filters_cleared', {
+                macro_filters_count: counts.macro,
+                dietary_filters_count: counts.dietary,
+                allergen_filters_count: counts.allergens,
                 hall: selectedHall,
                 meal_period: selectedPeriod,
             })
-
-            return isAdding ? [...prev, pref] : prev.filter(p => p !== pref)
-        })
-    }
-
-
-    // ========================================
-    // ALLERGEN FILTERS (localStorage)
-    // ========================================
-    const ALLERGENS_STORAGE_KEY = 'eatunc_allergens'
-    const VALID_ALLERGENS: AllergenOption[] = [
-        'milk', 'egg', 'fish', 'shellfish', 'tree nuts',
-        'peanut', 'wheat', 'soy', 'sesame'
-    ]
-
-    const loadAllergensFromStorage = useCallback((): AllergenOption[] => {
-        try {
-            if (typeof window === 'undefined') return []
-            const saved = localStorage.getItem(ALLERGENS_STORAGE_KEY)
-            if (!saved) return []
-            const parsed = JSON.parse(saved)
-            if (!Array.isArray(parsed)) return []
-            return parsed.filter((f): f is AllergenOption => VALID_ALLERGENS.includes(f))
-        } catch {
-            return []
-        }
-    }, [])
-
-    const saveAllergensToStorage = useCallback((allergens: AllergenOption[]) => {
-        try {
-            if (typeof window === 'undefined') return
-            localStorage.setItem(ALLERGENS_STORAGE_KEY, JSON.stringify(allergens))
-        } catch {
-            console.warn('Could not save allergens to localStorage')
-        }
-    }, [])
-
-    const [activeAllergens, setActiveAllergens] = useState<AllergenOption[]>([])
-
-    useEffect(() => {
-        const savedAllergens = loadAllergensFromStorage()
-        setActiveAllergens(savedAllergens)
-    }, [loadAllergensFromStorage])
-
-    useEffect(() => {
-        if (filtersLoaded) {
-            saveAllergensToStorage(activeAllergens)
-        }
-    }, [activeAllergens, filtersLoaded, saveAllergensToStorage])
-
-    const toggleAllergen = (allergen: AllergenOption) => {
-        setActiveAllergens(prev => {
-            const isAdding = !prev.includes(allergen)
-
-            posthog.capture('filter_toggled', {
-                filter_type: 'allergen',
-                filter_name: allergen,
-                action: isAdding ? 'added' : 'removed',
-                hall: selectedHall,
-                meal_period: selectedPeriod,
-            })
-
-            return isAdding ? [...prev, allergen] : prev.filter(a => a !== allergen)
-        })
-    }
+        },
+    })
 
 
     // ========================================
     // HELPER FUNCTIONS FOR FILTERING
     // ========================================
 
-    /**
-     * Map preference IDs to database values
-     */
-    const PREF_ID_TO_DB: Record<DietaryPreferenceOption, string> = {
-        'vegan': 'vegan',
-        'vegetarian': 'vegetarian',
-        'gluten-free': 'made without gluten',
-        'halal': 'halal',
-        'local': 'local',
-        'organic': 'organic',
-        'smart-choice': 'smart choice',
-        'sustainable-seafood': 'sustainable seafood',
-        'coolfood': 'coolfood',
-    }
+    const [modalSelection, setModalSelection] = useState<{ item: MasterFoodItem; station: string } | null>(null)
 
-    /**
-     * Check if item matches selected dietary preferences
-     * Uses AND logic - item must match ALL selected preferences
-     */
-    const itemMatchesDietaryPreferences = useCallback((
-        item: MasterFoodItem,
-        preferences: DietaryPreferenceOption[]
-    ): boolean => {
-        if (preferences.length === 0) return true
-        const itemPrefs = parseDietaryPreferences(item.dietary_preferences)
-        return preferences.every(pref =>
-            itemPrefs.includes(PREF_ID_TO_DB[pref])
-        )
+    const handleItemClick = useCallback((item: MasterFoodItem, station: string) => {
+        setModalSelection({ item, station })
     }, [])
 
-    /**
-     * Check if item contains any allergens to avoid
-     */
-    const itemContainsSelectedAllergens = useCallback((
-        item: MasterFoodItem,
-        allergensToAvoid: AllergenOption[]
-    ): boolean => {
-        if (allergensToAvoid.length === 0) return false
-        const itemAllergens = parseAllergens(item.allergens)
-        return allergensToAvoid.some(allergen =>
-            itemAllergens.some(itemAllergen =>
-                itemAllergen.toLowerCase() === allergen.toLowerCase()
-            )
-        )
-    }, [])
-
-
-    const [selectedItemForModal, setSelectedItemForModal] = useState<MasterFoodItem | null>(null)
-    const [selectedItemStation, setSelectedItemStation] = useState<string>('')
-
-    const [searchQuery, setSearchQuery] = useState('')
-    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+    const [search, dispatchSearch] = useReducer(searchReducer, { input: '', debounced: '' })
+    const searchQuery = search.input
+    const debouncedSearchQuery = search.debounced
     const [sortBy, setSortBy] = useState<'recommended' | 'calories' | 'protein' | 'fat' | 'alphabetical'>('recommended')
 
     // Debounce search input to prevent excessive re-renders
     useEffect(() => {
         const timer = setTimeout(() => {
-            setDebouncedSearchQuery(searchQuery)
+            dispatchSearch({ type: 'commit' })
         }, 300) // 300ms debounce
         return () => clearTimeout(timer)
     }, [searchQuery])
@@ -770,10 +938,10 @@ export default function MenuContainer({
         return items
     }, [allEntries, selectedPeriod, debouncedSearchQuery])
 
-    const applyGlobalSort = (items: any[]) => {
+    const applyGlobalSort = useCallback((items: any[]) => {
         if (sortBy === 'recommended') return items;
 
-        return [...items].sort((a, b) => {
+        return items.toSorted((a, b) => {
             const itemA = a.item || a;
             const itemB = b.item || b;
 
@@ -790,94 +958,11 @@ export default function MenuContainer({
                     return 0;
             }
         });
-    };
+    }, [sortBy]);
 
     const healthyPicks = useMemo(() => {
-        // Show Top Picks if any macro filters or dietary preferences are active
-        if (activeFilters.length === 0 && activeDietaryPreferences.length === 0) return []
-
-        // Count how many filters each item matches
-        const picks = baseFilteredItems
-            .map(({ item, station }) => {
-                // Exclude items with missing nutrition
-                const cal = item.calories_kcal
-                const protein = item.protein_g
-                const fat = item.fat_g
-                const carbs = item.carbohydrates_g
-
-                if (cal === null || protein === null || fat === null || carbs === null) {
-                    return null
-                }
-
-                if (isCondimentOrDrink(item, station)) {
-                    return null
-                }
-
-                // Skip items containing allergens to avoid
-                if (itemContainsSelectedAllergens(item, activeAllergens)) {
-                    return null
-                }
-
-                // Skip items that don't match dietary preferences
-                if (!itemMatchesDietaryPreferences(item, activeDietaryPreferences)) {
-                    return null
-                }
-
-                // Count matched macro filters
-                let matchCount = 0
-                const matchedFilters: string[] = []
-
-                // Add matched dietary preferences to reason
-                if (activeDietaryPreferences.length > 0) {
-                    const itemPrefs = parseDietaryPreferences(item.dietary_preferences)
-                    activeDietaryPreferences.forEach(pref => {
-                        if (itemPrefs.includes(PREF_ID_TO_DB[pref])) {
-                            matchedFilters.push(pref.charAt(0).toUpperCase() + pref.slice(1).replace('-', ' '))
-                            matchCount++
-                        }
-                    })
-                }
-
-                for (const filter of activeFilters) {
-                    let matches = false
-                    switch (filter) {
-                        case 'protein':
-                            matches = (protein ?? 0) >= 20
-                            if (matches) matchedFilters.push('High Protein')
-                            break
-                        case 'calories':
-                            matches = (cal ?? 0) > 0 && (cal ?? 0) <= 350
-                            if (matches) matchedFilters.push('Low Calorie')
-                            break
-                        case 'fat':
-                            matches = (cal ?? 0) > 0 && (fat ?? 0) <= 8
-                            if (matches) matchedFilters.push('Low Fat')
-                            break
-                        case 'carbs':
-                            // Low Carbohydrate: Under 15g carbs
-                            matches = (carbs ?? 0) <= 15
-                            if (matches) matchedFilters.push('Low Carbohydrate')
-                            break
-                    }
-                    if (matches) matchCount++
-                }
-
-                // Need at least 1 match to appear in Top Picks
-                const totalFiltersActive = activeFilters.length + activeDietaryPreferences.length
-                const minMatches = totalFiltersActive === 1 ? 1 : Math.min(2, totalFiltersActive)
-                if (matchCount < minMatches) return null
-
-                const score = matchCount + calculateHealthyScore(item, activeFilters[0] || 'protein') / 100
-                const reason = matchedFilters.join(' + ')
-
-                return { item, station, score, matchCount, reason }
-            })
-            .filter((pick): pick is NonNullable<typeof pick> => pick !== null)
-            .sort((a, b) => b.score - a.score)
-            .slice(0, 8)
-
-        return applyGlobalSort(picks);
-    }, [baseFilteredItems, activeFilters, activeDietaryPreferences, activeAllergens, sortBy, itemMatchesDietaryPreferences, itemContainsSelectedAllergens])
+        return computeHealthyPicks(baseFilteredItems, activeFilters, activeDietaryPreferences, activeAllergens, applyGlobalSort)
+    }, [baseFilteredItems, activeFilters, activeDietaryPreferences, activeAllergens, applyGlobalSort])
 
     /**
      * stationsMap: Groups food items by their station for display
@@ -894,59 +979,8 @@ export default function MenuContainer({
      * 4. They are a duplicate (same recipe_number at the same station)
      */
     const stationsMap = useMemo(() => {
-        const map: Record<string, MasterFoodItem[]> = {}
-        // Track processed combinations: "station:recipe_number"
-        const processedIds = new Set<string>()
-
-        allEntries.forEach(entry => {
-            if (entry.meal_period === selectedPeriod && entry.master_food_items) {
-                const item = entry.master_food_items
-                const station = entry.meal_station || 'Other'
-
-                // Search Filter (using debounced query)
-                if (debouncedSearchQuery && !item.food_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) {
-                    return
-                }
-
-                // Create a unique key combining station and recipe_number
-                // This ensures we only skip TRUE duplicates (same item at same station)
-                const uniqueKey = `${station}:${entry.recipe_number}`
-
-                // Only skip if this exact station+recipe combo was already processed
-                if (processedIds.has(uniqueKey)) {
-                    if (process.env.NODE_ENV === 'development') {
-                        console.log(`[MENU] Skipping duplicate: ${item.food_name} (${entry.recipe_number}) at ${station}`)
-                    }
-                    return
-                }
-
-                processedIds.add(uniqueKey)
-
-                if (!map[station]) {
-                    map[station] = []
-                }
-                map[station].push(item)
-            }
-        })
-
-        // Log final counts for debugging
-        if (process.env.NODE_ENV === 'development') {
-            console.log('[MENU] Final station item counts:',
-                Object.entries(map).map(([station, items]) => ({
-                    station,
-                    count: items.length,
-                    recipes: items.map(i => i.recipe_number)
-                }))
-            )
-        }
-
-        // Apply global sort to each station
-        Object.keys(map).forEach(station => {
-            map[station] = applyGlobalSort(map[station]);
-        });
-
-        return map
-    }, [allEntries, selectedPeriod, debouncedSearchQuery, sortBy])
+        return buildStationsMap(allEntries, selectedPeriod, debouncedSearchQuery, applyGlobalSort)
+    }, [allEntries, selectedPeriod, debouncedSearchQuery, applyGlobalSort])
 
     // Initial visibility for stations (show first 3 immediately)
     const [visibleStationsCount, setVisibleStationsCount] = useState(3)
@@ -960,54 +994,7 @@ export default function MenuContainer({
     }, [selectedPeriod]) // Reset when meal period changes
 
     const sortedStations = useMemo(() => {
-        const allSorted = Object.keys(stationsMap).sort((a, b) => {
-            // Priority stations in order
-            const priorityStations = [
-                'The Kitchen Table',
-                'Simply Prepared',
-                'The Grill',
-                'The Griddle'
-            ];
-
-            const indexA = priorityStations.findIndex(s => s.toLowerCase() === a.toLowerCase());
-            const indexB = priorityStations.findIndex(s => s.toLowerCase() === b.toLowerCase());
-
-            // If both are in priority list, sort by their order in that list
-            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-            // If only A is in priority list, it comes first
-            if (indexA !== -1) return -1;
-            // If only B is in priority list, it comes first
-            if (indexB !== -1) return 1;
-
-            const bottomStations = ['beverages', 'condiments', 'spreads', 'cereal', 'breads', 'bakery', 'dessert', 'stress less', 'cabinet']
-            const isABottom = bottomStations.some(s => a.toLowerCase().includes(s))
-            const isBBottom = bottomStations.some(s => b.toLowerCase().includes(s))
-
-            if (isABottom && !isBBottom) return 1
-            if (!isABottom && isBBottom) return -1
-
-            // Calculate average calories for each station
-            const getAvgCalories = (stationName: string) => {
-                const items = stationsMap[stationName] || []
-                if (items.length === 0) return 0
-                const total = items.reduce((sum, item) => sum + (item.calories_kcal ?? 0), 0)
-                return total / items.length
-            }
-
-            const avgA = getAvgCalories(a)
-            const avgB = getAvgCalories(b)
-
-            // Sort by average calories descending (Higher on top)
-            // Use a small epsilon for float comparison safety, though likely overkill here
-            if (Math.abs(avgA - avgB) > 0.1) {
-                return avgB - avgA
-            }
-
-            // Fallback to alphabetical if averages are roughly equal
-            return a.localeCompare(b)
-        })
-
-        return allSorted;
+        return sortStations(stationsMap);
     }, [stationsMap])
 
     const visibleStations = useMemo(() => {
@@ -1015,50 +1002,12 @@ export default function MenuContainer({
     }, [sortedStations, visibleStationsCount]);
 
     if (allEntries.length === 0) {
-        const formattedDate = new Date(selectedDate).toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'short',
-            day: 'numeric',
-            timeZone: 'UTC',
-        })
-
-
         return (
-            <FoodDisplayLayout
+            <ClosedHallNotice
                 diningHall={selectedHall}
                 selectedDate={selectedDate}
                 availableDates={availableDates}
-                selectedPeriod=""
-                availablePeriods={[]}
-                onPeriodChange={() => { }}
-            >
-                <div className="max-w-2xl mx-auto py-12 text-center">
-                    <div className="p-8 rounded-3xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                        <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                            <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <h2 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 mb-3">
-                            {selectedHall} isn't open on {formattedDate}
-                        </h2>
-                        <p className="text-zinc-500 mb-8 leading-relaxed">
-                            We couldn't find any menu items for this date. It looks like the dining hall might be closed.
-                        </p>
-                        <a
-                            href="https://dining.unc.edu/menu-hours/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors w-full sm:w-auto"
-                        >
-                            <span>Double Check Official Schedule</span>
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                        </a>
-                    </div>
-                </div>
-            </FoodDisplayLayout>
+            />
         )
     }
 
@@ -1075,7 +1024,7 @@ export default function MenuContainer({
             onClearFilters={clearAllFilters}
             itemCount={Object.values(stationsMap).reduce((sum, items) => sum + items.length, 0)}
             searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
+            onSearchChange={(value) => dispatchSearch({ type: 'input', value })}
             sortBy={sortBy}
             onSortChange={setSortBy}
         >
@@ -1094,59 +1043,13 @@ export default function MenuContainer({
             <div className="w-full flex flex-col gap-8 transition-all duration-500 ease-in-out animate-in fade-in slide-in-from-bottom-2">
 
                 {(activeFilters.length > 0 || activeDietaryPreferences.length > 0) && healthyPicks.length > 0 && (
-                    <section className="flex flex-col gap-6 p-6 -mx-4 sm:-mx-6 bg-gradient-to-br from-emerald-50/80 to-teal-50/50 dark:from-emerald-950/30 dark:to-teal-950/20 border-y border-emerald-100 dark:border-emerald-900/30 rounded-none sm:rounded-2xl sm:mx-0 sm:border">
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
-                                    <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h2 className="text-lg font-black tracking-tight text-emerald-700 dark:text-emerald-400">
-                                        Top Picks
-                                    </h2>
-                                    <p className="text-xs text-emerald-600/70 dark:text-emerald-500/70 font-medium">
-                                        {healthyPicks.length} items matching your filters
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="h-px flex-1 bg-emerald-200/50 dark:bg-emerald-800/30" />
-                        </div>
-                        <motion.div
-                            key={activeFilters.join('-') + '-picks'}
-                            className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            {healthyPicks.map(({ item, station, reason }, index) => (
-                                <motion.div
-                                    key={item.recipe_number}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{
-                                        delay: Math.min(index * 0.03, 0.3),
-                                        duration: 0.2
-                                    }}
-                                    className="h-full"
-                                    {...(index === 0 ? { 'data-tutorial-target': 'food-card' } : {})}
-                                >
-                                    <FoodCard
-                                        item={item}
-                                        station={station}
-                                        reason={reason}
-                                        mealPeriod={selectedPeriod}
-                                        searchQuery={debouncedSearchQuery}
-                                        onClick={() => {
-                                            setSelectedItemForModal(item)
-                                            setSelectedItemStation(station)
-                                        }}
-                                    />
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                    </section>
+                    <TopPicksSection
+                        picks={healthyPicks}
+                        activeFilters={activeFilters}
+                        selectedPeriod={selectedPeriod}
+                        debouncedSearchQuery={debouncedSearchQuery}
+                        onItemClick={handleItemClick}
+                    />
                 )}
 
                 {/* Individual categorical sections removed in favor of global filter */}
@@ -1164,10 +1067,7 @@ export default function MenuContainer({
                             searchQuery={debouncedSearchQuery}
                             hasActiveFilters={activeFilters.length > 0 || activeDietaryPreferences.length > 0}
                             isFirstStation={stationIndex === 0 && activeFilters.length === 0 && activeDietaryPreferences.length === 0}
-                            onItemClick={(item, stat) => {
-                                setSelectedItemForModal(item)
-                                setSelectedItemStation(stat)
-                            }}
+                            onItemClick={handleItemClick}
                             activeAllergens={activeAllergens}
                             activeDietaryPreferences={activeDietaryPreferences}
                         />
@@ -1175,47 +1075,21 @@ export default function MenuContainer({
                 </div>
 
                 {sortedStations.length === 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-center py-16 px-6 rounded-3xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800"
-                    >
-                        <div className="w-16 h-16 mx-auto mb-4 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center">
-                            <svg className="w-8 h-8 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
-                        <h3 className="text-lg font-bold text-zinc-700 dark:text-zinc-300 mb-2">
-                            No items match your filters
-                        </h3>
-                        <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-                            {activeFilters.length > 0 ? (
-                                <>Try removing some filters or adjusting your search to see more options.</>
-                            ) : (
-                                <>No food items found for <span className="font-bold text-zinc-700 dark:text-zinc-200">{getMealPeriodLabel(selectedPeriod)}</span> on this date.</>
-                            )}
-                        </p>
-                        <div className="flex flex-wrap justify-center gap-3">
-                            {activeFilters.length > 0 && (
-                                <button
-                                    onClick={() => activeFilters.forEach(f => toggleFilter(f))}
-                                    className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors"
-                                >
-                                    Clear All Filters
-                                </button>
-                            )}
-                        </div>
-                    </motion.div>
+                    <NoMatchingItems
+                        hasFilters={activeFilters.length > 0}
+                        mealPeriodLabel={getMealPeriodLabel(selectedPeriod)}
+                        onClearFilters={clearMacroFilters}
+                    />
                 )}
             </div>
 
-            {selectedItemForModal && (
+            {modalSelection && (
                 <FoodModal
-                    item={selectedItemForModal}
-                    station={selectedItemStation}
+                    item={modalSelection.item}
+                    station={modalSelection.station}
                     mealPeriod={selectedPeriod}
-                    isOpen={!!selectedItemForModal}
-                    onClose={() => setSelectedItemForModal(null)}
+                    isOpen={!!modalSelection}
+                    onClose={() => setModalSelection(null)}
                 />
             )}
         </FoodDisplayLayout>

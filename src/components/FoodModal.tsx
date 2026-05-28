@@ -2,9 +2,9 @@
 
 import { MasterFoodItem } from '@/lib/api'
 import { getMealPeriodLabel } from '@/lib/utils'
-import { useEffect } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
-import { DIETARY_ICON_MAP, parseDietaryPreferences } from '@/components/icons/DietaryIcons'
+import { useEffect, useEffectEvent } from 'react'
+import { m, AnimatePresence } from 'motion/react'
+import { DIETARY_ICON_MAP, parseDietaryPreferences } from '@/components/icons/dietary'
 
 // Mapping of dietary preference keys to display names
 const DIETARY_DISPLAY_NAMES: Record<string, string> = {
@@ -40,9 +40,10 @@ export default function FoodModal({
     isOpen,
     onClose
 }: FoodModalProps) {
+    const onCloseEvent = useEffectEvent(onClose)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose()
+            if (e.key === 'Escape') onCloseEvent()
         }
         if (isOpen) {
             window.addEventListener('keydown', handleKeyDown)
@@ -52,7 +53,7 @@ export default function FoodModal({
             window.removeEventListener('keydown', handleKeyDown)
             document.body.style.overflow = 'unset'
         }
-    }, [isOpen, onClose])
+    }, [isOpen])
 
     if (!isOpen) return null
 
@@ -75,13 +76,13 @@ export default function FoodModal({
     return (
         <AnimatePresence>
             {isOpen && (
-                <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
-                    role="dialog"
+                <dialog
+                    open
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 border-0 bg-transparent max-w-none max-h-none"
                     aria-modal="true"
                     aria-labelledby="modal-title"
                 >
-                    <motion.div
+                    <m.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -90,7 +91,7 @@ export default function FoodModal({
                         onClick={onClose}
                     />
 
-                    <motion.div
+                    <m.div
                         initial={{ opacity: 0, scale: 0.98, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.98, y: 10 }}
@@ -100,19 +101,19 @@ export default function FoodModal({
                         }}
                         className="relative w-full max-w-lg transform overflow-hidden rounded-3xl bg-white p-8 shadow-2xl dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
                     >
-                        <motion.button
+                        <m.button
                             onClick={onClose}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             transition={{ duration: 0.2 }}
                             className="absolute right-6 top-6 rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 transition-colors z-10"
                         >
-                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
-                        </motion.button>
+                        </m.button>
 
-                        <motion.div
+                        <m.div
                             className="flex flex-col gap-6"
                         >
                             <div>
@@ -174,10 +175,10 @@ export default function FoodModal({
                                                 return (
                                                     <div
                                                         key={pref}
-                                                        className="w-7 h-7 rounded-full bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 flex items-center justify-center"
+                                                        className="size-7 rounded-full bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 flex items-center justify-center"
                                                         title={DIETARY_DISPLAY_NAMES[pref] || pref}
                                                     >
-                                                        <IconComponent className="w-4 h-4" />
+                                                        <IconComponent className="size-4" />
                                                     </div>
                                                 )
                                             })}
@@ -210,8 +211,8 @@ export default function FoodModal({
                                                     key={pref}
                                                     className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-zinc-800 border border-green-200 dark:border-green-700"
                                                 >
-                                                    <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">
-                                                        <IconComponent className="w-4 h-4" />
+                                                    <div className="size-5 rounded-full flex items-center justify-center flex-shrink-0">
+                                                        <IconComponent className="size-4" />
                                                     </div>
                                                     <span className="text-xs font-medium text-green-800 dark:text-green-300">
                                                         {DIETARY_DISPLAY_NAMES[pref] || pref}
@@ -234,9 +235,9 @@ export default function FoodModal({
                                     </p>
                                 </div>
                             )}
-                        </motion.div>
-                    </motion.div>
-                </div>
+                        </m.div>
+                    </m.div>
+                </dialog>
             )}
         </AnimatePresence>
     )
@@ -244,7 +245,7 @@ export default function FoodModal({
 
 function NutrientHighlight({ label, value, unit, color, bgColor }: { label: string, value: number | null, unit: string, color: string, bgColor: string }) {
     return (
-        <motion.div
+        <m.div
             whileHover={{ y: -2 }}
             transition={{ duration: 0.2 }}
             className={`flex flex-col items-center gap-1 rounded-2xl p-4 ${bgColor}`}
@@ -254,6 +255,6 @@ function NutrientHighlight({ label, value, unit, color, bgColor }: { label: stri
                 <span className="text-xl font-black">{value ?? 0}</span>
                 <span className="text-xs font-bold opacity-70">{unit}</span>
             </div>
-        </motion.div>
+        </m.div>
     )
 }

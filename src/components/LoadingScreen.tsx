@@ -1,6 +1,7 @@
 'use client'
 
-import { motion, AnimatePresence } from 'motion/react'
+import { m, AnimatePresence } from 'motion/react'
+import Image from 'next/image'
 
 interface LoadingScreenProps {
     isLoading: boolean
@@ -10,7 +11,7 @@ export default function LoadingScreen({ isLoading }: LoadingScreenProps) {
     return (
         <AnimatePresence>
             {isLoading && (
-                <motion.div
+                <m.div
                     initial={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -18,7 +19,7 @@ export default function LoadingScreen({ isLoading }: LoadingScreenProps) {
                 >
                     {/* Animated Background Pattern */}
                     <div className="absolute inset-0 opacity-10">
-                        <motion.div
+                        <m.div
                             animate={{
                                 backgroundPosition: ['0% 0%', '100% 100%'],
                             }}
@@ -40,7 +41,7 @@ export default function LoadingScreen({ isLoading }: LoadingScreenProps) {
                     {/* Loading Content */}
                     <div className="relative z-10 flex flex-col items-center gap-6">
                         {/* EatUNC Logo with Pulsing Animation */}
-                        <motion.div
+                        <m.div
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{
                                 scale: [1, 1.05, 1],
@@ -59,7 +60,7 @@ export default function LoadingScreen({ isLoading }: LoadingScreenProps) {
                             className="relative"
                         >
                             {/* Pulsing Glow Effect */}
-                            <motion.div
+                            <m.div
                                 animate={{
                                     scale: [1, 1.15, 1],
                                     opacity: [0.4, 0.1, 0.4],
@@ -73,15 +74,18 @@ export default function LoadingScreen({ isLoading }: LoadingScreenProps) {
                             />
 
                             {/* Logo Image */}
-                            <img
+                            <Image
                                 src="/eat_unc_logo_white_nb.svg"
                                 alt="EatUNC Logo"
-                                className="relative w-56 h-56 md:w-64 md:h-64 object-contain drop-shadow-2xl"
+                                width={256}
+                                height={256}
+                                unoptimized
+                                className="relative size-56 md:w-64 md:h-64 object-contain drop-shadow-2xl"
                             />
-                        </motion.div>
+                        </m.div>
 
                         {/* Loading Text */}
-                        <motion.div
+                        <m.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2, duration: 0.5 }}
@@ -94,7 +98,7 @@ export default function LoadingScreen({ isLoading }: LoadingScreenProps) {
                             {/* Animated Dots */}
                             <div className="flex gap-1.5">
                                 {[0, 1, 2].map((i) => (
-                                    <motion.div
+                                    <m.div
                                         key={i}
                                         animate={{
                                             scale: [1, 1.3, 1],
@@ -105,13 +109,13 @@ export default function LoadingScreen({ isLoading }: LoadingScreenProps) {
                                             repeat: Infinity,
                                             delay: i * 0.2,
                                         }}
-                                        className="w-2 h-2 rounded-full bg-blue-400"
+                                        className="size-2 rounded-full bg-blue-400"
                                     />
                                 ))}
                             </div>
-                        </motion.div>
+                        </m.div>
                     </div>
-                </motion.div>
+                </m.div>
             )}
         </AnimatePresence>
     )

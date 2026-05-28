@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import { cn } from '@/lib/utils'
 
 interface FoodCardSkeletonProps {
@@ -11,7 +11,7 @@ interface FoodCardSkeletonProps {
  * FoodCardSkeleton - Animated skeleton loader for food cards
  * Matches the layout of FoodCard with pulsing animation
  */
-export function FoodCardSkeleton({ className }: FoodCardSkeletonProps) {
+function FoodCardSkeleton({ className }: FoodCardSkeletonProps) {
     return (
         <div
             className={cn(
@@ -62,14 +62,14 @@ export function FoodGridSkeleton({ count = 8 }: { count?: number }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: count }).map((_, i) => (
-                <motion.div
+                <m.div
                     key={i}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05, duration: 0.3 }}
                 >
                     <FoodCardSkeleton />
-                </motion.div>
+                </m.div>
             ))}
         </div>
     )
@@ -78,15 +78,15 @@ export function FoodGridSkeleton({ count = 8 }: { count?: number }) {
 /**
  * LoadingSpinner - Animated spinner for transitions
  */
-export function LoadingSpinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+function LoadingSpinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
     const sizes = {
-        sm: 'w-4 h-4',
-        md: 'w-6 h-6',
-        lg: 'w-8 h-8',
+        sm: 'size-4',
+        md: 'size-6',
+        lg: 'size-8',
     }
 
     return (
-        <motion.div
+        <m.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             className={cn(sizes[size], 'border-2 border-blue-500 border-t-transparent rounded-full')}
@@ -99,7 +99,7 @@ export function LoadingSpinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
  */
 export function ContentLoader({ message = 'Loading...' }: { message?: string }) {
     return (
-        <motion.div
+        <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -107,63 +107,6 @@ export function ContentLoader({ message = 'Loading...' }: { message?: string }) 
         >
             <LoadingSpinner size="lg" />
             <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">{message}</p>
-        </motion.div>
-    )
-}
-
-/**
- * StaggeredGrid - Wrapper that adds stagger animation to children
- */
-export function StaggeredGrid({
-    children,
-    className,
-    staggerDelay = 0.05
-}: {
-    children: React.ReactNode
-    className?: string
-    staggerDelay?: number
-}) {
-    return (
-        <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={{
-                hidden: { opacity: 0 },
-                visible: {
-                    opacity: 1,
-                    transition: {
-                        staggerChildren: staggerDelay,
-                    },
-                },
-            }}
-            className={className}
-        >
-            {children}
-        </motion.div>
-    )
-}
-
-/**
- * StaggeredItem - Individual item in staggered grid
- */
-export function StaggeredItem({ children }: { children: React.ReactNode }) {
-    return (
-        <motion.div
-            variants={{
-                hidden: { opacity: 0, y: 20, scale: 0.95 },
-                visible: {
-                    opacity: 1,
-                    y: 0,
-                    scale: 1,
-                    transition: {
-                        type: 'spring',
-                        stiffness: 300,
-                        damping: 25,
-                    }
-                },
-            }}
-        >
-            {children}
-        </motion.div>
+        </m.div>
     )
 }

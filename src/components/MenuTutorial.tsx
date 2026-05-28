@@ -1,8 +1,18 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useSyncExternalStore } from 'react'
 import Joyride, { CallBackProps, STATUS, ACTIONS, Step, Styles } from 'react-joyride'
 import { usePostHog } from 'posthog-js/react'
+
+// SSR-safe is-client detection (no effect, no hydration flicker)
+const emptySubscribe = () => () => {}
+
+// SSR-safe viewport detection for mobile breakpoint (< 768px)
+function subscribeMobile(cb: () => void) {
+    const m = window.matchMedia('(max-width: 767px)')
+    m.addEventListener('change', cb)
+    return () => m.removeEventListener('change', cb)
+}
 
 // UNC Brand Colors
 const UNC_NAVY = '#13294B'
@@ -201,29 +211,12 @@ const joyrideStyles: Partial<Styles> = {
 export default function MenuTutorial() {
     const posthog = usePostHog()
     const [run, setRun] = useState(false)
-    const [isMobile, setIsMobile] = useState(false)
-    const [isClient, setIsClient] = useState(false)
-
-    // iOS CRASH DEBUG: Disable react-joyride on iOS to test if it's causing crashes
-    // This overlay library is known to cause memory issues on iOS Safari
-    // TODO: Remove this after confirming the crash cause
-    if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
-        console.log('[MenuTutorial] Disabled on iOS for crash debugging');
-        return null;
-    }
-
-    // Detect client-side rendering and viewport size
-    useEffect(() => {
-        setIsClient(true)
-
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768)
-        }
-
-        checkMobile()
-        window.addEventListener('resize', checkMobile)
-        return () => window.removeEventListener('resize', checkMobile)
-    }, [])
+    const isMobile = useSyncExternalStore(
+        subscribeMobile,
+        () => window.matchMedia('(max-width: 767px)').matches,
+        () => false
+    )
+    const isClient = useSyncExternalStore(emptySubscribe, () => true, () => false)
 
     // Check if tutorial should run on mount
     useEffect(() => {
@@ -297,6 +290,9 @@ export default function MenuTutorial() {
 
     // Don't render on server
     if (!isClient) return null
+
+    // react-joyride causes memory issues on iOS Safari, so disable it there
+    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) return null
 
     const steps = isMobile ? MOBILE_STEPS : DESKTOP_STEPS
 

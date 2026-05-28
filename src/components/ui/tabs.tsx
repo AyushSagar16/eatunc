@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "motion/react";
+import { m } from "motion/react";
 import { cn } from "@/lib/utils";
 
 type Tab = {
@@ -24,15 +24,11 @@ export const Tabs = ({
   contentClassName?: string;
 }) => {
   const [active, setActive] = useState<Tab>(propTabs[0]);
-  const [tabs, setTabs] = useState<Tab[]>(propTabs);
 
-  const moveSelectedTabToTop = (idx: number) => {
-    const newTabs = [...propTabs];
-    const selectedTab = newTabs.splice(idx, 1);
-    newTabs.unshift(selectedTab[0]);
-    setTabs(newTabs);
-    setActive(newTabs[0]);
-  };
+  const orderedTabs = [
+    active,
+    ...propTabs.filter((t) => t.value !== active.value),
+  ];
 
   const [hovering, setHovering] = useState(false);
 
@@ -46,9 +42,10 @@ export const Tabs = ({
       >
         {propTabs.map((tab, idx) => (
           <button
+            type="button"
             key={tab.title}
             onClick={() => {
-              moveSelectedTabToTop(idx);
+              setActive(propTabs[idx]);
             }}
             onMouseEnter={() => setHovering(true)}
             onMouseLeave={() => setHovering(false)}
@@ -58,7 +55,7 @@ export const Tabs = ({
             }}
           >
             {active.value === tab.value && (
-              <motion.div
+              <m.div
                 layoutId="clickedbutton"
                 transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
                 className={cn(
@@ -75,7 +72,7 @@ export const Tabs = ({
         ))}
       </div>
       <FadeInDiv
-        tabs={tabs}
+        tabs={orderedTabs}
         active={active}
         key={active.value}
         hovering={hovering}
@@ -85,7 +82,7 @@ export const Tabs = ({
   );
 };
 
-export const FadeInDiv = ({
+const FadeInDiv = ({
   className,
   tabs,
   hovering,
@@ -100,9 +97,9 @@ export const FadeInDiv = ({
     return tab.value === tabs[0].value;
   };
   return (
-    <div className="relative w-full h-full">
+    <div className="relative size-full">
       {tabs.map((tab, idx) => (
-        <motion.div
+        <m.div
           key={tab.value}
           layoutId={tab.value}
           style={{
@@ -114,10 +111,10 @@ export const FadeInDiv = ({
           animate={{
             y: isActive(tab) ? [0, 40, 0] : 0,
           }}
-          className={cn("w-full h-full absolute top-0 left-0", className)}
+          className={cn("size-full absolute top-0 left-0", className)}
         >
           {tab.content}
-        </motion.div>
+        </m.div>
       ))}
     </div>
   );

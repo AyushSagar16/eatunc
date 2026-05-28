@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { PostHogProvider } from "@/providers/PostHogProvider";
+import { MotionProvider } from "@/providers/MotionProvider";
 import CookieConsent from "@/components/CookieConsent";
 import { Analytics } from "@vercel/analytics/next";
 import CDSBanner from "@/components/CDSBanner";
@@ -137,14 +138,16 @@ export default function RootLayout({
         className={`${inter.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <PostHogProvider>
-          <ThemeProvider>
-            <CDSBanner />
-            {children}
-            <Footer />
-          </ThemeProvider>
-          <CookieConsent />
-        </PostHogProvider>
+        <MotionProvider>
+          <PostHogProvider>
+            <ThemeProvider>
+              <CDSBanner />
+              {children}
+              <Footer />
+            </ThemeProvider>
+            <CookieConsent />
+          </PostHogProvider>
+        </MotionProvider>
         <Analytics />
       </body>
     </html>

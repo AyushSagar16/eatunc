@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { m, AnimatePresence } from 'motion/react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface CalendarPickerProps {
@@ -29,8 +29,8 @@ export default function CalendarPicker({
 }: CalendarPickerProps) {
     // Parse selected date to get initial month/year
     const selected = new Date(selectedDate)
-    const [viewMonth, setViewMonth] = useState(selected.getMonth())
-    const [viewYear, setViewYear] = useState(selected.getFullYear())
+    const [viewMonth, setViewMonth] = useState(() => selected.getMonth())
+    const [viewYear, setViewYear] = useState(() => selected.getFullYear())
 
     // Get today's date for highlighting
     const today = new Date()
@@ -67,18 +67,18 @@ export default function CalendarPicker({
     const handlePrevMonth = () => {
         if (viewMonth === 0) {
             setViewMonth(11)
-            setViewYear(viewYear - 1)
+            setViewYear(prev => prev - 1)
         } else {
-            setViewMonth(viewMonth - 1)
+            setViewMonth(prev => prev - 1)
         }
     }
 
     const handleNextMonth = () => {
         if (viewMonth === 11) {
             setViewMonth(0)
-            setViewYear(viewYear + 1)
+            setViewYear(prev => prev + 1)
         } else {
-            setViewMonth(viewMonth + 1)
+            setViewMonth(prev => prev + 1)
         }
     }
 
@@ -95,7 +95,7 @@ export default function CalendarPicker({
     }
 
     return (
-        <motion.div
+        <m.div
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -105,29 +105,29 @@ export default function CalendarPicker({
         >
             {/* Header: Month/Year with navigation */}
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-zinc-200 dark:border-zinc-800">
-                <motion.button
+                <m.button
                     onClick={handlePrevMonth}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                     aria-label="Previous month"
                 >
-                    <ChevronLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
-                </motion.button>
+                    <ChevronLeft className="size-5 text-zinc-600 dark:text-zinc-400" />
+                </m.button>
 
                 <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
                     {MONTHS[viewMonth]} {viewYear}
                 </h3>
 
-                <motion.button
+                <m.button
                     onClick={handleNextMonth}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                     aria-label="Next month"
                 >
-                    <ChevronRight className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
-                </motion.button>
+                    <ChevronRight className="size-5 text-zinc-600 dark:text-zinc-400" />
+                </m.button>
             </div>
 
             {/* Days of week header */}
@@ -158,7 +158,7 @@ export default function CalendarPicker({
                     const isSelectable = isDateSelectable(date, dateStr)
 
                     return (
-                        <motion.button
+                        <m.button
                             key={dateStr}
                             onClick={() => isSelectable && handleDateClick(dateStr)}
                             disabled={!isSelectable}
@@ -180,7 +180,7 @@ export default function CalendarPicker({
                             `}
                         >
                             {date.getDate()}
-                        </motion.button>
+                        </m.button>
                     )
                 })}
             </div>
@@ -188,18 +188,18 @@ export default function CalendarPicker({
             {/* Legend */}
             <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap gap-3 text-xs">
                 <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-blue-600" />
+                    <div className="size-3 rounded bg-blue-600" />
                     <span className="text-zinc-600 dark:text-zinc-400">Selected</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded border-2 border-blue-500 bg-blue-100 dark:bg-blue-900/30" />
+                    <div className="size-3 rounded border-2 border-blue-500 bg-blue-100 dark:bg-blue-900/30" />
                     <span className="text-zinc-600 dark:text-zinc-400">Today</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-zinc-100 dark:bg-zinc-800" />
+                    <div className="size-3 rounded bg-zinc-100 dark:bg-zinc-800" />
                     <span className="text-zinc-600 dark:text-zinc-400">Menu Available</span>
                 </div>
             </div>
-        </motion.div>
+        </m.div>
     )
 }

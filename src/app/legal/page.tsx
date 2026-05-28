@@ -21,14 +21,14 @@ export default function LegalPage() {
     return (
         <div className="container mx-auto px-4 py-8 max-w-2xl min-h-screen">
             <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-2 size-4" />
                 Back to Menu
             </Link>
 
             <h1 className="text-3xl font-bold tracking-tight mb-6">Legal</h1>
 
             <div className="prose dark:prose-invert">
-                <p className="text-muted-foreground mb-6">
+                <p className="text-muted-foreground mb-6" suppressHydrationWarning>
                     Last updated: {new Date().toLocaleDateString()}
                 </p>
 
