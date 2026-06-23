@@ -40,6 +40,8 @@ export default function SearchAndSort({
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
+    const triggerRef = useRef<HTMLButtonElement>(null)
+    const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
 
     // Close dropdown on outside click
     useEffect(() => {
@@ -51,6 +53,21 @@ export default function SearchAndSort({
         document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
+
+    // Focus management for dropdown
+    useEffect(() => {
+        if (isDropdownOpen) {
+            // Focus the currently selected item or the first one
+            const selectedIndex = SORT_OPTIONS.findIndex(opt => opt.value === sortBy)
+            const indexToFocus = selectedIndex >= 0 ? selectedIndex : 0
+
+            // Small timeout to ensure DOM is ready and animation started
+            const timer = setTimeout(() => {
+                itemRefs.current[indexToFocus]?.focus()
+            }, 50)
+            return () => clearTimeout(timer)
+        }
+    }, [isDropdownOpen, sortBy])
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -69,6 +86,37 @@ export default function SearchAndSort({
         document.addEventListener('keydown', handleKeyDown)
         return () => document.removeEventListener('keydown', handleKeyDown)
     }, [onSearchChange])
+
+    const handleTriggerKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setIsDropdownOpen(true)
+        }
+    }
+
+    const handleItemKeyDown = (e: React.KeyboardEvent, index: number) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            const nextIndex = (index + 1) % SORT_OPTIONS.length
+            itemRefs.current[nextIndex]?.focus()
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            const prevIndex = (index - 1 + SORT_OPTIONS.length) % SORT_OPTIONS.length
+            itemRefs.current[prevIndex]?.focus()
+        } else if (e.key === 'Home') {
+            e.preventDefault()
+            itemRefs.current[0]?.focus()
+        } else if (e.key === 'End') {
+            e.preventDefault()
+            itemRefs.current[SORT_OPTIONS.length - 1]?.focus()
+        } else if (e.key === 'Escape') {
+            e.preventDefault()
+            setIsDropdownOpen(false)
+            triggerRef.current?.focus()
+        } else if (e.key === 'Tab') {
+            setIsDropdownOpen(false)
+        }
+    }
 
     const currentSort = SORT_OPTIONS.find(opt => opt.value === sortBy) || SORT_OPTIONS[0]
 
@@ -115,7 +163,9 @@ export default function SearchAndSort({
             {/* Sort Dropdown */}
             <div ref={dropdownRef} className="relative flex-shrink-0" data-tutorial-target="sort-dropdown">
                 <motion.button
+                    ref={triggerRef}
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    onKeyDown={handleTriggerKeyDown}
                     aria-label="Sort options"
                     aria-haspopup="true"
                     aria-expanded={isDropdownOpen}
@@ -144,17 +194,20 @@ export default function SearchAndSort({
                             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                             className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl overflow-hidden z-50"
                         >
-                            {SORT_OPTIONS.map((option) => (
+                            {SORT_OPTIONS.map((option, index) => (
                                 <button
                                     key={option.value}
+                                    ref={(el) => { itemRefs.current[index] = el }}
                                     role="menuitemradio"
                                     aria-checked={sortBy === option.value}
                                     onClick={() => {
                                         onSortChange(option.value)
                                         setIsDropdownOpen(false)
+                                        triggerRef.current?.focus()
                                     }}
+                                    onKeyDown={(e) => handleItemKeyDown(e, index)}
                                     className={`
-                                        w-full px-4 py-2.5 text-left text-sm transition-colors
+                                        w-full px-4 py-2.5 text-left text-sm transition-colors focus:outline-none focus:bg-zinc-100 dark:focus:bg-zinc-800
                                         ${sortBy === option.value
                                             ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
                                             : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800'
