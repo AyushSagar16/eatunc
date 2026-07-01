@@ -31,10 +31,10 @@ export default function DateSelector({ dates, selectedDate }: DateSelectorProps)
                             key={date}
                             onClick={() => handleDateChange(date)}
                             className={`
-                                px-4 py-2 rounded-xl text-sm font-semibold transition-all
+                                px-4 py-2 rounded-xl text-sm font-semibold tabular-nums active:scale-[0.96] transition-[transform,color,background-color,box-shadow] duration-150 ease-out
                                 ${isActive
                                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                                    : 'bg-white text-zinc-600 border border-zinc-200 hover:border-blue-400 hover:text-blue-600 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-blue-500 dark:hover:text-blue-400'
+                                    : 'bg-white text-zinc-600 shadow-border hover:text-blue-600 hover:shadow-border-hover dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-blue-400'
                                 }
                             `}
                         >

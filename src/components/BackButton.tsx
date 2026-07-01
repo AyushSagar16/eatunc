@@ -11,7 +11,7 @@ export default function BackButton() {
         >
             <motion.div
                 whileHover={{ scale: 1.05, x: -2 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.96 }}
                 className="inline-flex items-center gap-2"
             >
                 <motion.svg

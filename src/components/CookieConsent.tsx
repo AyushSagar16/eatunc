@@ -36,13 +36,13 @@ export default function CookieConsent() {
                 <motion.div
                     initial={{ y: 50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: 50, opacity: 0 }}
+                    exit={{ y: 12, opacity: 0, transition: { duration: 0.15, ease: 'easeIn' } }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                     className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-[100]"
                     role="dialog"
                     aria-modal="true"
                 >
-                    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-lg p-4">
+                    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-border rounded-xl p-4">
                         <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-3">
                             Eat UNC uses cookies to improve your experience.{' '}
                             <Link href="/privacy" className="underline hover:text-zinc-900 dark:hover:text-zinc-200">
@@ -51,7 +51,7 @@ export default function CookieConsent() {
                         </p>
                         <button
                             onClick={handleAccept}
-                            className="w-full px-4 py-2 rounded-lg bg-[#4B9CD3] text-white text-sm font-semibold hover:bg-[#3d8bc2] transition-colors"
+                            className="w-full px-4 py-2 rounded-lg bg-[#4B9CD3] text-white text-sm font-semibold hover:bg-[#3d8bc2] transition-[background-color,transform] duration-150 ease-out active:scale-[0.96]"
                         >
                             Got it
                         </button>

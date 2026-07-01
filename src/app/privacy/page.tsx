@@ -121,7 +121,7 @@ export default function PrivacyPage() {
                         </p>
                         <button
                             onClick={handleClearData}
-                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${cleared
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.96] ${cleared
                                     ? 'bg-green-500 text-white'
                                     : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-700'
                                 }`}

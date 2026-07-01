@@ -136,7 +136,7 @@ export default function FeedbackPage() {
                         key={option.type}
                         type="button"
                         onClick={() => setSelectedType(option.type)}
-                        className={`relative flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-200 ${selectedType === option.type
+                        className={`relative flex flex-col items-center p-4 rounded-xl border-2 transition-[border-color,transform] duration-150 ease-out active:scale-[0.96] ${selectedType === option.type
                                 ? `${option.borderColor} bg-gradient-to-br ${option.gradient} to-transparent`
                                 : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
                             }`}
@@ -144,7 +144,7 @@ export default function FeedbackPage() {
                         <div className={`w-10 h-10 rounded-lg ${option.iconBg} flex items-center justify-center mb-2`}>
                             {option.icon}
                         </div>
-                        <span className="text-sm font-medium text-center">{option.title}</span>
+                        <span className="text-sm font-medium text-center text-balance">{option.title}</span>
                         <span className="text-xs text-muted-foreground text-center hidden sm:block">{option.description}</span>
                     </button>
                 ))}
@@ -185,7 +185,7 @@ export default function FeedbackPage() {
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="Your name"
-                            className="w-full px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#4B9CD3] transition-all"
+                            className="w-full px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#4B9CD3] transition-[box-shadow] duration-150 ease-out"
                         />
                     </div>
                     <div>
@@ -198,7 +198,7 @@ export default function FeedbackPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="you@example.com"
-                            className="w-full px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#4B9CD3] transition-all"
+                            className="w-full px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#4B9CD3] transition-[box-shadow] duration-150 ease-out"
                         />
                     </div>
                 </div>
@@ -220,14 +220,14 @@ export default function FeedbackPage() {
                                     ? "Describe the feature you'd like to see. How would it improve your experience?"
                                     : "Share your thoughts about Eat UNC..."
                         }
-                        className="w-full px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#4B9CD3] transition-all resize-none"
+                        className="w-full px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#4B9CD3] transition-[box-shadow] duration-150 ease-out resize-none"
                     />
                 </div>
 
                 <button
                     type="submit"
                     disabled={!feedbackEnabled || !message.trim() || status === 'loading'}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#4B9CD3] hover:bg-[#4B9CD3]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition-all shadow-lg active:scale-[0.98]"
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#4B9CD3] hover:bg-[#4B9CD3]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition-[background-color,opacity,transform] duration-150 ease-out shadow-lg active:scale-[0.96]"
                 >
                     {status === 'loading' ? (
                         <>

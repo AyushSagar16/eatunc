@@ -45,8 +45,8 @@ export default function ActiveFilterChips({
         >
             {/* Item count */}
             {itemCount !== undefined && (
-                <div className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 min-h-[44px] bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-sm">
-                    <span className="text-lg font-black text-zinc-900 dark:text-zinc-100">
+                <div className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 min-h-[44px] bg-white dark:bg-zinc-800 rounded-lg shadow-border">
+                    <span className="text-lg font-black tabular-nums text-zinc-900 dark:text-zinc-100">
                         {itemCount}
                     </span>
                     <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
@@ -75,7 +75,7 @@ export default function ActiveFilterChips({
                                 animate={{ opacity: 1, scale: 1, x: 0 }}
                                 exit={{ opacity: 0, scale: 0.8, x: -10 }}
                                 whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
+                                whileTap={{ scale: 0.96 }}
                                 transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                                 onClick={() => onRemoveFilter(filterId)}
                                 className="group flex items-center gap-2 px-3 py-2.5 min-h-[44px] min-w-[44px] rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 active:bg-blue-200 dark:active:bg-blue-800/50 transition-colors border border-blue-200/50 dark:border-blue-800/50"
@@ -96,7 +96,7 @@ export default function ActiveFilterChips({
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileTap={{ scale: 0.96 }}
                     onClick={onClearAll}
                     className="flex-shrink-0 flex items-center gap-1 px-3 py-2.5 min-h-[44px] text-xs text-zinc-500 hover:text-red-500 dark:hover:text-red-400 active:text-red-600 font-bold transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
                 >

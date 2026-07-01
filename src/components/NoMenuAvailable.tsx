@@ -78,7 +78,7 @@ export default function NoMenuAvailable({
                         transition={{ duration: 0.5 }}
                         className="max-w-xl w-full"
                     >
-                        <div className="px-8 py-12 md:px-12 md:py-16 rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col items-center">
+                        <div className="px-8 py-12 md:px-12 md:py-16 rounded-[2.5rem] bg-white dark:bg-zinc-900 shadow-border flex flex-col items-center">
                             {/* Clock Icon */}
                             <motion.div
                                 initial={{ scale: 0, rotate: -20 }}
@@ -132,7 +132,7 @@ export default function NoMenuAvailable({
                                     href="https://dining.unc.edu/menu-hours/"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="w-full sm:w-auto min-w-[240px] flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-blue-500/25"
+                                    className="w-full sm:w-auto min-w-[240px] flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-[transform,background-color] duration-150 ease-out hover:scale-[1.02] active:scale-[0.96] shadow-lg shadow-blue-500/25"
                                 >
                                     <span>Double Check Official Schedule</span>
                                     <svg
@@ -153,7 +153,7 @@ export default function NoMenuAvailable({
                                 {nextAvailableDate && (
                                     <button
                                         onClick={handleNavigateToNextDate}
-                                        className="text-sm font-bold text-zinc-400 hover:text-blue-600 transition-colors py-2"
+                                        className="text-sm font-bold text-zinc-400 hover:text-blue-600 transition-[color,transform] duration-150 ease-out active:scale-[0.96] py-2"
                                     >
                                         View Next Available Menu →
                                     </button>

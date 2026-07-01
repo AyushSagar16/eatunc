@@ -73,11 +73,11 @@ export default function FeedbackPopup() {
                 <motion.div
                     initial={{ y: -100, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -100, opacity: 0 }}
+                    exit={{ y: -12, opacity: 0, transition: { duration: 0.15, ease: 'easeIn' } }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                     className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] w-[calc(100%-2rem)] max-w-md"
                 >
-                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-4 flex items-center gap-3">
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-border p-4 flex items-center gap-3">
                         {/* Icon */}
                         <div className="w-10 h-10 rounded-xl bg-[#4B9CD3]/10 flex items-center justify-center shrink-0">
                             <MessageSquare className="w-5 h-5 text-[#4B9CD3]" />
@@ -97,7 +97,7 @@ export default function FeedbackPopup() {
                         <Link
                             href="/feedback"
                             onClick={handleFeedbackClick}
-                            className="px-4 py-2 bg-[#4B9CD3] hover:bg-[#4B9CD3]/90 text-white text-sm font-semibold rounded-xl transition-colors shrink-0"
+                            className="px-4 py-2 bg-[#4B9CD3] hover:bg-[#4B9CD3]/90 text-white text-sm font-semibold rounded-xl transition-[background-color,transform] duration-150 ease-out active:scale-[0.96] shrink-0"
                         >
                             Give Feedback
                         </Link>
@@ -105,7 +105,7 @@ export default function FeedbackPopup() {
                         {/* Dismiss Button */}
                         <button
                             onClick={handleDismiss}
-                            className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
+                            className="relative shrink-0 p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-[background-color,transform] duration-150 ease-out active:scale-[0.96] before:content-[''] before:absolute before:left-1/2 before:top-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:h-11 before:w-11"
                             aria-label="Dismiss"
                         >
                             <X className="w-4 h-4 text-zinc-400" />

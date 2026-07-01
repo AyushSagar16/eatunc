@@ -94,10 +94,10 @@ const MiniFoodCard = React.memo(({ item, onClick, containsAllergen = false }: { 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             whileHover={containsAllergen ? {} : { backgroundColor: "rgba(250, 250, 250, 1)" }}
-            whileTap={{ scale: 0.99 }}
-            className={`flex items-center justify-between p-3 rounded-xl border bg-white/50 dark:bg-zinc-900/30 cursor-pointer transition-all group h-full min-h-[42px] ${containsAllergen
+            whileTap={{ scale: 0.96 }}
+            className={`flex items-center justify-between p-3 rounded-xl bg-white/50 dark:bg-zinc-900/30 cursor-pointer transition-[box-shadow] duration-150 ease-out group h-full min-h-[42px] ${containsAllergen
                 ? 'border-2 border-dashed border-zinc-300 dark:border-zinc-700 opacity-60'
-                : 'border-zinc-200/50 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                : 'shadow-border hover:shadow-border-hover'
                 }`}
         >
             <span className={`text-sm font-bold transition-colors ${containsAllergen
@@ -248,7 +248,7 @@ const StationSection = React.memo((({
                     <h2 className="text-sm font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600 dark:group-hover:text-zinc-400 transition-colors">
                         {station}
                     </h2>
-                    <span className="text-xs font-medium text-zinc-300 dark:text-zinc-600">
+                    <span className="text-xs font-medium text-zinc-300 dark:text-zinc-600 tabular-nums">
                         ({items.length})
                     </span>
                     <motion.div
@@ -1033,7 +1033,7 @@ export default function MenuContainer({
                 onPeriodChange={() => { }}
             >
                 <div className="max-w-2xl mx-auto py-12 text-center">
-                    <div className="p-8 rounded-3xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                    <div className="p-8 rounded-3xl bg-zinc-50 dark:bg-zinc-900 shadow-border">
                         <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
                             <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1049,7 +1049,7 @@ export default function MenuContainer({
                             href="https://dining.unc.edu/menu-hours/"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors w-full sm:w-auto"
+                            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-[background-color,transform] duration-150 ease-out active:scale-[0.96] w-full sm:w-auto"
                         >
                             <span>Double Check Official Schedule</span>
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1091,7 +1091,7 @@ export default function MenuContainer({
             />
 
             {/* Main Content - Full Width */}
-            <div className="w-full flex flex-col gap-8 transition-all duration-500 ease-in-out animate-in fade-in slide-in-from-bottom-2">
+            <div className="w-full flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2">
 
                 {(activeFilters.length > 0 || activeDietaryPreferences.length > 0) && healthyPicks.length > 0 && (
                     <section className="flex flex-col gap-6 p-6 -mx-4 sm:-mx-6 bg-gradient-to-br from-emerald-50/80 to-teal-50/50 dark:from-emerald-950/30 dark:to-teal-950/20 border-y border-emerald-100 dark:border-emerald-900/30 rounded-none sm:rounded-2xl sm:mx-0 sm:border">
@@ -1106,7 +1106,7 @@ export default function MenuContainer({
                                     <h2 className="text-lg font-black tracking-tight text-emerald-700 dark:text-emerald-400">
                                         Top Picks
                                     </h2>
-                                    <p className="text-xs text-emerald-600/70 dark:text-emerald-500/70 font-medium">
+                                    <p className="text-xs text-emerald-600/70 dark:text-emerald-500/70 font-medium tabular-nums">
                                         {healthyPicks.length} items matching your filters
                                     </p>
                                 </div>
@@ -1178,7 +1178,7 @@ export default function MenuContainer({
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-center py-16 px-6 rounded-3xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800"
+                        className="text-center py-16 px-6 rounded-3xl bg-zinc-50 dark:bg-zinc-900/50 shadow-border"
                     >
                         <div className="w-16 h-16 mx-auto mb-4 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center">
                             <svg className="w-8 h-8 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -1199,7 +1199,7 @@ export default function MenuContainer({
                             {activeFilters.length > 0 && (
                                 <button
                                     onClick={() => activeFilters.forEach(f => toggleFilter(f))}
-                                    className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors"
+                                    className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-[background-color,transform] duration-150 ease-out active:scale-[0.96]"
                                 >
                                     Clear All Filters
                                 </button>

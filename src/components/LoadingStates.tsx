@@ -16,7 +16,7 @@ export function FoodCardSkeleton({ className }: FoodCardSkeletonProps) {
         <div
             className={cn(
                 'flex flex-col overflow-hidden',
-                'rounded-2xl border border-zinc-200/80 dark:border-zinc-800',
+                'rounded-2xl shadow-border',
                 'bg-white dark:bg-zinc-900/60',
                 'p-5 sm:p-6',
                 'h-full min-h-[180px]',

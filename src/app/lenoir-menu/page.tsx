@@ -133,7 +133,7 @@ export default function LenoirMenuPage() {
 
                         <Link
                             href={`/lenoir/${today}`}
-                            className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-lg transition-all shadow-lg shadow-teal-600/25 hover:shadow-xl hover:shadow-teal-600/30 hover:-translate-y-0.5"
+                            className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-lg transition-[background-color,box-shadow,transform] duration-150 ease-out active:scale-[0.96] shadow-lg shadow-teal-600/25 hover:shadow-xl hover:shadow-teal-600/30 hover:-translate-y-0.5"
                         >
                             View Today&apos;s Menu
                             <ArrowRight className="w-5 h-5" />
@@ -145,7 +145,7 @@ export default function LenoirMenuPage() {
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
                     <div className="grid md:grid-cols-2 gap-8">
                         {/* Meal Times */}
-                        <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                        <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 shadow-border">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
                                     <Clock className="w-5 h-5 text-amber-600" />
@@ -157,19 +157,19 @@ export default function LenoirMenuPage() {
                             <div className="space-y-3 text-zinc-600 dark:text-zinc-400">
                                 <div className="flex justify-between">
                                     <span>Breakfast</span>
-                                    <span className="font-medium">7:00 AM - 10:30 AM</span>
+                                    <span className="font-medium tabular-nums">7:00 AM - 10:30 AM</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Lunch</span>
-                                    <span className="font-medium">11:00 AM - 2:00 PM</span>
+                                    <span className="font-medium tabular-nums">11:00 AM - 2:00 PM</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Lite Lunch</span>
-                                    <span className="font-medium">2:00 PM - 4:30 PM</span>
+                                    <span className="font-medium tabular-nums">2:00 PM - 4:30 PM</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Dinner</span>
-                                    <span className="font-medium">4:30 PM - 8:00 PM</span>
+                                    <span className="font-medium tabular-nums">4:30 PM - 8:00 PM</span>
                                 </div>
                                 <p className="text-sm text-zinc-500 pt-2 border-t border-zinc-100 dark:border-zinc-800">
                                     Weekend hours may vary. Check the menu for current availability.
@@ -178,7 +178,7 @@ export default function LenoirMenuPage() {
                         </div>
 
                         {/* Dietary Options */}
-                        <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                        <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 shadow-border">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
                                     <Leaf className="w-5 h-5 text-green-600" />

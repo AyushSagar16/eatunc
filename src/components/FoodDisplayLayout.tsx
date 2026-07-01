@@ -96,7 +96,7 @@ function MealTabsWithScrollIndicators({
 
             <div
                 ref={scrollRef}
-                className="inline-flex gap-1 p-1 bg-zinc-100 rounded-2xl border border-zinc-200/50 overflow-x-auto no-visible-scrollbar max-w-full"
+                className="inline-flex gap-1 p-1 bg-zinc-100 rounded-2xl shadow-border overflow-x-auto no-visible-scrollbar max-w-full"
             >
                 {availablePeriods.map((period) => {
                     const isActive = selectedPeriod === period
@@ -105,9 +105,9 @@ function MealTabsWithScrollIndicators({
                             key={period}
                             onClick={() => onPeriodChange(period)}
                             whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
+                            whileTap={{ scale: 0.96 }}
                             className={`
-                                px-4 sm:px-6 py-3 min-h-[44px] rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 whitespace-nowrap touch-manipulation flex-shrink-0
+                                px-4 sm:px-6 py-3 min-h-[44px] rounded-xl text-xs sm:text-sm font-bold transition-colors duration-200 whitespace-nowrap touch-manipulation flex-shrink-0
                                 ${isActive
                                     ? 'bg-blue-600 text-white shadow-md'
                                     : 'text-zinc-500 hover:text-zinc-700 active:bg-white/50'
@@ -288,8 +288,8 @@ export default function FoodDisplayLayout({
                                 data-tutorial-target="hall-switcher"
                                 onClick={handleSwitchHall}
                                 whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="flex items-center justify-center gap-1.5 px-3 sm:px-6 py-1.5 min-h-[52px] rounded-xl bg-zinc-100 text-zinc-900 border border-zinc-200/50 font-bold text-md sm:text-base hover:bg-zinc-200 active:bg-zinc-300 transition-all touch-manipulation"
+                                whileTap={{ scale: 0.96 }}
+                                className="flex items-center justify-center gap-1.5 px-3 sm:px-6 py-1.5 min-h-[52px] rounded-xl bg-zinc-100 text-zinc-900 shadow-border hover:shadow-border-hover font-bold text-md sm:text-base hover:bg-zinc-200 active:bg-zinc-300 transition-[box-shadow,background-color] duration-150 ease-out touch-manipulation"
                             >
                                 <ArrowLeftRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-500 shrink-0" />
                                 <span className="whitespace-nowrap">
@@ -299,13 +299,13 @@ export default function FoodDisplayLayout({
                             </motion.button>
 
                             {/* Date Selector */}
-                            <div ref={datePickerRef} className="relative flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-zinc-100 rounded-xl border border-zinc-200/50 min-h-[52px] shrink-0" data-tutorial-target="date-nav">
+                            <div ref={datePickerRef} className="relative flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-zinc-100 rounded-xl shadow-border min-h-[52px] shrink-0" data-tutorial-target="date-nav">
                                 <motion.button
                                     onClick={handlePrevDate}
                                     disabled={!canGoBack}
                                     whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
-                                    className="p-3 min-w-[44px] min-h-[44px] rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-white active:bg-zinc-200 disabled:opacity-30 disabled:pointer-events-none transition-all touch-manipulation flex items-center justify-center"
+                                    whileTap={{ scale: 0.96 }}
+                                    className="p-3 min-w-[44px] min-h-[44px] rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-white active:bg-zinc-200 disabled:opacity-30 disabled:pointer-events-none transition-colors touch-manipulation flex items-center justify-center"
                                 >
                                     <ChevronLeft className="w-5 h-5" />
                                 </motion.button>
@@ -313,8 +313,8 @@ export default function FoodDisplayLayout({
                                 <motion.button
                                     onClick={handleCalendarToggle}
                                     whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    className="px-2 sm:px-4 min-w-[80px] sm:min-w-[120px] text-center font-bold text-md sm:text-base text-zinc-900 hover:text-blue-600 transition-colors cursor-pointer"
+                                    whileTap={{ scale: 0.96 }}
+                                    className="px-2 sm:px-4 min-w-[80px] sm:min-w-[120px] text-center font-bold text-md sm:text-base text-zinc-900 hover:text-blue-600 transition-colors cursor-pointer tabular-nums"
                                 >
                                     {formattedDate}
                                 </motion.button>
@@ -323,14 +323,14 @@ export default function FoodDisplayLayout({
                                     onClick={handleNextDate}
                                     disabled={!canGoForward}
                                     whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
-                                    className="p-3 min-w-[44px] min-h-[44px] rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-white active:bg-zinc-200 disabled:opacity-30 disabled:pointer-events-none transition-all touch-manipulation flex items-center justify-center"
+                                    whileTap={{ scale: 0.96 }}
+                                    className="p-3 min-w-[44px] min-h-[44px] rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-white active:bg-zinc-200 disabled:opacity-30 disabled:pointer-events-none transition-colors touch-manipulation flex items-center justify-center"
                                 >
                                     <ChevronRight className="w-5 h-5" />
                                 </motion.button>
 
                                 {/* Calendar Popup */}
-                                <AnimatePresence>
+                                <AnimatePresence initial={false}>
                                     {isCalendarOpen && (
                                         <CalendarPicker
                                             selectedDate={selectedDate}
@@ -356,7 +356,7 @@ export default function FoodDisplayLayout({
                         <select
                             value={selectedPeriod}
                             onChange={(e) => onPeriodChange(e.target.value)}
-                            className="w-full h-14 px-4 bg-blue-600 border border-blue-500 rounded-2xl text-base font-bold text-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all appearance-none cursor-pointer pr-12 shadow-lg shadow-blue-500/20"
+                            className="w-full h-14 px-4 bg-blue-600 border border-blue-500 rounded-2xl text-base font-bold text-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-[box-shadow] duration-150 ease-out appearance-none cursor-pointer pr-12 shadow-lg shadow-blue-500/20"
                         >
                             {availablePeriods.map((period) => (
                                 <option key={period} value={period} className="bg-white text-zinc-900">

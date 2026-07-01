@@ -44,6 +44,11 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  /* Shadow-as-border tokens — layered transparent shadows that read as a
+     1px ring plus subtle depth, and adapt to any background. Inline so the
+     underlying values can be redefined per color scheme below. */
+  --shadow-border: var(--shadow-border-base);
+  --shadow-border-hover: var(--shadow-border-elevated);
 }
 
 /* Base variables */
@@ -81,6 +86,10 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  /* Dark mode: a single white ring — layered depth shadows aren't visible
+     on dark backgrounds. */
+  --shadow-border-base: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-border-elevated: 0 0 0 1px rgba(255, 255, 255, 0.13);
 }
 
 /* Ensure Tailwind 4 dark: variant uses the .dark class */
@@ -90,6 +99,9 @@
 html {
   /* Fix for iOS Safari viewport height issues */
   height: -webkit-fill-available;
+  /* Crisper, thinner text rendering on macOS (ignored elsewhere) */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -136,6 +148,15 @@ body {
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* Light mode: 1px ring + subtle lift + ambient depth */
+  --shadow-border-base:
+    0 0 0 1px rgba(0, 0, 0, 0.06),
+    0 1px 2px -1px rgba(0, 0, 0, 0.06),
+    0 2px 4px 0 rgba(0, 0, 0, 0.04);
+  --shadow-border-elevated:
+    0 0 0 1px rgba(0, 0, 0, 0.08),
+    0 1px 2px -1px rgba(0, 0, 0, 0.08),
+    0 2px 4px 0 rgba(0, 0, 0, 0.06);
 }
 
 @layer base {
@@ -145,6 +166,16 @@ body {
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Balance short headings so they don't leave orphaned words; keep body
+     copy free of single-word last lines. */
+  h1, h2, h3, h4, h5, h6 {
+    text-wrap: balance;
+  }
+
+  p, li, figcaption, blockquote, dd {
+    text-wrap: pretty;
   }
 }
 

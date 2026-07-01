@@ -78,7 +78,7 @@ export default function AnnouncementBanner({
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+                exit={{ opacity: 0, y: -12, transition: { duration: 0.15, ease: 'easeOut' } }}
                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 className={`w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white relative overflow-hidden ${className}`}
             >
@@ -105,7 +105,7 @@ export default function AnnouncementBanner({
                             <motion.button
                                 onClick={handleCheckItOut}
                                 whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
+                                whileTap={{ scale: 0.96 }}
                                 className="px-4 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full text-sm font-bold transition-colors whitespace-nowrap"
                             >
                                 Check it out →
@@ -113,7 +113,7 @@ export default function AnnouncementBanner({
 
                             <button
                                 onClick={handleDismiss}
-                                className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
+                                className="relative p-1.5 hover:bg-white/20 rounded-full transition-[background-color,transform] duration-150 ease-out active:scale-[0.96] before:content-[''] before:absolute before:left-1/2 before:top-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:h-10 before:w-10"
                                 aria-label="Dismiss announcement"
                             >
                                 <X className="w-4 h-4" />

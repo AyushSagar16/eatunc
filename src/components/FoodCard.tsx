@@ -171,7 +171,7 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                 scale: 1.01,
                 y: -2,
             }}
-            whileTap={{ scale: 0.99 }}
+            whileTap={{ scale: 0.96 }}
             transition={{
                 duration: 0.2,
                 ease: 'easeOut',
@@ -183,15 +183,12 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                 containsAllergen
                     ? 'border-2 border-dashed border-zinc-300 dark:border-zinc-700 opacity-60'
                     : matchesDietaryFilter
-                        ? 'border-2 border-green-400 dark:border-green-600 bg-green-50/50 dark:bg-green-900/20'
-                        : 'border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/60',
+                        ? 'border-2 border-green-400 dark:border-green-600 bg-green-50/50 dark:bg-green-900/20 hover:shadow-border-hover'
+                        : 'shadow-border bg-white dark:bg-zinc-900/60 hover:shadow-border-hover',
                 !containsAllergen && !matchesDietaryFilter && 'bg-white dark:bg-zinc-900/60',
                 'p-5 sm:p-6',
                 'h-full min-h-[140px]',
-                'transition-shadow duration-300',
-                containsAllergen
-                    ? ''
-                    : 'hover:shadow-xl hover:shadow-zinc-200/50 dark:hover:shadow-zinc-900/50 hover:border-zinc-300 dark:hover:border-zinc-700',
+                'transition-[box-shadow] duration-150 ease-out',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2'
             )}
         >
@@ -251,7 +248,7 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                     transition={{ duration: 0.2 }}
                 >
                     <span className={cn(
-                        'text-2xl sm:text-3xl font-black',
+                        'text-2xl sm:text-3xl font-black tabular-nums',
                         containsAllergen
                             ? 'text-zinc-300 dark:text-zinc-700'
                             : 'bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent'
@@ -322,12 +319,12 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                                     e.stopPropagation()
                                     setShowDietaryPopover(!showDietaryPopover)
                                 }}
-                                className={`${isMobile ? 'w-11 h-11 -m-2' : 'w-6 h-6'} flex items-center justify-center cursor-pointer`}
+                                className={`${isMobile ? 'w-11 h-11 -m-2' : 'w-6 h-6'} flex items-center justify-center cursor-pointer active:scale-[0.96] transition-transform duration-150 ease-out`}
                                 aria-label={`Show ${hiddenCount} more dietary preferences`}
                             >
                                 {/* Visual button - always 24x24, uses menu-dietary-icon for iOS fallback */}
                                 <div className="menu-dietary-icon w-6 h-6 rounded-full flex items-center justify-center">
-                                    <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">
+                                    <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400 tabular-nums">
                                         +{hiddenCount}
                                     </span>
                                 </div>

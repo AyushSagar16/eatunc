@@ -46,7 +46,7 @@ export default function AboutPage() {
 
                 <button
                     onClick={handleTryTutorial}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#4B9CD3] hover:bg-[#4B9CD3]/90 text-white font-semibold transition-all shadow-md active:scale-95"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#4B9CD3] hover:bg-[#4B9CD3]/90 text-white font-semibold transition-[background-color,transform] duration-150 ease-out shadow-md active:scale-[0.96]"
                 >
                     <Play className="w-4 h-4 fill-current" />
                     Try it out

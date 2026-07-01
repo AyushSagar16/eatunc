@@ -28,7 +28,7 @@ export default function NotFound() {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                    className="relative flex flex-col items-center p-8 md:p-16 rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-center overflow-hidden"
+                    className="relative flex flex-col items-center p-8 md:p-16 rounded-[2.5rem] shadow-border bg-white/5 backdrop-blur-md text-center overflow-hidden"
                 >
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -38,8 +38,8 @@ export default function NotFound() {
                     />
 
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
+                        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                         transition={{ duration: 0.6, delay: 0.2 }}
                         className="space-y-6 relative z-10"
                     >
@@ -73,16 +73,16 @@ export default function NotFound() {
                         </p>
 
                         <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
+                            initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
+                            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                             transition={{ duration: 0.6, delay: 0.4 }}
                             className="pt-4"
                         >
                             <Link href="/">
                                 <motion.button
                                     whileHover={{ scale: 1.05, y: -2 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    className="px-8 py-4 rounded-2xl bg-white text-zinc-950 font-bold text-lg shadow-xl shadow-white/5 hover:shadow-white/10 transition-all duration-300 flex items-center gap-2 mx-auto"
+                                    whileTap={{ scale: 0.96 }}
+                                    className="px-8 py-4 rounded-2xl bg-white text-zinc-950 font-bold text-lg shadow-xl shadow-white/5 hover:shadow-white/10 transition-[box-shadow] duration-300 flex items-center gap-2 mx-auto"
                                 >
                                     <span>Head Back Home</span>
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

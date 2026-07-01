@@ -252,16 +252,16 @@ export default function FilterSidebar({
                 data-tutorial-target="filter-button"
                 onClick={() => setIsModalOpen(true)}
                 whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                whileTap={{ scale: 0.96 }}
                 aria-label="Open filters"
-                className="fixed bottom-6 right-6 z-50 w-14 h-14 min-w-[56px] min-h-[56px] bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center hover:bg-blue-700 active:bg-blue-800 transition-all touch-manipulation"
+                className="fixed bottom-6 right-6 z-50 w-14 h-14 min-w-[56px] min-h-[56px] bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center hover:bg-blue-700 active:bg-blue-800 transition-[background-color,box-shadow] duration-150 ease-out touch-manipulation"
             >
                 <Filter className="w-6 h-6" />
                 {activeCount > 0 && (
                     <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="absolute -top-1 -right-1 w-6 h-6 bg-white text-blue-600 text-xs font-bold rounded-full flex items-center justify-center border-2 border-blue-600"
+                        className="absolute -top-1 -right-1 w-6 h-6 bg-white text-blue-600 text-xs font-bold tabular-nums rounded-full flex items-center justify-center border-2 border-blue-600"
                     >
                         {activeCount}
                     </motion.div>
@@ -285,7 +285,7 @@ export default function FilterSidebar({
                         <motion.div
                             initial={{ x: '100%' }}
                             animate={{ x: 0 }}
-                            exit={{ x: '100%' }}
+                            exit={{ x: '100%', transition: { duration: 0.2, ease: 'easeIn' } }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                             className="fixed top-0 right-0 bottom-0 w-full sm:w-96 sm:max-w-md bg-white dark:bg-zinc-900 z-[101] overflow-auto shadow-2xl"
                         >
@@ -300,7 +300,7 @@ export default function FilterSidebar({
                                             Filters
                                         </h2>
                                         {activeCount > 0 && (
-                                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
                                                 {activeCount} active filter{activeCount !== 1 ? 's' : ''}
                                             </p>
                                         )}
@@ -328,6 +328,7 @@ export default function FilterSidebar({
                                             Macro Filters
                                         </h3>
                                         <motion.div
+                                            initial={false}
                                             animate={{ rotate: collapsedSections.macro ? -90 : 0 }}
                                             transition={{ duration: 0.2 }}
                                             className="text-zinc-400 dark:text-zinc-500"
@@ -358,13 +359,13 @@ export default function FilterSidebar({
                                                                     }
                                                                 }}
                                                                 whileHover={{ scale: 1.02 }}
-                                                                whileTap={{ scale: 0.98 }}
+                                                                whileTap={{ scale: 0.96 }}
                                                                 role="checkbox"
                                                                 aria-checked={isActive}
                                                                 aria-label={`${filter.label}: ${filter.description}${isActive ? ', currently selected' : ''}`}
                                                                 tabIndex={0}
                                                                 className={cn(
-                                                                    'flex flex-col items-center justify-center gap-1 p-3 rounded-xl transition-all min-h-[80px]',
+                                                                    'flex flex-col items-center justify-center gap-1 p-3 rounded-xl transition-[background-color,border-color,color] duration-150 ease-out min-h-[80px]',
                                                                     'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
                                                                     isActive
                                                                         ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-2 border-blue-500 dark:border-blue-600'
@@ -411,6 +412,7 @@ export default function FilterSidebar({
                                             Dietary Preferences
                                         </h3>
                                         <motion.div
+                                            initial={false}
                                             animate={{ rotate: collapsedSections.dietary ? -90 : 0 }}
                                             transition={{ duration: 0.2 }}
                                             className="text-zinc-400 dark:text-zinc-500"
@@ -442,13 +444,13 @@ export default function FilterSidebar({
                                                                     }
                                                                 }}
                                                                 whileHover={{ scale: 1.02 }}
-                                                                whileTap={{ scale: 0.98 }}
+                                                                whileTap={{ scale: 0.96 }}
                                                                 role="checkbox"
                                                                 aria-checked={isActive}
                                                                 aria-label={`${pref.label}${isActive ? ', currently selected' : ''}`}
                                                                 tabIndex={0}
                                                                 className={cn(
-                                                                    'flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all min-h-[72px]',
+                                                                    'flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-[background-color,border-color,color] duration-150 ease-out min-h-[72px]',
                                                                     'focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2',
                                                                     isActive
                                                                         ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-2 border-emerald-500 dark:border-emerald-600'
@@ -496,6 +498,7 @@ export default function FilterSidebar({
                                             Avoid Allergens
                                         </h3>
                                         <motion.div
+                                            initial={false}
                                             animate={{ rotate: collapsedSections.allergens ? -90 : 0 }}
                                             transition={{ duration: 0.2 }}
                                             className="text-zinc-400 dark:text-zinc-500"
@@ -529,13 +532,13 @@ export default function FilterSidebar({
                                                                     }
                                                                 }}
                                                                 whileHover={{ scale: 1.02 }}
-                                                                whileTap={{ scale: 0.98 }}
+                                                                whileTap={{ scale: 0.96 }}
                                                                 role="checkbox"
                                                                 aria-checked={isActive}
                                                                 aria-label={`Avoid ${allergen.label}${isActive ? ', currently selected' : ''}`}
                                                                 tabIndex={0}
                                                                 className={cn(
-                                                                    'flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all min-h-[56px]',
+                                                                    'flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-[background-color,border-color,color] duration-150 ease-out min-h-[56px]',
                                                                     'focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2',
                                                                     isActive
                                                                         ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-2 border-amber-500 dark:border-amber-600'
@@ -562,7 +565,7 @@ export default function FilterSidebar({
                                 {activeCount > 0 && (
                                     <button
                                         onClick={handleClearAll}
-                                        className="w-full py-3 min-h-[52px] bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-base rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 active:bg-zinc-300 dark:active:bg-zinc-600 transition-colors touch-manipulation flex items-center justify-center gap-2"
+                                        className="w-full py-3 min-h-[52px] bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-base rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 active:bg-zinc-300 dark:active:bg-zinc-600 active:scale-[0.96] transition-[background-color,transform] duration-150 ease-out touch-manipulation flex items-center justify-center gap-2"
                                     >
                                         <Trash2 className="w-5 h-5" />
                                         Clear All Filters
@@ -570,7 +573,7 @@ export default function FilterSidebar({
                                 )}
                                 <button
                                     onClick={() => setIsModalOpen(false)}
-                                    className="w-full py-4 min-h-[52px] bg-blue-600 text-white font-bold text-lg rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation shadow-lg"
+                                    className="w-full py-4 min-h-[52px] bg-blue-600 text-white font-bold text-lg rounded-xl hover:bg-blue-700 active:bg-blue-800 active:scale-[0.96] transition-[background-color,transform] duration-150 ease-out touch-manipulation shadow-lg"
                                 >
                                     Apply Filters
                                 </button>

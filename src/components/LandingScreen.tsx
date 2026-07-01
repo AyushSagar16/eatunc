@@ -3,9 +3,42 @@
 import { useRouter } from 'next/navigation'
 
 import DitherShader from './ui/dither-shader'
-import { motion } from 'motion/react'
+import { motion, type Variants } from 'motion/react'
 import Image from 'next/image'
 import AnnouncementBanner from './AnnouncementBanner'
+
+// Split, staggered entrance: the whole hero plays in on load (title → cards →
+// caption), with the title cascading word-by-word. Each chunk shares one
+// "rise + unblur" feel so the screen assembles rather than pops.
+const pageContainer: Variants = {
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.1, delayChildren: 0.1 } },
+}
+
+const heroContainer: Variants = {
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.08 } },
+}
+
+const titleContainer: Variants = {
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.08 } },
+}
+
+const cardsContainer: Variants = {
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.12 } },
+}
+
+const enterChunk: Variants = {
+    hidden: { opacity: 0, y: 12, filter: 'blur(4px)' },
+    visible: {
+        opacity: 1,
+        y: 0,
+        filter: 'blur(0px)',
+        transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+    },
+}
 
 export default function LandingScreen() {
     const router = useRouter()
@@ -46,19 +79,20 @@ export default function LandingScreen() {
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/20 to-zinc-950/40" />
             </div>
 
-            <div className="max-w-7xl w-full px-6 py-8 md:py-12 relative z-10 flex flex-col items-center justify-center flex-1 gap-8 md:gap-12">
+            <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={pageContainer}
+                className="max-w-7xl w-full px-6 py-8 md:py-12 relative z-10 flex flex-col items-center justify-center flex-1 gap-8 md:gap-12"
+            >
                 {/* Header content... (lines 48-241) */}
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                    variants={heroContainer}
                     className="text-center space-y-6"
                 >
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.5, delay: 0.1 }}
-                        className="inline-flex items-center justify-center rounded-full bg-white/10 border border-white/10 backdrop-blur-md shadow-lg shadow-black/20"
+                        variants={enterChunk}
+                        className="inline-flex items-center justify-center rounded-full bg-white/10 border border-white/10 backdrop-blur-md shadow-lg shadow-black/20 will-change-transform"
                     >
                         <div className="relative w-48 h-16">
                             <Image
@@ -71,44 +105,30 @@ export default function LandingScreen() {
                         </div>
                     </motion.div>
                     <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.2 }}
+                        variants={titleContainer}
                         className="text-5xl md:text-8xl font-black tracking-tighter text-white drop-shadow-2xl"
                     >
-                        Find Your <br className="hidden md:block" />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-white to-blue-200">Fuel</span>
+                        <motion.span variants={enterChunk} className="inline-block will-change-transform">Find</motion.span>{' '}
+                        <motion.span variants={enterChunk} className="inline-block will-change-transform">Your</motion.span>{' '}
+                        <br className="hidden md:block" />
+                        <motion.span variants={enterChunk} className="inline-block will-change-transform text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-white to-blue-200">Fuel</motion.span>
                     </motion.h1>
                 </motion.div>
 
                 {/* Selection Cards */}
                 <motion.div
-                    initial="hidden"
-                    animate="visible"
-                    variants={{
-                        hidden: { opacity: 0 },
-                        visible: {
-                            opacity: 1,
-                            transition: {
-                                staggerChildren: 0.15,
-                                delayChildren: 0.3
-                            }
-                        }
-                    }}
+                    variants={cardsContainer}
                     className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 w-full max-w-4xl"
                 >
 
                     {/* Chase Card */}
                     <motion.button
-                        variants={{
-                            hidden: { opacity: 0, y: 30, scale: 0.9 },
-                            visible: { opacity: 1, y: 0, scale: 1 }
-                        }}
+                        variants={enterChunk}
                         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                         onClick={() => handleSelect('chase')}
                         whileHover={{ scale: 1.02, y: -4 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="group relative flex flex-col p-5 md:p-10 h-48 md:h-80 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-left overflow-hidden"
+                        whileTap={{ scale: 0.96 }}
+                        className="group relative flex flex-col p-5 md:p-10 h-48 md:h-80 rounded-[2rem] md:rounded-[2.5rem] bg-white/5 backdrop-blur-md text-left overflow-hidden shadow-border transition-[box-shadow] duration-150 ease-out hover:shadow-border-hover"
                     >
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -167,15 +187,12 @@ export default function LandingScreen() {
 
                     {/* Lenoir Card */}
                     <motion.button
-                        variants={{
-                            hidden: { opacity: 0, y: 30, scale: 0.9 },
-                            visible: { opacity: 1, y: 0, scale: 1 }
-                        }}
+                        variants={enterChunk}
                         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                         onClick={() => handleSelect('lenoir')}
                         whileHover={{ scale: 1.02, y: -4 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="group relative flex flex-col p-5 md:p-10 h-48 md:h-80 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-left overflow-hidden"
+                        whileTap={{ scale: 0.96 }}
+                        className="group relative flex flex-col p-5 md:p-10 h-48 md:h-80 rounded-[2rem] md:rounded-[2.5rem] bg-white/5 backdrop-blur-md text-left overflow-hidden shadow-border transition-[box-shadow] duration-150 ease-out hover:shadow-border-hover"
                     >
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -234,14 +251,12 @@ export default function LandingScreen() {
                 </motion.div>
 
                 <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.6 }}
+                    variants={enterChunk}
                     className="text-zinc-500 font-medium text-sm"
                 >
                     Menus are dynamically updated from UNC Dining services.
                 </motion.p>
-            </div>
+            </motion.div>
         </div>
     )
 }

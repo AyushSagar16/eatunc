@@ -103,7 +103,7 @@ export default function FoodModal({
                         <motion.button
                             onClick={onClose}
                             whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            whileTap={{ scale: 0.96 }}
                             transition={{ duration: 0.2 }}
                             className="absolute right-6 top-6 rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 transition-colors z-10"
                         >
@@ -150,7 +150,7 @@ export default function FoodModal({
                                 <div className="flex flex-col">
                                     <span className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-1">Total Calories</span>
                                     <span
-                                        className="text-5xl font-black text-blue-600 dark:text-blue-400"
+                                        className="text-5xl font-black text-blue-600 dark:text-blue-400 tabular-nums"
                                     >
                                         {calories_kcal ?? 0}
                                         <span className="ml-2 text-lg font-normal text-zinc-400">kcal</span>
@@ -158,7 +158,7 @@ export default function FoodModal({
                                     {amount_per_serving && (
                                         <div className="mt-2">
                                             <span className="text-xs uppercase tracking-widest text-zinc-400 font-bold">Serving: </span>
-                                            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{amount_per_serving}</span>
+                                            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">{amount_per_serving}</span>
                                         </div>
                                     )}
                                 </div>
@@ -251,7 +251,7 @@ function NutrientHighlight({ label, value, unit, color, bgColor }: { label: stri
         >
             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{label}</span>
             <div className={`flex items-baseline gap-0.5 ${color}`}>
-                <span className="text-xl font-black">{value ?? 0}</span>
+                <span className="text-xl font-black tabular-nums">{value ?? 0}</span>
                 <span className="text-xs font-bold opacity-70">{unit}</span>
             </div>
         </motion.div>

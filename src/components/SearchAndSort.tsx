@@ -85,7 +85,7 @@ export default function SearchAndSort({
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
                     placeholder={placeholder}
-                    className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                    className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-[border-color,box-shadow] duration-150 ease-out"
                 />
                 <AnimatePresence>
                     {searchQuery && (
@@ -93,8 +93,10 @@ export default function SearchAndSort({
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.8 }}
+                            whileTap={{ scale: 0.96 }}
                             onClick={() => onSearchChange('')}
-                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                            aria-label="Clear search"
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors before:absolute before:inset-y-0 before:right-0 before:w-11 before:content-['']"
                         >
                             <X className="w-4 h-4" />
                         </motion.button>
@@ -115,9 +117,9 @@ export default function SearchAndSort({
                 <motion.button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileTap={{ scale: 0.96 }}
                     className={`
-                        flex items-center gap-2 px-4 h-14 sm:h-auto sm:py-2.5 rounded-2xl sm:rounded-xl border text-base sm:text-sm font-bold sm:font-medium transition-all
+                        flex items-center gap-2 px-4 h-14 sm:h-auto sm:py-2.5 rounded-2xl sm:rounded-xl border text-base sm:text-sm font-bold sm:font-medium transition-[background-color,border-color,color] duration-150 ease-out
                         ${isDropdownOpen
                             ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300'
                             : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 shadow-lg shadow-zinc-200/20 sm:shadow-none'

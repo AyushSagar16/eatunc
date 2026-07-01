@@ -163,7 +163,7 @@ async function MenuContent({ date, hallSlug }: { date: string, hallSlug: string 
                     <p className="text-zinc-500 mb-8 text-sm">{menuError.message}</p>
                     <a
                         href={`/${hallSlug}/${date}`}
-                        className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors w-full"
+                        className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-[background-color,transform] duration-150 ease-out active:scale-[0.96] w-full"
                     >
                         Retry Connection
                     </a>

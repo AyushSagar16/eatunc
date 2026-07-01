@@ -108,8 +108,8 @@ export default function CalendarPicker({
                 <motion.button
                     onClick={handlePrevMonth}
                     whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                    whileTap={{ scale: 0.96 }}
+                    className="inline-flex items-center justify-center min-w-11 min-h-11 p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors duration-150 ease-out"
                     aria-label="Previous month"
                 >
                     <ChevronLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
@@ -122,8 +122,8 @@ export default function CalendarPicker({
                 <motion.button
                     onClick={handleNextMonth}
                     whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                    whileTap={{ scale: 0.96 }}
+                    className="inline-flex items-center justify-center min-w-11 min-h-11 p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors duration-150 ease-out"
                     aria-label="Next month"
                 >
                     <ChevronRight className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
@@ -163,9 +163,9 @@ export default function CalendarPicker({
                             onClick={() => isSelectable && handleDateClick(dateStr)}
                             disabled={!isSelectable}
                             whileHover={isSelectable ? { scale: 1.05 } : {}}
-                            whileTap={isSelectable ? { scale: 0.95 } : {}}
+                            whileTap={isSelectable ? { scale: 0.96 } : {}}
                             className={`
-                                aspect-square rounded-lg text-sm font-semibold transition-all
+                                aspect-square rounded-lg text-sm font-semibold tabular-nums transition-[background-color,color,box-shadow] duration-150 ease-out
                                 ${isSelected
                                     ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
                                     : isToday

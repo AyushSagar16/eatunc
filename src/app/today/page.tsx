@@ -67,7 +67,7 @@ export default function TodayPage() {
                     {/* Chase Card */}
                     <Link
                         href={`/chase/${today}`}
-                        className="group p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all hover:-translate-y-1"
+                        className="group p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-[box-shadow,border-color,transform] duration-150 ease-out hover:-translate-y-1"
                     >
                         <div className="w-14 h-14 rounded-xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                             <svg className="w-7 h-7 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -78,7 +78,7 @@ export default function TodayPage() {
                             Chase
                         </h2>
                         <p className="text-sm text-zinc-500 mb-4">South Campus</p>
-                        <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium text-sm group-hover:gap-2 transition-all">
+                        <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium text-sm group-hover:gap-2 transition-[gap] duration-150 ease-out">
                             View Menu <ArrowRight className="w-4 h-4" />
                         </span>
                     </Link>
@@ -86,7 +86,7 @@ export default function TodayPage() {
                     {/* Lenoir Card */}
                     <Link
                         href={`/lenoir/${today}`}
-                        className="group p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-lg hover:border-teal-300 dark:hover:border-teal-700 transition-all hover:-translate-y-1"
+                        className="group p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-lg hover:border-teal-300 dark:hover:border-teal-700 transition-[box-shadow,border-color,transform] duration-150 ease-out hover:-translate-y-1"
                     >
                         <div className="w-14 h-14 rounded-xl bg-teal-500/10 border border-teal-400/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                             <svg className="w-7 h-7 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -97,7 +97,7 @@ export default function TodayPage() {
                             Top of Lenoir
                         </h2>
                         <p className="text-sm text-zinc-500 mb-4">North Campus</p>
-                        <span className="inline-flex items-center gap-1 text-teal-600 dark:text-teal-400 font-medium text-sm group-hover:gap-2 transition-all">
+                        <span className="inline-flex items-center gap-1 text-teal-600 dark:text-teal-400 font-medium text-sm group-hover:gap-2 transition-[gap] duration-150 ease-out">
                             View Menu <ArrowRight className="w-4 h-4" />
                         </span>
                     </Link>

@@ -39,7 +39,7 @@ export default function Error({
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                    className="relative flex flex-col items-center p-8 md:p-16 rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-center overflow-hidden"
+                    className="relative flex flex-col items-center p-8 md:p-16 rounded-[2.5rem] shadow-border bg-white/5 backdrop-blur-md text-center overflow-hidden"
                 >
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -49,8 +49,8 @@ export default function Error({
                     />
 
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
+                        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                         transition={{ duration: 0.6, delay: 0.2 }}
                         className="space-y-6 relative z-10"
                     >
@@ -71,16 +71,16 @@ export default function Error({
                         </p>
 
                         <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
+                            initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
+                            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                             transition={{ duration: 0.6, delay: 0.4 }}
                             className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
                         >
                             <motion.button
                                 onClick={() => reset()}
                                 whileHover={{ scale: 1.05, y: -2 }}
-                                whileTap={{ scale: 0.95 }}
-                                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white text-zinc-950 font-bold text-lg shadow-xl shadow-white/5 hover:shadow-white/10 transition-all duration-300 flex items-center justify-center gap-2"
+                                whileTap={{ scale: 0.96 }}
+                                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white text-zinc-950 font-bold text-lg shadow-xl shadow-white/5 hover:shadow-white/10 transition-[box-shadow] duration-300 flex items-center justify-center gap-2"
                             >
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -91,8 +91,8 @@ export default function Error({
                             <Link href="/" className="w-full sm:w-auto">
                                 <motion.button
                                     whileHover={{ scale: 1.05, y: -2 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-lg hover:bg-white/10 transition-all duration-300 flex items-center justify-center gap-2"
+                                    whileTap={{ scale: 0.96 }}
+                                    className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-lg hover:bg-white/10 transition-[background-color] duration-300 flex items-center justify-center gap-2"
                                 >
                                     <span>Go Home</span>
                                 </motion.button>

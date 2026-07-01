@@ -44,7 +44,7 @@ export default function CDSBanner({ className = '' }: CDSBannerProps) {
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+                exit={{ opacity: 0, y: -12, transition: { duration: 0.15, ease: 'easeOut' } }}
                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 className={`w-full bg-red-500 text-white relative overflow-hidden ${className}`}
             >
@@ -69,7 +69,7 @@ export default function CDSBanner({ className = '' }: CDSBannerProps) {
 
                         <button
                             onClick={handleDismiss}
-                            className="p-1.5 hover:bg-white/20 rounded-full transition-colors flex-shrink-0"
+                            className="relative flex-shrink-0 p-1.5 hover:bg-white/20 rounded-full transition-[background-color,transform] duration-150 ease-out active:scale-[0.96] before:content-[''] before:absolute before:left-1/2 before:top-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:h-11 before:w-11"
                             aria-label="Dismiss CDS announcement"
                         >
                             <X className="w-4 h-4" />

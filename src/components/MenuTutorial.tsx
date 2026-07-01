@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import Joyride, { CallBackProps, STATUS, ACTIONS, Step, Styles } from 'react-joyride'
+import Joyride, { CallBackProps, STATUS, ACTIONS, Step, Styles, TooltipRenderProps } from 'react-joyride'
 import { usePostHog } from 'posthog-js/react'
 
 // UNC Brand Colors
@@ -186,6 +186,100 @@ const joyrideStyles: Partial<Styles> = {
 }
 
 /**
+ * Custom tooltip rendered by react-joyride.
+ *
+ * Re-creates the glassmorphic default look while adding interaction polish:
+ * press feedback on every control, a tabular-nums step counter, and 40px hit
+ * areas on the close/skip targets. All behavior is delegated to joyride's
+ * render props (onClick / role / aria-label stay intact) so the tour API is
+ * untouched.
+ */
+function JoyrideTooltip({
+    backProps,
+    closeProps,
+    continuous,
+    index,
+    isLastStep,
+    primaryProps,
+    size,
+    skipProps,
+    step,
+    tooltipProps,
+}: TooltipRenderProps) {
+    return (
+        <div
+            {...tooltipProps}
+            className="react-joyride__tooltip relative w-[320px] max-w-[calc(100vw-2rem)] rounded-2xl bg-white p-5 text-left shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]"
+        >
+            {!step.hideCloseButton && (
+                <button
+                    {...closeProps}
+                    className="absolute right-1.5 top-1.5 inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-400 transition-[transform,color] duration-150 ease-out hover:text-gray-600 active:scale-[0.96]"
+                >
+                    <svg
+                        className="h-3.5 w-3.5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                        aria-hidden="true"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            )}
+
+            <div className="pr-9">
+                {step.title && (
+                    <h2 className="mb-2 text-lg font-extrabold" style={{ color: UNC_NAVY }}>
+                        {step.title}
+                    </h2>
+                )}
+                <div className="text-sm leading-relaxed text-gray-600">{step.content}</div>
+            </div>
+
+            {!step.hideFooter && (
+                <div className="mt-5 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                        {continuous && size > 1 && (
+                            <span className="text-xs font-semibold tabular-nums text-gray-400">
+                                {index + 1} / {size}
+                            </span>
+                        )}
+                        {step.showSkipButton && !isLastStep && (
+                            <button
+                                {...skipProps}
+                                className="inline-flex min-h-[40px] items-center rounded-xl px-3 text-[13px] font-medium text-gray-500 transition-transform duration-150 ease-out hover:text-gray-700 active:scale-[0.96]"
+                            >
+                                {step.locale.skip}
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {!step.hideBackButton && index > 0 && (
+                            <button
+                                {...backProps}
+                                className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-700 transition-transform duration-150 ease-out hover:bg-gray-200 active:scale-[0.96]"
+                            >
+                                {step.locale.back}
+                            </button>
+                        )}
+                        <button
+                            {...primaryProps}
+                            className="rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-transform duration-150 ease-out active:scale-[0.96]"
+                            style={{ backgroundColor: UNC_BLUE }}
+                        >
+                            {continuous ? (isLastStep ? step.locale.last : step.locale.next) : step.locale.close}
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
+/**
  * MenuTutorial - Interactive onboarding tutorial for first-time users
  * 
  * Features:
@@ -313,6 +407,7 @@ export default function MenuTutorial() {
             disableScrolling={false}
             spotlightClicks
             styles={joyrideStyles}
+            tooltipComponent={JoyrideTooltip}
             callback={handleJoyrideCallback}
             locale={{
                 back: 'Back',
