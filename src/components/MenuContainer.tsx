@@ -10,7 +10,7 @@ import FoodDisplayLayout from '@/components/FoodDisplayLayout'
 import FilterSidebar from '@/components/FilterSidebar'
 import { FoodGridSkeleton, ContentLoader } from '@/components/LoadingStates'
 import { FilterOption, DietaryPreferenceOption, AllergenOption } from '@/lib/types'
-import { calculateHealthyScore, getMealPeriodLabel, getActiveMealPeriod } from '@/lib/utils'
+import { calculateHealthyScore, getMealPeriodLabel, getActiveMealPeriod, isImplausibleServing } from '@/lib/utils'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { parseDietaryPreferences, parseAllergens } from '@/components/icons/DietaryIcons'
 
@@ -810,6 +810,11 @@ export default function MenuContainer({
                 }
 
                 if (isCondimentOrDrink(item, station)) {
+                    return null
+                }
+
+                // Skip rows published at case quantity — they outscore every real dish
+                if (isImplausibleServing(item)) {
                     return null
                 }
 

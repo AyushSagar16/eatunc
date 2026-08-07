@@ -59,6 +59,13 @@ export default function PrivacyPage() {
                             Eat UNC is committed to protecting your privacy. This policy explains how we collect,
                             use, and safeguard information when you use our website to view UNC dining hall menus.
                         </p>
+                        <p className="text-zinc-600 dark:text-zinc-400 mt-4">
+                            Looking for the iOS app? It collects nothing at all — no analytics, no tracking —
+                            so it has its own{' '}
+                            <Link href="/privacy/ios" className="underline hover:text-zinc-900 dark:hover:text-zinc-200">
+                                app privacy policy
+                            </Link>.
+                        </p>
                     </section>
 
                     <section>

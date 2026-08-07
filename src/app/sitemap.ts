@@ -15,6 +15,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         { path: '/about', priority: 0.6, changeFrequency: 'monthly' as const },
         { path: '/feedback', priority: 0.5, changeFrequency: 'monthly' as const },
         { path: '/legal', priority: 0.3, changeFrequency: 'yearly' as const },
+        // App Store requires the iOS policy to live at a stable, reachable URL.
+        { path: '/privacy/ios', priority: 0.3, changeFrequency: 'yearly' as const },
     ].map((route) => ({
         url: `${baseUrl}${route.path}`,
         lastModified: new Date(),

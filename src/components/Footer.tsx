@@ -135,6 +135,14 @@ function FooterContent() {
                                     Privacy Policy
                                 </Link>
                             </li>
+                            <li>
+                                <Link
+                                    href="/privacy/ios"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    App Privacy
+                                </Link>
+                            </li>
                         </ul>
                     </div>
                 </div>

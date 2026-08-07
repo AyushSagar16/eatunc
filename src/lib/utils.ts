@@ -23,6 +23,22 @@ export function getMealPeriodLabel(period: string): string {
         default: return period.charAt(0).toUpperCase() + period.slice(1);
     }
 }
+/**
+ * Some master_food_items rows carry case-quantity nutrition while still being labelled with a
+ * per-serving amount — "Swiss Cheese, 1 Slice, 1780 kcal, 136 g protein", "Croutons, 2 Tbsp,
+ * 1940 kcal". Those numbers beat every real dish on a protein or calorie sort, so left alone
+ * they take over Top Picks and recommend a slice of cheese as the day's best high-protein
+ * choice.
+ *
+ * The thresholds sit far above any genuine single serving — the largest real entrées on these
+ * menus land near 900 kcal and 60 g of protein — so this only catches the bad rows. It gates
+ * Top Picks alone: the items still appear on the menu with their published numbers, because
+ * silently hiding food is worse than showing a number that is off.
+ */
+export function isImplausibleServing(item: { calories_kcal?: number | null; protein_g?: number | null }): boolean {
+    return (item.calories_kcal ?? 0) > 1000 || (item.protein_g ?? 0) > 100;
+}
+
 export function calculateHealthyScore(item: any, preset: string): number {
     const cal = item.calories_kcal ?? 0;
     const protein = item.protein_g ?? 0;
