@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { usePostHog } from 'posthog-js/react'
 import { cn } from '@/lib/utils'
 import { DIETARY_ICON_MAP, parseDietaryPreferences } from '@/components/icons/DietaryIcons'
+import { Heart } from 'lucide-react'
 
 // Mapping of dietary preference keys to display names
 const DIETARY_DISPLAY_NAMES: Record<string, string> = {
@@ -29,6 +30,7 @@ interface FoodCardProps {
     onClick: () => void
     containsAllergen?: boolean
     matchesDietaryFilter?: boolean
+    isFavorited?: boolean
 }
 
 // PERFORMANCE: Move pure function outside component to prevent recreation on every render
@@ -71,7 +73,7 @@ function getReasonStyle(reasonText: string): string {
 
 // PERFORMANCE: Wrap with React.memo to prevent re-renders when props haven't changed
 // This is especially important since FoodCard is rendered many times in lists
-const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPeriod, searchQuery = '', onClick, containsAllergen = false, matchesDietaryFilter = false }: FoodCardProps) {
+const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPeriod, searchQuery = '', onClick, containsAllergen = false, matchesDietaryFilter = false, isFavorited = false }: FoodCardProps) {
     const posthog = usePostHog()
 
     const {
@@ -204,6 +206,18 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
             />
 
             <div className="flex flex-col gap-3 flex-1 relative z-10">
+                {/* Heart icon for favorited items */}
+                {isFavorited && (
+                    <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute -right-2 -top-2 text-rose-500"
+                    >
+                        <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                    </motion.div>
+                )}
                 {/* Reason badge - color-coded */}
                 {reason && (
                     <motion.div

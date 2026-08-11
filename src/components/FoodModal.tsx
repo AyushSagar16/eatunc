@@ -1,10 +1,11 @@
 'use client'
 
-import { MasterFoodItem } from '@/lib/api'
+import { MasterFoodItem, addFavorite, removeFavorite, getFavorites } from '@/lib/api'
 import { getMealPeriodLabel } from '@/lib/utils'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { DIETARY_ICON_MAP, parseDietaryPreferences } from '@/components/icons/DietaryIcons'
+import { supabase } from '@/lib/supabase'
 
 // Mapping of dietary preference keys to display names
 const DIETARY_DISPLAY_NAMES: Record<string, string> = {
@@ -25,6 +26,8 @@ interface FoodModalProps {
     mealPeriod: string
     isOpen: boolean
     onClose: () => void
+    isFavorited: boolean
+    onToggleFavorite: (recipeNumber: number) => Promise<void>
 }
 
 // Helper function to parse comma-separated allergens string
@@ -38,7 +41,9 @@ export default function FoodModal({
     station,
     mealPeriod,
     isOpen,
-    onClose
+    onClose,
+    isFavorited,
+    onToggleFavorite
 }: FoodModalProps) {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -53,6 +58,10 @@ export default function FoodModal({
             document.body.style.overflow = 'unset'
         }
     }, [isOpen, onClose])
+
+    const toggleFavorite = async () => {
+        await onToggleFavorite(item.recipe_number)
+    }
 
     if (!isOpen) return null
 
@@ -100,17 +109,31 @@ export default function FoodModal({
                         }}
                         className="relative w-full max-w-lg transform overflow-hidden rounded-3xl bg-white p-8 shadow-2xl dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
                     >
-                        <motion.button
-                            onClick={onClose}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            transition={{ duration: 0.2 }}
-                            className="absolute right-6 top-6 rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 transition-colors z-10"
-                        >
-                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </motion.button>
+                        <div className="absolute right-6 top-6 flex items-center gap-2 z-10">
+                            <motion.button
+                                onClick={toggleFavorite}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                transition={{ duration: 0.2 }}
+                                className={`rounded-full p-2 transition-colors ${isFavorited ? 'text-rose-500 bg-rose-50 dark:bg-rose-900/30' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800'}`}
+                                aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+                            >
+                                <svg className={`h-6 w-6 ${isFavorited ? 'fill-current' : 'fill-none'}`} viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                            </motion.button>
+                            <motion.button
+                                onClick={onClose}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                transition={{ duration: 0.2 }}
+                                className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 transition-colors"
+                            >
+                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </motion.button>
+                        </div>
 
                         <motion.div
                             className="flex flex-col gap-6"

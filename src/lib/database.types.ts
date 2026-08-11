@@ -97,6 +97,31 @@ export interface Database {
                     }
                 ]
             }
+            favorites: {
+                Row: {
+                    user_id: string
+                    recipe_number: number
+                    created_at: string
+                }
+                Insert: {
+                    user_id: string
+                    recipe_number: number
+                    created_at?: string
+                }
+                Update: {
+                    user_id?: string
+                    recipe_number?: number
+                    created_at?: string
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "favorites_recipe_number_fkey"
+                        columns: ["recipe_number"]
+                        referencedRelation: "master_food_items"
+                        referencedColumns: ["recipe_number"]
+                    }
+                ]
+            }
         }
         Views: {
             [_ in never]: never

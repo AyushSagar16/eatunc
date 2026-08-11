@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { Database } from '@/lib/database.types'
+import { Database } from './database.types'
 
 export type Menu = Database['public']['Tables']['menus']['Row']
 export type MenuEntry = Database['public']['Tables']['menu_entries']['Row']
@@ -177,6 +177,51 @@ export async function getFullMenuByDateAndHall(date: string, diningHall: string)
         })
         console.log('[API] Recipe numbers by period and station:', byPeriodAndStation)
     }
+
+    if (error) throw error
+    return data
+}
+
+/**
+ * Fetch favorite food items for a user.
+ */
+export async function getFavorites(userId: string) {
+    const { data, error } = await (supabase as any)
+        .from('favorites')
+        .select(`
+            recipe_number,
+            master_food_items (*)
+        `)
+        .eq('user_id', userId)
+
+    if (error) throw error
+    return data as { recipe_number: number, master_food_items: MasterFoodItem }[]
+}
+
+/**
+ * Add a food item to favorites.
+ */
+export async function addFavorite(userId: string, recipeNumber: number) {
+    const { data, error } = await (supabase as any)
+        .from('favorites')
+        .insert({
+            user_id: userId,
+            recipe_number: recipeNumber
+        })
+
+    if (error) throw error
+    return data
+}
+
+/**
+ * Remove a food item from favorites.
+ */
+export async function removeFavorite(userId: string, recipeNumber: number) {
+    const { data, error } = await (supabase as any)
+        .from('favorites')
+        .delete()
+        .eq('user_id', userId)
+        .eq('recipe_number', recipeNumber)
 
     if (error) throw error
     return data
