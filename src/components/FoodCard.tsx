@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { usePostHog } from 'posthog-js/react'
 import { cn } from '@/lib/utils'
 import { DIETARY_ICON_MAP, parseDietaryPreferences } from '@/components/icons/DietaryIcons'
+import LogFoodButton from '@/components/LogFoodButton'
 
 // Mapping of dietary preference keys to display names
 const DIETARY_DISPLAY_NAMES: Record<string, string> = {
@@ -25,6 +26,7 @@ interface FoodCardProps {
     station: string
     reason?: string
     mealPeriod: string
+    diningHall?: string
     searchQuery?: string
     onClick: () => void
     containsAllergen?: boolean
@@ -71,7 +73,7 @@ function getReasonStyle(reasonText: string): string {
 
 // PERFORMANCE: Wrap with React.memo to prevent re-renders when props haven't changed
 // This is especially important since FoodCard is rendered many times in lists
-const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPeriod, searchQuery = '', onClick, containsAllergen = false, matchesDietaryFilter = false }: FoodCardProps) {
+const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPeriod, diningHall = '', searchQuery = '', onClick, containsAllergen = false, matchesDietaryFilter = false }: FoodCardProps) {
     const posthog = usePostHog()
 
     const {
@@ -243,25 +245,35 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                 {/* Compact nutritional info row */}
 
 
-                {/* Calories - prominent with gradient */}
-                <motion.div
-                    className="flex items-baseline gap-1.5 mt-1"
-                    initial={{ opacity: 0.8 }}
-                    whileHover={{ opacity: 1 }}
-                    transition={{ duration: 0.2 }}
-                >
-                    <span className={cn(
-                        'text-2xl sm:text-3xl font-black',
-                        containsAllergen
-                            ? 'text-zinc-300 dark:text-zinc-700'
-                            : 'bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent'
-                    )}>
-                        {calories_kcal ?? 0}
-                    </span>
-                    <span className="text-xs text-zinc-400 dark:text-zinc-500 font-semibold tracking-wide">
-                        kcal
-                    </span>
-                </motion.div>
+                {/* Calories & Log Button Row */}
+                <div className="flex items-center justify-between mt-1">
+                    <motion.div
+                        className="flex items-baseline gap-1.5"
+                        initial={{ opacity: 0.8 }}
+                        whileHover={{ opacity: 1 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <span className={cn(
+                            'text-2xl sm:text-3xl font-black',
+                            containsAllergen
+                                ? 'text-zinc-300 dark:text-zinc-700'
+                                : 'bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent'
+                        )}>
+                            {calories_kcal ?? 0}
+                        </span>
+                        <span className="text-xs text-zinc-400 dark:text-zinc-500 font-semibold tracking-wide">
+                            kcal
+                        </span>
+                    </motion.div>
+                    {!containsAllergen && (
+                        <LogFoodButton
+                            item={item}
+                            mealPeriod={mealPeriod}
+                            diningHall={diningHall}
+                            variant="mini"
+                        />
+                    )}
+                </div>
             </div>
 
             {/* Dietary Preference Icons - Bottom Right */}

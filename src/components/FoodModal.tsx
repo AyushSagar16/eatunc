@@ -5,6 +5,7 @@ import { getMealPeriodLabel } from '@/lib/utils'
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { DIETARY_ICON_MAP, parseDietaryPreferences } from '@/components/icons/DietaryIcons'
+import LogFoodButton from '@/components/LogFoodButton'
 
 // Mapping of dietary preference keys to display names
 const DIETARY_DISPLAY_NAMES: Record<string, string> = {
@@ -23,6 +24,7 @@ interface FoodModalProps {
     item: MasterFoodItem
     station: string
     mealPeriod: string
+    diningHall?: string
     isOpen: boolean
     onClose: () => void
 }
@@ -37,6 +39,7 @@ export default function FoodModal({
     item,
     station,
     mealPeriod,
+    diningHall = '',
     isOpen,
     onClose
 }: FoodModalProps) {
@@ -234,6 +237,14 @@ export default function FoodModal({
                                     </p>
                                 </div>
                             )}
+
+                            {/* Log Food Button */}
+                            <LogFoodButton
+                                item={item}
+                                mealPeriod={mealPeriod}
+                                diningHall={diningHall}
+                                variant="modal"
+                            />
                         </motion.div>
                     </motion.div>
                 </div>
