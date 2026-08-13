@@ -6,6 +6,7 @@ import DitherShader from './ui/dither-shader'
 import { motion } from 'motion/react'
 import Image from 'next/image'
 import AnnouncementBanner from './AnnouncementBanner'
+import AppStoreBadge from './AppStoreBadge'
 
 export default function LandingScreen() {
     const router = useRouter()
@@ -233,14 +234,19 @@ export default function LandingScreen() {
                     </motion.button>
                 </motion.div>
 
-                <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.6 }}
-                    className="text-zinc-500 font-medium text-sm"
+                    className="flex flex-col items-center gap-3"
                 >
-                    Menus are dynamically updated from UNC Dining services.
-                </motion.p>
+                    {/* White lockup: the hero sits on the dark dithered image. */}
+                    <AppStoreBadge source="landing" variant="white" />
+
+                    <p className="text-zinc-500 font-medium text-sm text-center">
+                        Menus are dynamically updated from UNC Dining services.
+                    </p>
+                </motion.div>
             </div>
         </div>
     )

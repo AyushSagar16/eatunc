@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
+import AppStoreBadge from "@/components/AppStoreBadge";
 import { Suspense } from "react";
 import { HelpCircle } from "lucide-react";
 
@@ -45,6 +46,10 @@ function FooterContent() {
                                 : "Making UNC dining menus eager to explore. Real-time updates, nutrition facts, and dietary filters for Chapel Hill students."
                             }
                         </p>
+                        {/* The landing hero carries its own badge, so showing one here
+                            too would stack two of them within a screen of each other. */}
+                        {!isLanding && <AppStoreBadge source="footer" />}
+
                         <p className={cn("text-xs pt-2", isLanding ? "text-blue-100/40" : "text-muted-foreground")}>
                             &copy; {new Date().getFullYear()} Eat UNC. All rights reserved.
                         </p>

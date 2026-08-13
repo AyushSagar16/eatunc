@@ -8,6 +8,8 @@ import { PostHogProvider } from "@/providers/PostHogProvider";
 import CookieConsent from "@/components/CookieConsent";
 import { Analytics } from "@vercel/analytics/next";
 import CDSBanner from "@/components/CDSBanner";
+import AppInstallBanner from "@/components/AppInstallBanner";
+import { APP_STORE_ID } from "@/lib/app-store";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -121,6 +123,10 @@ export const metadata: Metadata = {
     ],
   },
   manifest: '/site.webmanifest',
+  // Native Safari-on-iOS "Smart App Banner" for the Eat UNC iOS app.
+  itunes: {
+    appId: APP_STORE_ID,
+  },
   alternates: {
     canonical: 'https://eatunc.com',
   },
@@ -140,6 +146,7 @@ export default function RootLayout({
         <PostHogProvider>
           <ThemeProvider>
             <CDSBanner />
+            <AppInstallBanner />
             {children}
             <Footer />
           </ThemeProvider>
