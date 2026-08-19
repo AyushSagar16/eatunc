@@ -1,15 +1,9 @@
 import type { Metadata } from "next";
 import LandingScreen from "@/components/LandingScreen";
-import HomeCampusSection from "@/components/HomeCampusSection";
+import OpenNowRail from "@/components/home/OpenNowRail";
 import { redirect } from "next/navigation";
-import {
-  campusToday,
-  getMenuPreview,
-  getOpenNow,
-  type Location,
-  type MenuPreviewItem,
-  type OpenPeriod,
-} from "@/lib/campus";
+import { getHomeSnapshot } from "@/lib/home";
+import { pickCatchphrase } from "@/lib/catchphrase";
 import { canonical, jsonLd } from "@/lib/seo";
 
 // Dynamic rendering - no caching
@@ -62,32 +56,6 @@ const homepageStructuredData = {
   ],
 };
 
-/** Everything the section below the hero needs, with each piece failing independently. */
-async function loadCampusSnapshot(today: string): Promise<{
-  open: OpenPeriod[];
-  openingSoon: OpenPeriod[];
-  locations: Location[];
-  chase: MenuPreviewItem[];
-  lenoir: MenuPreviewItem[];
-}> {
-  const [openResult, chaseResult, lenoirResult] = await Promise.allSettled([
-    getOpenNow(),
-    getMenuPreview("Chase", today),
-    getMenuPreview("Top of Lenoir", today),
-  ]);
-
-  const openNow =
-    openResult.status === "fulfilled"
-      ? openResult.value
-      : { open: [], openingSoon: [], locations: [] };
-
-  return {
-    ...openNow,
-    chase: chaseResult.status === "fulfilled" ? chaseResult.value : [],
-    lenoir: lenoirResult.status === "fulfilled" ? lenoirResult.value : [],
-  };
-}
-
 export default async function Home({ searchParams }: PageProps) {
   const params = await searchParams;
   const hallSlug = params.hall;
@@ -102,8 +70,12 @@ export default async function Home({ searchParams }: PageProps) {
     }
   }
 
-  const today = campusToday();
-  const snapshot = await loadCampusSnapshot(today);
+  const { today, halls, openVenues, nextVenues, totalLocations } =
+    await getHomeSnapshot();
+
+  // Drawn per request rather than in the browser, so the largest text on the page does not
+  // flash or shift after hydration. See the note in `pickCatchphrase`.
+  const catchphrase = pickCatchphrase();
 
   return (
     <>
@@ -111,9 +83,19 @@ export default async function Home({ searchParams }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(homepageStructuredData) }}
       />
-      <main className="min-h-screen-ios-safe bg-transparent">
-        <LandingScreen today={today} />
-        <HomeCampusSection today={today} {...snapshot} />
+      <main>
+        {/*
+          `OpenNowRail` is passed as a child rather than imported by `LandingScreen`, which is a
+          client component. That keeps the venue list a server component: its names and closing
+          times are the crawlable menu-adjacent text on a page that no longer scrolls.
+        */}
+        <LandingScreen today={today} halls={halls} catchphrase={catchphrase}>
+          <OpenNowRail
+            openVenues={openVenues}
+            nextVenues={nextVenues}
+            totalLocations={totalLocations}
+          />
+        </LandingScreen>
       </main>
     </>
   );

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useSyncExternalStore } from 'react'
+import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'motion/react'
 import { usePostHog } from 'posthog-js/react'
 import { X } from 'lucide-react'
@@ -29,12 +30,17 @@ const readDismissed = () => localStorage.getItem(DISMISSED_KEY) !== null
  */
 export default function AppInstallBanner({ className = '' }: AppInstallBannerProps) {
     const posthog = usePostHog()
+    const pathname = usePathname()
     // localStorage is client-only, so the server snapshot hides the banner and
     // hydration reveals it. Reading it through useSyncExternalStore keeps the
     // markup consistent without a setState-in-effect cascade.
     const wasDismissed = useSyncExternalStore(neverChanges, readDismissed, () => true)
     const [dismissedNow, setDismissedNow] = useState(false)
-    const isHidden = wasDismissed || dismissedNow
+    // The homepage is a single non-scrolling screen and this banner sits above it in the
+    // document flow, so on `/` it would push the screen taller than the viewport. That page
+    // carries its own App Store badge, which is the same ask in a place that fits.
+    const isLanding = pathname === '/'
+    const isHidden = wasDismissed || dismissedNow || isLanding
 
     useEffect(() => {
         if (isHidden) return
