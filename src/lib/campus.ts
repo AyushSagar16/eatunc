@@ -268,3 +268,46 @@ export async function getVenueMenuDates(locationId: string): Promise<string[]> {
     if (error) throw error
     return Array.from(new Set((data ?? []).map((r) => r.menu_date)))
 }
+
+export type MenuPreviewItem = { period: string; station: string; name: string; calories: number | null }
+
+/**
+ * A light sample of a hall's menu for a date — meal periods and a few dish names.
+ *
+ * The homepage needs something concrete to say about today, but `getFullMenuByDateAndHall`
+ * pulls every entry (a hall day runs past 1,300 rows) and that is far too much weight for the
+ * page carrying 60% of the site's search impressions. The nested `limit` keeps it to one small
+ * round trip.
+ */
+export async function getMenuPreview(
+    diningHall: string,
+    date: string,
+    limit = 60,
+): Promise<MenuPreviewItem[]> {
+    const { data, error } = await supabase
+        .from('menus')
+        .select(
+            `
+            menu_entries (
+                meal_period,
+                meal_station,
+                master_food_items ( food_name, calories_kcal )
+            )
+        `,
+        )
+        .eq('menu_date', date)
+        .eq('dining_hall', diningHall)
+        .limit(limit, { foreignTable: 'menu_entries' })
+        .maybeSingle()
+
+    if (error) throw error
+
+    return (data?.menu_entries ?? [])
+        .filter((entry) => entry.master_food_items?.food_name)
+        .map((entry) => ({
+            period: entry.meal_period,
+            station: entry.meal_station,
+            name: entry.master_food_items!.food_name!,
+            calories: entry.master_food_items!.calories_kcal,
+        }))
+}

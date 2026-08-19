@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 import DitherShader from './ui/dither-shader'
 import { motion } from 'motion/react'
@@ -8,24 +8,16 @@ import Image from 'next/image'
 import AnnouncementBanner from './AnnouncementBanner'
 import AppStoreBadge from './AppStoreBadge'
 
-export default function LandingScreen() {
-    const router = useRouter()
+/**
+ * The hall cards are links, not buttons.
+ *
+ * They used to be `motion.button`s calling `router.push`, which meant the homepage — 60% of
+ * all search impressions — shipped no crawlable link to any menu at all. `motion.create`
+ * keeps the stagger variants working through a real `<a href>`.
+ */
+const MotionLink = motion.create(Link)
 
-
-
-    const handleSelect = (hall: string) => {
-        // Always navigate to today's date in EST (UNC Time)
-        // usage of toLocaleDateString ensures we get the correct "dining day"
-        const now = new Date()
-        const today = new Intl.DateTimeFormat('en-CA', {
-            timeZone: 'America/New_York',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        }).format(now) // standard format is YYYY-MM-DD for en-CA
-
-        router.push(`/${hall}/${today}`)
-    }
+export default function LandingScreen({ today }: { today: string }) {
 
     return (
         <div className="relative min-h-screen-ios-safe flex flex-col items-center" style={{ backgroundColor: '#3a4f5f' }}>
@@ -63,11 +55,11 @@ export default function LandingScreen() {
                     >
                         <div className="relative w-48 h-16">
                             <Image
-                                src="/eat_unc_text_logo_white_nb.svg"
+                                src="/eat_unc_text_logo_white_nb.png"
                                 alt="Eat UNC Logo"
                                 fill
                                 className="object-contain scale-120"
-                                unoptimized
+                                priority
                             />
                         </div>
                     </motion.div>
@@ -77,6 +69,9 @@ export default function LandingScreen() {
                         transition={{ duration: 0.6, delay: 0.2 }}
                         className="text-5xl md:text-8xl font-black tracking-tighter text-white drop-shadow-2xl"
                     >
+                        <span className="block text-sm md:text-lg font-semibold tracking-[0.25em] uppercase text-blue-200/80 mb-2 md:mb-4">
+                            UNC Chapel Hill Dining Menus
+                        </span>
                         Find Your <br className="hidden md:block" />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-white to-blue-200">Fuel</span>
                     </motion.h1>
@@ -100,13 +95,14 @@ export default function LandingScreen() {
                 >
 
                     {/* Chase Card */}
-                    <motion.button
+                    <MotionLink
+                        href={`/chase/${today}`}
+                        aria-label="Chase Dining Hall menu for today"
                         variants={{
                             hidden: { opacity: 0, y: 30, scale: 0.9 },
                             visible: { opacity: 1, y: 0, scale: 1 }
                         }}
                         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                        onClick={() => handleSelect('chase')}
                         whileHover={{ scale: 1.02, y: -4 }}
                         whileTap={{ scale: 0.98 }}
                         className="group relative flex flex-col p-5 md:p-10 h-48 md:h-80 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-left overflow-hidden"
@@ -164,16 +160,17 @@ export default function LandingScreen() {
                                 </div>
                             </motion.div>
                         </div>
-                    </motion.button>
+                    </MotionLink>
 
                     {/* Lenoir Card */}
-                    <motion.button
+                    <MotionLink
+                        href={`/lenoir/${today}`}
+                        aria-label="Top of Lenoir dining hall menu for today"
                         variants={{
                             hidden: { opacity: 0, y: 30, scale: 0.9 },
                             visible: { opacity: 1, y: 0, scale: 1 }
                         }}
                         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                        onClick={() => handleSelect('lenoir')}
                         whileHover={{ scale: 1.02, y: -4 }}
                         whileTap={{ scale: 0.98 }}
                         className="group relative flex flex-col p-5 md:p-10 h-48 md:h-80 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-left overflow-hidden"
@@ -231,7 +228,7 @@ export default function LandingScreen() {
                                 </div>
                             </motion.div>
                         </div>
-                    </motion.button>
+                    </MotionLink>
                 </motion.div>
 
                 <motion.div
