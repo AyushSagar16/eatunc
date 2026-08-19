@@ -162,9 +162,17 @@ function buildFaqs(
         })
     }
 
+    // Latest close first, then one row per venue: Chase files both a Late Dinner and a Late
+    // Night, and listing it twice would read as two different places staying open.
+    const seenLate = new Set<string>()
     const lateTonight = todayHours
         .filter((row) => closesLate(row) && byId.has(row.location_id))
         .sort((a, b) => Date.parse(b.closes_at) - Date.parse(a.closes_at))
+        .filter((row) => {
+            if (seenLate.has(row.location_id)) return false
+            seenLate.add(row.location_id)
+            return true
+        })
 
     faqs.push({
         question: 'Is anything open late at UNC tonight?',

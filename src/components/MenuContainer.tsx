@@ -23,7 +23,6 @@ interface MenuEntry {
     meal_station: string | null
     recipe_number: number
     master_food_items: MasterFoodItem | null
-    dining_hall?: string | null
 }
 
 interface MenuContainerProps {

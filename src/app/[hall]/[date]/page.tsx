@@ -235,12 +235,10 @@ export default async function Page({ params }: PageProps) {
         );
     }
 
-    const hallFilteredEntries = (menu.menu_entries || []).map(entry => ({
-        ...entry,
-        meal_period_raw: entry.meal_period,
-        meal_period: entry.meal_period,
-        dining_hall: menu?.dining_hall
-    }));
+    // Passed straight through. Each entry used to be rebuilt with a `meal_period_raw` copy of
+    // `meal_period` and the hall name repeated on it; nothing reads either, and at ~1,360
+    // entries a day the two dead fields were around 90KB of RSC payload per request.
+    const hallFilteredEntries = menu.menu_entries || [];
 
     const availablePeriods = Array.from(new Set(hallFilteredEntries.map(e => e.meal_period)));
     availablePeriods.sort(compareMealPeriods);

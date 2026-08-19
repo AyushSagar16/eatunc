@@ -19,7 +19,6 @@ import type { Faq } from '@/lib/seo'
 import { Breadcrumbs, CampusPage, Card, IconTile, Prose } from '@/components/campus/CampusChrome'
 import { JsonLd } from '@/components/campus/JsonLd'
 import {
-    buildingMeta,
     formatCampusDate,
     formatClock,
     formatHoursRange,
