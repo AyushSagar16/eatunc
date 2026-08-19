@@ -169,9 +169,10 @@ export type MenuSectionInput = { name: string; items: NutritionalItem[] }
  * dining site does not publish, and it is the only structured way to tell Google that a page
  * answers "what is being served at Chase today" rather than merely mentioning Chase.
  *
- * Sections are capped because a hall menu runs to several hundred items across four periods,
- * and a JSON-LD blob heavier than the page's own HTML is a payload problem on the mobile
- * connections that produce 56% of impressions.
+ * Both a per-section cap and a total budget apply. A hall day is around 100 stations and
+ * 1,300 items, which serialises to 188KB — heavier than the page's own HTML, on the mobile
+ * connections that produce 56% of impressions and hold the best positions. A representative
+ * sample carries the same signal, and the complete menu is in the markup either way.
  */
 export function menuSchema(opts: {
     name: string
@@ -179,21 +180,44 @@ export function menuSchema(opts: {
     description?: string
     sections: MenuSectionInput[]
     maxItemsPerSection?: number
+    maxItemsTotal?: number
 }) {
-    const maxItems = opts.maxItemsPerSection ?? 30
+    const perSection = opts.maxItemsPerSection ?? 12
+    const budget = opts.maxItemsTotal ?? 200
+
+    // Filled round-robin rather than section by section. Sections arrive ordered by meal
+    // period, so spending the budget in order would describe breakfast in full and never
+    // reach dinner — the meal most people are searching for at the time they search.
+    const sections = opts.sections.filter((section) => section.items.length > 0)
+    const taken = sections.map(() => 0)
+    let spent = 0
+
+    for (let round = 0; round < perSection && spent < budget; round++) {
+        let placedThisRound = false
+        for (let i = 0; i < sections.length && spent < budget; i++) {
+            if (taken[i] > round) continue
+            if (sections[i].items.length <= round) continue
+            taken[i] = round + 1
+            spent++
+            placedThisRound = true
+        }
+        if (!placedThisRound) break
+    }
+
+    const hasMenuSection = sections
+        .map((section, i) => ({
+            '@type': 'MenuSection',
+            name: section.name,
+            hasMenuItem: section.items.slice(0, taken[i]).map(menuItem),
+        }))
+        .filter((section) => section.hasMenuItem.length > 0)
 
     return {
         '@type': 'Menu',
         name: opts.name,
         url: opts.url,
         ...(opts.description ? { description: opts.description } : {}),
-        hasMenuSection: opts.sections
-            .filter((section) => section.items.length > 0)
-            .map((section) => ({
-                '@type': 'MenuSection',
-                name: section.name,
-                hasMenuItem: section.items.slice(0, maxItems).map(menuItem),
-            })),
+        hasMenuSection,
     }
 }
 
