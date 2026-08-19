@@ -128,6 +128,22 @@ function FooterContent() {
                         <ul className="space-y-1.5 text-sm">
                             <li>
                                 <Link
+                                    href="/faq"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    UNC Dining FAQ
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href="/unc-dining-app"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    iPhone App
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
                                     href="/about"
                                     className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
                                 >
