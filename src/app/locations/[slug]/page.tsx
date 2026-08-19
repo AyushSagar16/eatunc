@@ -170,25 +170,50 @@ function venueTitle(locations: Location[]): string {
     return `${name} — UNC Hours & Menu | ${buildings[0]}`
 }
 
-function venueDescription(locations: Location[]): string {
+/**
+ * A description that differs venue to venue.
+ *
+ * The obvious shape — one sentence with the name swapped in — is exactly what makes
+ * dining.unc.edu beatable: every page on that site carries the identical meta description,
+ * so none of them says anything. These lean on facts that actually differ per venue: the
+ * building, what kind of operation it is, and how many items carry nutrition.
+ *
+ * Deliberately no opening times, even though they are loaded here. A description is cached in
+ * the index for weeks, and "open until 3:00 pm" would keep being shown on days when it is
+ * false. Hours belong on the page, where they are current.
+ */
+function venueDescription(data: VenueData): string {
+    const { locations, menus, brands } = data
     const name = locations[0].name
     const buildings = Array.from(new Set(locations.map((l) => buildingMeta(l.venue_group).short)))
-    const where =
-        buildings.length > 1
-            ? `has two UNC Chapel Hill locations, in ${sentenceList(buildings)}`
-            : `is in ${buildings[0]} at UNC Chapel Hill`
-
-    const hasUncMenu = locations.some((l) => l.has_menu && l.kind !== 'dining_hall')
     const isHall = locations.some((l) => l.kind === 'dining_hall')
-    const hasBrand = locations.some((l) => l.brand_id)
+    const isTruck = locations.some((l) => l.venue_group === 'Food Trucks')
 
-    const extra = isHall
-        ? "See today's hours, the next seven days of service times, and the full daily menu."
-        : hasUncMenu
-          ? "See today's hours, the next seven days of service times, and today's published menu with calories and allergens."
-          : hasBrand
-            ? "See today's hours, the next seven days of service times, and the brand's published nutrition."
-            : "See today's hours and the next seven days of service times."
+    const where = isTruck
+        ? 'parks on the UNC Chapel Hill campus'
+        : buildings.length > 1
+          ? `serves two UNC Chapel Hill locations, in ${sentenceList(buildings)}`
+          : `is in ${buildings[0]} at UNC Chapel Hill`
+
+    const menuItems = Array.from(menus.values()).reduce((sum, menu) => sum + (menu?.itemCount ?? 0), 0)
+    const brandName = locations
+        .map((l) => (l.brand_id ? brands.get(l.brand_id)?.name : undefined))
+        .find(Boolean)
+
+    let extra: string
+    if (isHall) {
+        extra = 'Meal times for the week ahead and the full daily menu, with calories and allergens on every dish.'
+    } else if (brandName) {
+        extra = `Service times for the next seven days, plus nutrition from ${brandName} — calories, protein, fat, carbs and allergens, each marked as published by the operator or estimated by us.`
+    } else if (menuItems > 0) {
+        extra = `Service times for the next seven days and today's menu — ${menuItems} items with calories, protein and allergens.`
+    } else {
+        extra = 'Service times for today and the next seven days.'
+    }
+
+    if (isTruck) {
+        extra = `Part of the campus food truck rotation, so where it parks moves. ${extra}`
+    }
 
     return `${name} ${where}. ${extra}`
 }
@@ -207,12 +232,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     }
 
     const title = venueTitle(data.locations)
-    const description = venueDescription(data.locations)
+    const description = venueDescription(data)
+
+    // Chase and Top of Lenoir already have richer, older pages at /chase-menu and
+    // /lenoir-menu. Pointing the canonical there keeps this from becoming a third URL
+    // competing for "chase dining hall menu" against the two that should win it.
+    const hallCanonical: Record<string, string> = {
+        chase: '/chase-menu',
+        'top-of-lenoir': '/lenoir-menu',
+    }
+    const canonicalPath = hallCanonical[slug] ?? path
 
     return {
         title: { absolute: title },
         description,
-        alternates: { canonical: canonical(path) },
+        alternates: { canonical: canonical(canonicalPath) },
         openGraph: {
             title,
             description,
