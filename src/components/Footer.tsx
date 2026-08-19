@@ -58,7 +58,7 @@ function FooterContent() {
                     {/* Dining Halls Column */}
                     <div className="space-y-4">
                         <h4 className="text-xs font-semibold uppercase tracking-wider opacity-80">
-                            Dining Halls
+                            Where to Eat
                         </h4>
                         <ul className="space-y-1.5 text-sm">
                             <li>
@@ -83,6 +83,38 @@ function FooterContent() {
                                     className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
                                 >
                                     Today's Menu
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href="/open-now"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    What&apos;s Open Now
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href="/hours"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    Dining Hours
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href="/locations"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    All Campus Locations
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href="/brands"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    Restaurant Nutrition
                                 </Link>
                             </li>
                         </ul>
