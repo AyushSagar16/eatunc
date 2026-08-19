@@ -71,6 +71,32 @@ type HallToday = {
     hours: LocationHours[];
 };
 
+/** One dish per station in rotation, so a period is described by its breadth, not its first shelf. */
+function sampleAcrossStations(
+    stations: { items: OutlineEntry[] }[],
+    limit: number,
+): string[] {
+    const names: string[] = []
+    const seen = new Set<string>()
+
+    for (let round = 0; names.length < limit; round++) {
+        let advanced = false
+        for (const station of stations) {
+            if (names.length >= limit) break
+            const name = station.items[round]?.master_food_items?.food_name
+            if (!name) continue
+            advanced = true
+            const key = name.toLowerCase()
+            if (seen.has(key)) continue
+            seen.add(key)
+            names.push(name)
+        }
+        if (!advanced) break
+    }
+
+    return names
+}
+
 /** Today's menu and hours for one hall. Failures degrade to an empty card, never a 500. */
 async function loadHall(hall: (typeof HALLS)[number], date: string): Promise<HallToday> {
     const empty: HallToday = {
@@ -111,11 +137,12 @@ async function loadHall(hall: (typeof HALLS)[number], date: string): Promise<Hal
             itemCount: stations.reduce((sum, s) => sum + s.items.length, 0),
             // A handful of real dishes, so the page says something concrete about today
             // rather than only counting things.
-            sample: stations
-                .flatMap((s) => s.items)
-                .map((i) => i.master_food_items?.food_name)
-                .filter((n): n is string => Boolean(n))
-                .slice(0, 6),
+            //
+            // Taken one per station in rotation, not off the front of a flattened list. Stations
+            // arrive in a fixed order, so slicing the flat list returned whatever the first
+            // station happened to be — every period on the page read "Blueberry Bagel ·
+            // Cheddar Jalapeno Bagel · ..." because BAGELS AND BREADS sorts first at both halls.
+            sample: sampleAcrossStations(stations, 6),
         })),
     };
 }
