@@ -1,19 +1,21 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "About Eat UNC | UNC Dining Menu Dashboard",
-    description: "Learn about Eat UNC, a premium dining dashboard for UNC Chapel Hill students. View real-time menu updates, nutritional information, and dietary preference filtering.",
+    title: "About Eat UNC — Built by Ayush Sagar",
+    description: "Eat UNC is built by Ayush Sagar, a UNC student. Who made it, where to find him, and how to send feedback.",
     keywords: [
         "about Eat UNC",
+        "Ayush Sagar",
+        "who made Eat UNC",
         "UNC dining app",
         "UNC meal tracker",
         "Carolina dining",
     ],
     openGraph: {
-        title: "About Eat UNC | UNC Dining Menu Dashboard",
-        description: "Learn about Eat UNC, a premium dining dashboard for UNC Chapel Hill students.",
+        title: "About Eat UNC — Built by Ayush Sagar",
+        description: "Eat UNC is built by Ayush Sagar, a UNC student.",
         url: "https://eatunc.com/about",
-        siteName: "UNC Dining Menu",
+        siteName: "Eat UNC",
         type: "website",
     },
     alternates: {

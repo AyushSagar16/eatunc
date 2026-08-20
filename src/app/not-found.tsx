@@ -28,7 +28,7 @@ export default function NotFound() {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                    className="relative flex flex-col items-center p-8 md:p-16 rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-center overflow-hidden"
+                    className="relative flex flex-col items-center p-8 md:p-16 rounded-[1.875rem] border border-white/10 bg-white/5 backdrop-blur-md text-center overflow-hidden"
                 >
                     <motion.div
                         initial={{ opacity: 0 }}

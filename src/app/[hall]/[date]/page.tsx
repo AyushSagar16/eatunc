@@ -1,18 +1,15 @@
 
 import { getAvailableDates, getFullMenuByDateAndHall } from "@/lib/api";
 import MenuContainer from "@/components/MenuContainer";
-import LoadingScreen from "@/components/LoadingScreen";
 import NoMenuAvailable from "@/components/NoMenuAvailable";
 import BackButton from "@/components/BackButton";
 import StructuredData from "@/components/StructuredData";
 import MenuTutorial from "@/components/MenuTutorial";
-import FeedbackPopup from "@/components/FeedbackPopup";
-import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { compareMealPeriods } from "@/lib/utils";
+import MenuOutline from "@/components/MenuOutline";
+import { campusToday, getHoursForLocations, getLocationsBySlug, shiftDate } from "@/lib/campus";
 
 // Dynamic rendering - no caching, always fetch fresh data
 export const dynamic = 'force-dynamic';
@@ -29,35 +26,48 @@ const HALL_MAP: Record<string, string> = {
     lenoir: 'Top of Lenoir',
 };
 
-// Generate dynamic metadata for SEO
+/**
+ * How far either side of today a dated menu page is worth indexing.
+ *
+ * Google had indexed the whole back-catalogue and was serving /lenoir/2026-01-08 for
+ * "lenoir dining hall menu" in August — a page that cannot answer the query at all. Old dates
+ * stay reachable and keep a self-canonical, but they are marked noindex so the ranking signal
+ * consolidates on today's menu and on /lenoir-menu instead of splitting across 236 near-
+ * duplicate URLs.
+ */
+const INDEXABLE_PAST_DAYS = 7;
+const INDEXABLE_FUTURE_DAYS = 14;
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { hall, date } = await params;
     const hallName = HALL_MAP[hall];
 
-    if (!hallName) {
-        return {
-            title: 'Page Not Found',
-        };
+    if (!hallName || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return { title: 'Page Not Found', robots: { index: false, follow: false } };
     }
 
-    // Format date for display
-    const dateObj = new Date(date + 'T12:00:00');
-    const formattedDate = dateObj.toLocaleDateString('en-US', {
+    const formattedDate = formatMenuDate(date);
+    const shortDate = new Date(date + 'T12:00:00').toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
-        year: 'numeric'
     });
 
-    // Determine if it's today
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    const isToday = date === todayStr;
-    const dateText = isToday ? 'Today' : formattedDate;
+    // Chapel Hill's date, not the server's — a UTC server rolls over to tomorrow at 8pm ET
+    // and would have called tomorrow's menu "today" every single evening.
+    const today = campusToday();
+    const isToday = date === today;
+    const withinIndexWindow =
+        date >= shiftDate(today, -INDEXABLE_PAST_DAYS) &&
+        date <= shiftDate(today, INDEXABLE_FUTURE_DAYS);
 
-    // Hall-specific title formatting
     const hallDisplayName = hall === 'chase' ? 'Chase Dining Hall' : 'Lenoir Dining Hall';
-    const title = `${hallDisplayName} Menu ${dateText} | UNC Campus Dining`;
-    const description = `View the ${hallDisplayName} menu for ${formattedDate}. Check meal times, nutrition facts, and healthy options at UNC Chapel Hill.`;
+    const title = isToday
+        ? `${hallDisplayName} Menu Today — ${shortDate}`
+        : `${hallDisplayName} Menu — ${formattedDate}`;
+
+    const description = isToday
+        ? `Everything on the ${hallDisplayName} menu today at UNC Chapel Hill, with calories, protein and allergens for every item. Filter by diet, sort by macros. Free and updated nightly.`
+        : `The full ${hallDisplayName} menu for ${formattedDate} at UNC Chapel Hill — every station, with calories, protein and allergens for each item.`;
 
     return {
         title,
@@ -66,60 +76,89 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             `${hall} dining hall menu`,
             `${hall} menu unc`,
             `unc ${hall} menu`,
-            `unc dining ${isToday ? 'today' : formattedDate}`,
-            "unc dining hall menu",
-            "unc campus dining",
-            "UNC Chapel Hill dining",
+            'unc dining hall menu',
+            'unc dining today',
+            'UNC Chapel Hill dining',
         ],
         openGraph: {
             title,
             description,
             url: `https://eatunc.com/${hall}/${date}`,
-            siteName: 'UNC Dining Menu',
-            images: [
-                {
-                    url: '/eat_unc_text_logo_nw.svg',
-                    width: 1200,
-                    height: 630,
-                    alt: `${hallName} - UNC Dining Menu`,
-                }
-            ],
+            siteName: 'Eat UNC',
             type: 'website',
         },
         twitter: {
             card: 'summary_large_image',
             title,
             description,
-            images: ['/eat_unc_text_logo_nw.svg'],
         },
         alternates: {
             canonical: `https://eatunc.com/${hall}/${date}`,
         },
+        robots: withinIndexWindow
+            ? undefined
+            : { index: false, follow: true },
     };
 }
 
 
-async function MenuContent({ date, hallSlug }: { date: string, hallSlug: string }) {
+/** The two halls are rows in `locations`, under slugs that differ from the site's URL slugs. */
+const HALL_LOCATION_SLUG: Record<string, string> = {
+    chase: 'chase',
+    lenoir: 'top-of-lenoir',
+};
+
+function formatMenuDate(date: string) {
+    return new Date(date + 'T12:00:00').toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+    });
+}
+
+/**
+ * Real service periods for the hall, used for the page's opening-hours markup.
+ *
+ * Failure here is deliberately non-fatal: hours are supporting detail, and a hall with no
+ * stored hours for the week (which happens over breaks) must not take the menu down with it.
+ */
+async function loadHallHours(hallSlug: string) {
+    try {
+        const locations = await getLocationsBySlug(HALL_LOCATION_SLUG[hallSlug]);
+        if (locations.length === 0) return [];
+        const today = campusToday();
+        return await getHoursForLocations(
+            locations.map((l) => l.id),
+            shiftDate(today, -7),
+            shiftDate(today, 7),
+        );
+    } catch {
+        return [];
+    }
+}
+
+export default async function Page({ params }: PageProps) {
+    const { hall: hallSlug, date } = await params;
     const selectedHall = HALL_MAP[hallSlug];
 
-    if (!selectedHall) {
-        notFound();
-    }
+    // Validated before any fetching so that notFound() sets a real 404 status. Under
+    // `force-dynamic` the response streams, and a notFound() reached after the first flush
+    // arrives too late to change the status line — which is how /notahall/2026-08-19 and
+    // /chase/not-a-date both came to answer 200.
+    if (!selectedHall) notFound();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) notFound();
 
-    // Date validation (simple regex for YYYY-MM-DD)
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        notFound(); // Or handle error appropriately
-    }
-
-    // Parallel data fetching
-    let menu;
-    let dateData;
-    let menuError;
+    let menu: Awaited<ReturnType<typeof getFullMenuByDateAndHall>> | undefined;
+    let dateData: Awaited<ReturnType<typeof getAvailableDates>> | undefined;
+    let menuError: Error | undefined;
+    let hours: Awaited<ReturnType<typeof loadHallHours>> = [];
 
     try {
-        const [datesResult, menuResult] = await Promise.allSettled([
+        const [datesResult, menuResult, hoursResult] = await Promise.allSettled([
             getAvailableDates(),
             getFullMenuByDateAndHall(date, selectedHall),
+            loadHallHours(hallSlug),
         ]);
 
         const errorMessages: string[] = [];
@@ -134,11 +173,11 @@ async function MenuContent({ date, hallSlug }: { date: string, hallSlug: string 
             menu = menuResult.value;
         } else {
             const reason = menuResult.reason;
-            if (reason instanceof Error) {
-                errorMessages.push(reason.message);
-            } else {
-                errorMessages.push("Failed to load menu data");
-            }
+            errorMessages.push(reason instanceof Error ? reason.message : "Failed to load menu data");
+        }
+
+        if (hoursResult.status === "fulfilled") {
+            hours = hoursResult.value;
         }
 
         if (errorMessages.length > 0) {
@@ -149,9 +188,19 @@ async function MenuContent({ date, hallSlug }: { date: string, hallSlug: string 
     }
 
     const availableDates = Array.from(new Set(dateData?.map(d => d.menu_date) || [])).sort();
+    const formattedDate = formatMenuDate(date);
+    const hallDisplayName = hallSlug === 'chase' ? 'Chase Dining Hall' : 'Lenoir Dining Hall';
+
+    const shell = (children: React.ReactNode, extra?: React.ReactNode) => (
+        <main className="min-h-screen bg-transparent relative overflow-hidden">
+            {extra}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-blue-500/10 blur-[120px] pointer-events-none -z-10 dark:bg-blue-600/5" />
+            {children}
+        </main>
+    );
 
     if (menuError) {
-        return (
+        return shell(
             <div className="min-h-[50vh] flex items-center justify-center">
                 <div className="max-w-sm w-full text-center p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl">
                     <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -172,59 +221,37 @@ async function MenuContent({ date, hallSlug }: { date: string, hallSlug: string 
         );
     }
 
-    // Handle case when no menu exists for the selected date
     if (!menu) {
-        // Find the next available date after the selected date
-        const nextAvailableDate = availableDates.find(d => d > date);
-
-        return (
+        return shell(
             <NoMenuAvailable
                 selectedDate={date}
                 selectedHall={selectedHall}
                 availableDates={availableDates}
-                nextAvailableDate={nextAvailableDate}
+                nextAvailableDate={availableDates.find(d => d > date)}
             />
         );
     }
 
-    // Extract entries from the single menu object
-    const hallFilteredEntries = (menu?.menu_entries || []).map(entry => ({
-        ...entry,
-        meal_period_raw: entry.meal_period,
-        meal_period: entry.meal_period,
-        dining_hall: menu?.dining_hall
-    }));
-
-
+    // Passed straight through. Each entry used to be rebuilt with a `meal_period_raw` copy of
+    // `meal_period` and the hall name repeated on it; nothing reads either, and at ~1,360
+    // entries a day the two dead fields were around 90KB of RSC payload per request.
+    const hallFilteredEntries = menu.menu_entries || [];
 
     const availablePeriods = Array.from(new Set(hallFilteredEntries.map(e => e.meal_period)));
-
     availablePeriods.sort(compareMealPeriods);
 
-    return (
+    return shell(
         <div className="relative">
-            {/* Onboarding Tutorial */}
             <MenuTutorial />
 
-            {/* Feedback Popup - appears after 15 seconds, once per week */}
-            <FeedbackPopup />
-
-            {/* Prominent Logo */}
-
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                <div className="flex justify-start">
-                    <Link href="/" className="inline-block hover:opacity-80 transition-opacity">
-                        <Image
-                            src="/eat_unc_text_logo_nw.svg"
-                            alt="EAT UNC"
-                            width={600}
-                            height={180}
-                            className="h-28 md:h-36 w-auto"
-                            priority
-                        />
-                    </Link>
-                </div>
-            </div>
+            {/*
+                No masthead here. The sticky header inside `FoodDisplayLayout` already opens with
+                `<h1>{diningHall}</h1>` — "Chase" at the top left — so the logo and the
+                "Chase Dining Hall Menu" block that used to sit above it were a second masthead
+                and, worse, a second `h1` on the same page. The keyword headings the SEO pass
+                needed live on in `MenuOutline` ("Chase Dining Hall Breakfast", and so on) and in
+                the title and JSON-LD.
+            */}
 
             <MenuContainer
                 key={`${date}-${selectedHall}`}
@@ -235,32 +262,19 @@ async function MenuContent({ date, hallSlug }: { date: string, hallSlug: string 
                 selectedHall={selectedHall}
                 initialPeriod={undefined}
             />
-        </div>
-    );
-}
 
-export default async function Page({ params }: PageProps) {
-    const { hall, date } = await params;
-
-    // Validate Hall
-    if (!Object.keys(HALL_MAP).includes(hall)) {
-        notFound();
-    }
-
-    return (
-        <main className="min-h-screen bg-transparent relative overflow-hidden">
-            {/* Structured Data for SEO */}
-            <StructuredData hall={hall} date={date} />
-
-            {/* Background Glow */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-blue-500/10 blur-[120px] pointer-events-none -z-10 dark:bg-blue-600/5" />
-
-            <Suspense
-                key={`${date}-${hall}`}
-                fallback={<LoadingScreen isLoading={true} />}
-            >
-                <MenuContent date={date} hallSlug={hall} />
-            </Suspense>
-        </main>
+            <MenuOutline
+                entries={hallFilteredEntries}
+                hallName={hallDisplayName}
+                formattedDate={formattedDate}
+            />
+        </div>,
+        <StructuredData
+            hall={hallSlug}
+            date={date}
+            formattedDate={formattedDate}
+            entries={hallFilteredEntries}
+            hours={hours}
+        />
     );
 }

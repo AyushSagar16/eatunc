@@ -50,18 +50,28 @@ export interface Database {
                     id: string
                     menu_date: string
                     dining_hall: string
+                    location_id: string | null
                 }
                 Insert: {
                     id?: string
                     menu_date: string
                     dining_hall: string
+                    location_id?: string | null
                 }
                 Update: {
                     id?: string
                     menu_date?: string
                     dining_hall?: string
+                    location_id?: string | null
                 }
-                Relationships: []
+                Relationships: [
+                    {
+                        foreignKeyName: "menus_location_id_fkey"
+                        columns: ["location_id"]
+                        referencedRelation: "locations"
+                        referencedColumns: ["id"]
+                    }
+                ]
             }
             menu_entries: {
                 Row: {
@@ -94,6 +104,219 @@ export interface Database {
                         columns: ["recipe_number"]
                         referencedRelation: "master_food_items"
                         referencedColumns: ["recipe_number"]
+                    }
+                ]
+            }
+            locations: {
+                Row: {
+                    id: string
+                    location_key: string
+                    slug: string
+                    name: string
+                    venue_group: string
+                    unc_slug: string | null
+                    menu_url: string | null
+                    external_url: string | null
+                    brand_id: string | null
+                    kind: string
+                    has_menu: boolean
+                    display_label: string
+                    active: boolean
+                    first_seen_at: string
+                    last_seen_at: string
+                }
+                Insert: {
+                    id?: string
+                    location_key: string
+                    slug: string
+                    name: string
+                    venue_group: string
+                    unc_slug?: string | null
+                    menu_url?: string | null
+                    external_url?: string | null
+                    brand_id?: string | null
+                    kind: string
+                    has_menu?: boolean
+                    display_label: string
+                    active?: boolean
+                    first_seen_at?: string
+                    last_seen_at?: string
+                }
+                Update: {
+                    id?: string
+                    location_key?: string
+                    slug?: string
+                    name?: string
+                    venue_group?: string
+                    unc_slug?: string | null
+                    menu_url?: string | null
+                    external_url?: string | null
+                    brand_id?: string | null
+                    kind?: string
+                    has_menu?: boolean
+                    display_label?: string
+                    active?: boolean
+                    first_seen_at?: string
+                    last_seen_at?: string
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "locations_brand_id_fkey"
+                        columns: ["brand_id"]
+                        referencedRelation: "external_brands"
+                        referencedColumns: ["id"]
+                    }
+                ]
+            }
+            location_hours: {
+                Row: {
+                    id: string
+                    location_id: string
+                    service_date: string
+                    period_name: string
+                    sort_order: number
+                    opens_at: string
+                    closes_at: string
+                    opens_label: string
+                    closes_label: string
+                    hours_revision: number
+                    first_seen_at: string
+                    changed_at: string
+                    last_scraped_at: string
+                }
+                Insert: {
+                    id?: string
+                    location_id: string
+                    service_date: string
+                    period_name: string
+                    sort_order?: number
+                    opens_at: string
+                    closes_at: string
+                    opens_label: string
+                    closes_label: string
+                    hours_revision?: number
+                    first_seen_at?: string
+                    changed_at?: string
+                    last_scraped_at?: string
+                }
+                Update: {
+                    id?: string
+                    location_id?: string
+                    service_date?: string
+                    period_name?: string
+                    sort_order?: number
+                    opens_at?: string
+                    closes_at?: string
+                    opens_label?: string
+                    closes_label?: string
+                    hours_revision?: number
+                    first_seen_at?: string
+                    changed_at?: string
+                    last_scraped_at?: string
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "location_hours_location_id_fkey"
+                        columns: ["location_id"]
+                        referencedRelation: "locations"
+                        referencedColumns: ["id"]
+                    }
+                ]
+            }
+            external_brands: {
+                Row: {
+                    id: string
+                    slug: string
+                    name: string
+                    source_url: string
+                    coverage_note: string
+                    scraped_at: string
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    slug: string
+                    name: string
+                    source_url: string
+                    coverage_note: string
+                    scraped_at?: string
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    slug?: string
+                    name?: string
+                    source_url?: string
+                    coverage_note?: string
+                    scraped_at?: string
+                    created_at?: string
+                    updated_at?: string
+                }
+                Relationships: []
+            }
+            external_food_items: {
+                Row: {
+                    id: string
+                    brand_id: string
+                    item_name: string
+                    category: string
+                    serving_description: string
+                    calories_kcal: number | null
+                    protein_g: number | null
+                    fat_g: number | null
+                    carbohydrates_g: number | null
+                    allergens: string | null
+                    dietary_preferences: string | null
+                    nutrition_source: string
+                    nutrition_basis: string | null
+                    item_key: string
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    brand_id: string
+                    item_name: string
+                    category: string
+                    serving_description: string
+                    calories_kcal?: number | null
+                    protein_g?: number | null
+                    fat_g?: number | null
+                    carbohydrates_g?: number | null
+                    allergens?: string | null
+                    dietary_preferences?: string | null
+                    nutrition_source: string
+                    nutrition_basis?: string | null
+                    item_key: string
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    brand_id?: string
+                    item_name?: string
+                    category?: string
+                    serving_description?: string
+                    calories_kcal?: number | null
+                    protein_g?: number | null
+                    fat_g?: number | null
+                    carbohydrates_g?: number | null
+                    allergens?: string | null
+                    dietary_preferences?: string | null
+                    nutrition_source?: string
+                    nutrition_basis?: string | null
+                    item_key?: string
+                    created_at?: string
+                    updated_at?: string
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "external_food_items_brand_id_fkey"
+                        columns: ["brand_id"]
+                        referencedRelation: "external_brands"
+                        referencedColumns: ["id"]
                     }
                 ]
             }

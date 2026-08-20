@@ -1,112 +1,300 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Clock, UtensilsCrossed } from "lucide-react";
+import { getFullMenuByDateAndHall } from "@/lib/api";
+import {
+    campusToday,
+    getHoursForLocations,
+    getLocationsBySlug,
+    type LocationHours,
+} from "@/lib/campus";
+import { groupByPeriodAndStation, type OutlineEntry } from "@/components/MenuOutline";
+import { breadcrumbList, canonical, jsonLd } from "@/lib/seo";
+import { compareMealPeriods } from "@/lib/utils";
+
+// This page is entirely about "today". Without a revalidate it is prerendered once at build
+// time and then frozen — the deployed build was six days old and still announcing
+// "Thursday, August 13, 2026" while linking to /chase/2026-08-13.
+export const revalidate = 900;
 
 export const metadata: Metadata = {
-    title: "UNC Dining Menu Today | What's Cooking at Chapel Hill",
-    description: "View today's dining menu at UNC Chapel Hill. Quick access to Chase and Lenoir dining hall menus with real-time updates.",
+    title: "What's on the UNC Dining Menu Today",
+    description:
+        "Today's menus for Chase and Top of Lenoir at UNC Chapel Hill — meal times, stations and calories for every item, updated nightly. See what's being served before you walk over.",
     keywords: [
         "unc dining today",
         "unc menu today",
-        "what's for dinner unc",
+        "what's on the menu today",
         "unc dining hall today",
         "unc chapel hill dining today",
-        "unc campus dining"
+        "todays menu unc",
     ],
     openGraph: {
-        title: "UNC Dining Menu Today | What's Cooking at Chapel Hill",
-        description: "View today's dining menu at UNC Chapel Hill. Quick access to Chase and Lenoir dining hall menus.",
-        url: "https://eatunc.com/today",
-        siteName: "UNC Dining Menu",
+        title: "What's on the UNC Dining Menu Today",
+        description:
+            "Today's menus for Chase and Top of Lenoir at UNC Chapel Hill — meal times, stations and calories for every item.",
+        url: canonical("/today"),
+        siteName: "Eat UNC",
         type: "website",
     },
     alternates: {
-        canonical: "https://eatunc.com/today",
+        canonical: canonical("/today"),
     },
 };
 
-function getTodayDate() {
-    const now = new Date();
-    return new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/New_York',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    }).format(now);
+const HALLS = [
+    {
+        slug: "chase",
+        locationSlug: "chase",
+        diningHall: "Chase",
+        name: "Chase Dining Hall",
+        campus: "South Campus",
+        accent: "blue",
+    },
+    {
+        slug: "lenoir",
+        locationSlug: "top-of-lenoir",
+        diningHall: "Top of Lenoir",
+        name: "Top of Lenoir",
+        campus: "North Campus",
+        accent: "teal",
+    },
+] as const;
+
+type HallToday = {
+    slug: string;
+    name: string;
+    campus: string;
+    accent: string;
+    itemCount: number;
+    periods: { period: string; stationCount: number; itemCount: number; sample: string[] }[];
+    hours: LocationHours[];
+};
+
+/** One dish per station in rotation, so a period is described by its breadth, not its first shelf. */
+function sampleAcrossStations(
+    stations: { items: OutlineEntry[] }[],
+    limit: number,
+): string[] {
+    const names: string[] = []
+    const seen = new Set<string>()
+
+    for (let round = 0; names.length < limit; round++) {
+        let advanced = false
+        for (const station of stations) {
+            if (names.length >= limit) break
+            const name = station.items[round]?.master_food_items?.food_name
+            if (!name) continue
+            advanced = true
+            const key = name.toLowerCase()
+            if (seen.has(key)) continue
+            seen.add(key)
+            names.push(name)
+        }
+        if (!advanced) break
+    }
+
+    return names
 }
 
-function getFormattedDate() {
-    const now = new Date();
-    return new Intl.DateTimeFormat('en-US', {
-        timeZone: 'America/New_York',
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-    }).format(now);
+/** Today's menu and hours for one hall. Failures degrade to an empty card, never a 500. */
+async function loadHall(hall: (typeof HALLS)[number], date: string): Promise<HallToday> {
+    const empty: HallToday = {
+        slug: hall.slug,
+        name: hall.name,
+        campus: hall.campus,
+        accent: hall.accent,
+        itemCount: 0,
+        periods: [],
+        hours: [],
+    };
+
+    const [menuResult, hoursResult] = await Promise.allSettled([
+        getFullMenuByDateAndHall(date, hall.diningHall),
+        getLocationsBySlug(hall.locationSlug).then((locations) =>
+            locations.length
+                ? getHoursForLocations(
+                      locations.map((l) => l.id),
+                      date,
+                      date,
+                  )
+                : [],
+        ),
+    ]);
+
+    if (hoursResult.status === "fulfilled") empty.hours = hoursResult.value;
+    if (menuResult.status !== "fulfilled" || !menuResult.value) return empty;
+
+    const entries = (menuResult.value.menu_entries ?? []) as OutlineEntry[];
+    const grouped = groupByPeriodAndStation(entries);
+
+    return {
+        ...empty,
+        itemCount: entries.length,
+        periods: grouped.map(({ period, stations }) => ({
+            period,
+            stationCount: stations.length,
+            itemCount: stations.reduce((sum, s) => sum + s.items.length, 0),
+            // A handful of real dishes, so the page says something concrete about today
+            // rather than only counting things.
+            //
+            // Taken one per station in rotation, not off the front of a flattened list. Stations
+            // arrive in a fixed order, so slicing the flat list returned whatever the first
+            // station happened to be — every period on the page read "Blueberry Bagel ·
+            // Cheddar Jalapeno Bagel · ..." because BAGELS AND BREADS sorts first at both halls.
+            sample: sampleAcrossStations(stations, 6),
+        })),
+    };
 }
 
-export default function TodayPage() {
-    const today = getTodayDate();
-    const formattedDate = getFormattedDate();
+export default async function TodayPage() {
+    const today = campusToday();
+    const formattedDate = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/New_York",
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+    }).format(new Date());
+
+    const halls = await Promise.all(HALLS.map((hall) => loadHall(hall, today)));
+    const anyMenu = halls.some((h) => h.itemCount > 0);
 
     return (
-        <main className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900 flex flex-col items-center justify-center px-4">
-            <div className="max-w-xl w-full text-center">
-                <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-4">
-                    UNC Dining Today
-                </h1>
-                <p className="text-xl text-zinc-500 dark:text-zinc-400 mb-2">
-                    {formattedDate}
-                </p>
-                <p className="text-zinc-600 dark:text-zinc-300 mb-12">
-                    Choose a dining hall to view today&apos;s menu
-                </p>
+        <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: jsonLd(
+                        breadcrumbList([
+                            { name: "Eat UNC", path: "/" },
+                            { name: "Today's menu", path: "/today" },
+                        ]),
+                    ),
+                }}
+            />
+            <main className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 md:py-16">
+                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-3">
+                        What&apos;s on the UNC dining menu today
+                    </h1>
+                    <p className="text-xl text-zinc-500 dark:text-zinc-400 mb-2">{formattedDate}</p>
+                    <p className="text-zinc-600 dark:text-zinc-300 max-w-2xl mb-10 leading-relaxed">
+                        Both UNC Chapel Hill dining halls, with the stations serving right now and
+                        the calories for every dish. Menus come from Carolina Dining Services and
+                        refresh nightly.
+                    </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Chase Card */}
-                    <Link
-                        href={`/chase/${today}`}
-                        className="group p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all hover:-translate-y-1"
-                    >
-                        <div className="w-14 h-14 rounded-xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                            <svg className="w-7 h-7 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            </svg>
+                    {!anyMenu && (
+                        <div className="mb-10 p-6 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40">
+                            <p className="text-zinc-700 dark:text-zinc-300">
+                                No menu is published for {formattedDate} yet. Both halls close for
+                                university breaks, and menus usually appear a day or two ahead —
+                                check the hall pages below for the next date that has one.
+                            </p>
                         </div>
-                        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50 mb-1">
-                            Chase
-                        </h2>
-                        <p className="text-sm text-zinc-500 mb-4">South Campus</p>
-                        <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium text-sm group-hover:gap-2 transition-all">
-                            View Menu <ArrowRight className="w-4 h-4" />
-                        </span>
-                    </Link>
+                    )}
 
-                    {/* Lenoir Card */}
-                    <Link
-                        href={`/lenoir/${today}`}
-                        className="group p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-lg hover:border-teal-300 dark:hover:border-teal-700 transition-all hover:-translate-y-1"
-                    >
-                        <div className="w-14 h-14 rounded-xl bg-teal-500/10 border border-teal-400/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                            <svg className="w-7 h-7 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50 mb-1">
-                            Top of Lenoir
-                        </h2>
-                        <p className="text-sm text-zinc-500 mb-4">North Campus</p>
-                        <span className="inline-flex items-center gap-1 text-teal-600 dark:text-teal-400 font-medium text-sm group-hover:gap-2 transition-all">
-                            View Menu <ArrowRight className="w-4 h-4" />
-                        </span>
-                    </Link>
+                    <div className="grid gap-6 md:grid-cols-2">
+                        {halls.map((hall) => (
+                            <section
+                                key={hall.slug}
+                                className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col"
+                            >
+                                <div className="flex items-start gap-3 mb-4">
+                                    <div
+                                        className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+                                            hall.accent === "blue"
+                                                ? "bg-blue-500/10 text-blue-600"
+                                                : "bg-teal-500/10 text-teal-600"
+                                        }`}
+                                    >
+                                        <UtensilsCrossed className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+                                            {hall.name}
+                                        </h2>
+                                        <p className="text-sm text-zinc-500">
+                                            {hall.campus}
+                                            {hall.itemCount > 0 && ` · ${hall.itemCount} items today`}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {hall.hours.length > 0 && (
+                                    <div className="mb-4 space-y-1.5">
+                                        {hall.hours.map((row) => (
+                                            <div
+                                                key={row.id}
+                                                className="flex justify-between text-sm text-zinc-600 dark:text-zinc-400"
+                                            >
+                                                <span className="flex items-center gap-1.5">
+                                                    <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                                                    {row.period_name}
+                                                </span>
+                                                <span className="font-medium tabular-nums">
+                                                    {row.opens_label} – {row.closes_label}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {hall.periods.length > 0 ? (
+                                    <div className="space-y-4 flex-1">
+                                        {hall.periods
+                                            .slice()
+                                            .sort((a, b) => compareMealPeriods(a.period, b.period))
+                                            .map((period) => (
+                                                <div key={period.period}>
+                                                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                                                        {period.period}
+                                                    </h3>
+                                                    <p className="text-xs text-zinc-500 mb-1">
+                                                        {period.stationCount} stations ·{" "}
+                                                        {period.itemCount} items
+                                                    </p>
+                                                    <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                                                        {period.sample.join(" · ")}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-zinc-500 flex-1">
+                                        Nothing published for {hall.name} today.
+                                    </p>
+                                )}
+
+                                <Link
+                                    href={`/${hall.slug}/${today}`}
+                                    className={`mt-6 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-white transition-colors ${
+                                        hall.accent === "blue"
+                                            ? "bg-blue-600 hover:bg-blue-700"
+                                            : "bg-teal-600 hover:bg-teal-700"
+                                    }`}
+                                >
+                                    Full {hall.name} menu
+                                    <ArrowRight className="w-4 h-4" />
+                                </Link>
+                            </section>
+                        ))}
+                    </div>
+
+                    <div className="mt-10 flex flex-wrap gap-4 text-sm">
+                        <Link href="/open-now" className="text-blue-600 dark:text-blue-400 hover:underline">
+                            What&apos;s open right now →
+                        </Link>
+                        <Link href="/hours" className="text-blue-600 dark:text-blue-400 hover:underline">
+                            All UNC dining hours today →
+                        </Link>
+                        <Link href="/locations" className="text-blue-600 dark:text-blue-400 hover:underline">
+                            Every campus dining location →
+                        </Link>
+                    </div>
                 </div>
-
-                <p className="mt-8 text-sm text-zinc-400">
-                    Menus are updated daily from UNC Dining Services
-                </p>
-            </div>
-        </main>
+            </main>
+        </>
     );
 }

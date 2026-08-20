@@ -1,39 +1,36 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-
-import DitherShader from './ui/dither-shader'
-import { motion } from 'motion/react'
 import Image from 'next/image'
-import AnnouncementBanner from './AnnouncementBanner'
+import { motion } from 'motion/react'
+
 import AppStoreBadge from './AppStoreBadge'
+import DitherShader from './ui/dither-shader'
+import HallBentoCard from './home/HallBentoCard'
+import type { HomeSnapshot } from '@/lib/home'
 
-export default function LandingScreen() {
-    const router = useRouter()
-
-
-
-    const handleSelect = (hall: string) => {
-        // Always navigate to today's date in EST (UNC Time)
-        // usage of toLocaleDateString ensures we get the correct "dining day"
-        const now = new Date()
-        const today = new Intl.DateTimeFormat('en-CA', {
-            timeZone: 'America/New_York',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        }).format(now) // standard format is YYYY-MM-DD for en-CA
-
-        router.push(`/${hall}/${today}`)
-    }
-
+/**
+ * The homepage hero: one screen, everything visible without scrolling.
+ *
+ * `h-[100dvh]` rather than `min-h-`, so the sitewide footer sits just under the fold and is
+ * reached by scrolling while nothing above it ever needs to be. Every size below is responsive
+ * down to a 375x667 phone — the screen scales, it does not clip.
+ *
+ * `children` is the open-now band. It arrives as a slot rather than an import because this file
+ * is a client component and `OpenNowRail` is a server one; passing it through keeps the venue
+ * list off the client bundle while still rendering it inside this layout.
+ */
+export default function LandingScreen({
+    today,
+    halls,
+    catchphrase,
+    children,
+}: Pick<HomeSnapshot, 'today' | 'halls'> & {
+    catchphrase: string
+    children: React.ReactNode
+}) {
     return (
-        <div className="relative min-h-screen-ios-safe flex flex-col items-center" style={{ backgroundColor: '#3a4f5f' }}>
-            {/* Temporary Feature Announcement Banner - expires Jan 15, 2026 */}
-            <AnnouncementBanner expirationDate="2026-01-15" />
-
-            {/* Dither Background with Overlay */}
-            <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="relative flex h-[100dvh] flex-col overflow-hidden" style={{ backgroundColor: '#3a4f5f' }}>
+            <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
                 <DitherShader
                     src="/old-well-optimized.jpg"
                     ditherMode="bayer"
@@ -47,208 +44,78 @@ export default function LandingScreen() {
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/20 to-zinc-950/40" />
             </div>
 
-            <div className="max-w-7xl w-full px-6 py-8 md:py-12 relative z-10 flex flex-col items-center justify-center flex-1 gap-8 md:gap-12">
-                {/* Header content... (lines 48-241) */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+            <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-[clamp(0.75rem,2.8vh,2.25rem)] px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
+                <motion.header
+                    initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                    className="text-center space-y-6"
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    className="flex shrink-0 flex-col"
                 >
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.5, delay: 0.1 }}
-                        className="inline-flex items-center justify-center rounded-full bg-white/10 border border-white/10 backdrop-blur-md shadow-lg shadow-black/20"
-                    >
-                        <div className="relative w-48 h-16">
-                            <Image
-                                src="/eat_unc_text_logo_white_nb.svg"
-                                alt="Eat UNC Logo"
-                                fill
-                                className="object-contain scale-120"
-                                unoptimized
-                            />
-                        </div>
-                    </motion.div>
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.2 }}
-                        className="text-5xl md:text-8xl font-black tracking-tighter text-white drop-shadow-2xl"
-                    >
-                        Find Your <br className="hidden md:block" />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-white to-blue-200">Fuel</span>
-                    </motion.h1>
-                </motion.div>
+                    {/*
+                        The wordmark centres; everything under it is left-aligned on the same axis
+                        as the cards. The mark reads as the site's signature at the top of the
+                        screen, and the headline reads as the start of the content.
+                    */}
+                    <Image
+                        src="/eat_unc_wordmark_white.png"
+                        alt="Eat UNC"
+                        width={837}
+                        height={221}
+                        priority
+                        className="mx-auto h-[clamp(1.75rem,5.5vh,3.25rem)] w-auto drop-shadow-lg"
+                    />
 
-                {/* Selection Cards */}
-                <motion.div
+                    {/*
+                        `leading-[1.12] pb-[0.1em]` rather than `leading-[1]`: `bg-clip-text`
+                        paints the gradient over the element's box and clips it to the glyphs, so
+                        anything a glyph does outside that box is simply not painted. At a
+                        line-height of 1 the descenders of "g", "y" and "?" hang below it and the
+                        bottom of every one of them was sheared off. The padding is what actually
+                        guarantees the cover; the looser leading keeps a wrapped headline from
+                        colliding with itself on a narrow phone.
+                    */}
+                    <h1 className="mt-[clamp(1rem,4vh,2.75rem)] bg-gradient-to-r from-blue-200 via-white to-blue-200 bg-clip-text pb-[0.1em] text-[clamp(1.75rem,min(8vw,9vh),4.5rem)] font-black leading-[1.12] tracking-tighter text-transparent drop-shadow-2xl [@media(forced-colors:active)]:text-white">
+                        {catchphrase}
+                    </h1>
+                </motion.header>
+
+                <motion.section
+                    aria-label="Dining halls"
                     initial="hidden"
                     animate="visible"
                     variants={{
                         hidden: { opacity: 0 },
-                        visible: {
-                            opacity: 1,
-                            transition: {
-                                staggerChildren: 0.15,
-                                delayChildren: 0.3
-                            }
-                        }
+                        visible: { opacity: 1, transition: { staggerChildren: 0.12, delayChildren: 0.25 } },
                     }}
-                    className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 w-full max-w-4xl"
+                    className="grid shrink-0 grid-cols-2 gap-[clamp(0.5rem,1.8vh,1.25rem)]"
                 >
+                    {halls.map((hall) => (
+                        <HallBentoCard key={hall.slug} hall={hall} today={today} />
+                    ))}
+                </motion.section>
 
-                    {/* Chase Card */}
-                    <motion.button
-                        variants={{
-                            hidden: { opacity: 0, y: 30, scale: 0.9 },
-                            visible: { opacity: 1, y: 0, scale: 1 }
-                        }}
-                        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                        onClick={() => handleSelect('chase')}
-                        whileHover={{ scale: 1.02, y: -4 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="group relative flex flex-col p-5 md:p-10 h-48 md:h-80 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-left overflow-hidden"
-                    >
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            whileHover={{ opacity: 1 }}
-                            transition={{ duration: 0.3 }}
-                            className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-transparent to-transparent"
-                        />
-
-                        <div className="relative z-10 h-full flex flex-col justify-between">
-                            <div className="flex justify-between items-start">
-                                <motion.div
-                                    whileHover={{ scale: 1.1, rotate: 5 }}
-                                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                                    className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-blue-500/20 border border-blue-400/20 flex items-center justify-center text-blue-200"
-                                >
-                                    <svg className="w-5 h-5 md:w-7 md:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                    </svg>
-                                </motion.div>
-
-                                <motion.div
-                                    initial={{ opacity: 1, x: 0 }}
-                                    whileHover={{ x: 5 }}
-                                    className="opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                                >
-                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/10 flex items-center justify-center text-white">
-                                        <motion.svg
-                                            whileHover={{ x: 3 }}
-                                            className="w-4 h-4 md:w-5 md:h-5"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                        </motion.svg>
-                                    </div>
-                                </motion.div>
-                            </div>
-
-                            <motion.div
-                                initial={{ opacity: 0.9 }}
-                                whileHover={{ opacity: 1 }}
-                            >
-                                <h2 className="text-2xl md:text-4xl font-bold text-white mb-1 md:mb-2 tracking-tight">Chase</h2>
-                                <div className="flex items-center gap-1.5 md:gap-2 text-blue-200/60 font-medium text-sm md:text-lg">
-                                    <motion.span
-                                        animate={{ scale: [1, 1.2, 1] }}
-                                        transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-                                        className="w-1.5 h-1.5 rounded-full bg-blue-400"
-                                    />
-                                    South Campus
-                                </div>
-                            </motion.div>
-                        </div>
-                    </motion.button>
-
-                    {/* Lenoir Card */}
-                    <motion.button
-                        variants={{
-                            hidden: { opacity: 0, y: 30, scale: 0.9 },
-                            visible: { opacity: 1, y: 0, scale: 1 }
-                        }}
-                        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                        onClick={() => handleSelect('lenoir')}
-                        whileHover={{ scale: 1.02, y: -4 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="group relative flex flex-col p-5 md:p-10 h-48 md:h-80 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-md text-left overflow-hidden"
-                    >
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            whileHover={{ opacity: 1 }}
-                            transition={{ duration: 0.3 }}
-                            className="absolute inset-0 bg-gradient-to-br from-teal-500/20 via-transparent to-transparent"
-                        />
-
-                        <div className="relative z-10 h-full flex flex-col justify-between">
-                            <div className="flex justify-between items-start">
-                                <motion.div
-                                    whileHover={{ scale: 1.1, rotate: -5 }}
-                                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                                    className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-teal-500/20 border border-teal-400/20 flex items-center justify-center text-teal-200"
-                                >
-                                    <svg className="w-5 h-5 md:w-7 md:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </motion.div>
-
-                                <motion.div
-                                    initial={{ opacity: 1, x: 0 }}
-                                    whileHover={{ x: 5 }}
-                                    className="opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                                >
-                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/10 flex items-center justify-center text-white">
-                                        <motion.svg
-                                            whileHover={{ x: 3 }}
-                                            className="w-4 h-4 md:w-5 md:h-5"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                        </motion.svg>
-                                    </div>
-                                </motion.div>
-                            </div>
-
-                            <motion.div
-                                initial={{ opacity: 0.9 }}
-                                whileHover={{ opacity: 1 }}
-                            >
-                                <h2 className="text-2xl md:text-4xl font-bold text-white mb-1 md:mb-2 tracking-tight leading-tight">Top of Lenoir</h2>
-                                <div className="flex items-center gap-1.5 md:gap-2 text-teal-200/60 font-medium text-sm md:text-lg">
-                                    <motion.span
-                                        animate={{ scale: [1, 1.2, 1] }}
-                                        transition={{ duration: 2, repeat: Infinity, delay: 0.7 }}
-                                        className="w-1.5 h-1.5 rounded-full bg-teal-400"
-                                    />
-                                    North Campus
-                                </div>
-                            </motion.div>
-                        </div>
-                    </motion.button>
+                <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.5 }}
+                    className="flex min-h-0 flex-1 flex-col"
+                >
+                    {children}
                 </motion.div>
 
                 <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.6 }}
-                    className="flex flex-col items-center gap-3"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.6, delay: 0.7 }}
+                    className="flex shrink-0 flex-wrap items-center justify-center gap-x-4 gap-y-1.5 sm:justify-between"
                 >
                     {/* White lockup: the hero sits on the dark dithered image. */}
                     <AppStoreBadge source="landing" variant="white" />
-
-                    <p className="text-zinc-500 font-medium text-sm text-center">
-                        Menus are dynamically updated from UNC Dining services.
+                    <p className="text-center text-[11px] font-medium text-blue-200/70 sm:text-xs">
+                        Menus are updated nightly from UNC Dining Services.
                     </p>
                 </motion.div>
             </div>
         </div>
     )
 }
-

@@ -78,7 +78,7 @@ export default function NoMenuAvailable({
                         transition={{ duration: 0.5 }}
                         className="max-w-xl w-full"
                     >
-                        <div className="px-8 py-12 md:px-12 md:py-16 rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col items-center">
+                        <div className="px-8 py-12 md:px-12 md:py-16 rounded-[1.875rem] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col items-center">
                             {/* Clock Icon */}
                             <motion.div
                                 initial={{ scale: 0, rotate: -20 }}
@@ -108,7 +108,7 @@ export default function NoMenuAvailable({
                                 transition={{ delay: 0.3 }}
                                 className="text-2xl md:text-3xl font-black text-zinc-900 dark:text-zinc-50 mb-4 text-center tracking-tight"
                             >
-                                {selectedHall} isn't open on {formattedDate}
+                                No menu published for {selectedHall} on {formattedDate}
                             </motion.h2>
 
                             {/* Description */}
@@ -118,7 +118,10 @@ export default function NoMenuAvailable({
                                 transition={{ delay: 0.4 }}
                                 className="text-zinc-500 dark:text-zinc-400 leading-relaxed text-center mb-10 text-sm max-w-[320px]"
                             >
-                                We couldn't find any menu items for this date. It looks like the dining hall might be closed.
+                                UNC hasn&apos;t published itemised menu items for this date. The
+                                halls close for university breaks, and some campus venues keep
+                                hours without UNC listing their food — so a venue shown as open
+                                above may still be serving.
                             </motion.p>
 
                             {/* Action Buttons */}

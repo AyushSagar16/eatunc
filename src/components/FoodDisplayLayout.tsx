@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Tabs } from '@/components/ui/tabs'
 import { ChevronLeft, ChevronRight, ArrowLeftRight } from 'lucide-react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 
 import SearchAndSort, { SortOption } from '@/components/SearchAndSort'
@@ -24,6 +24,16 @@ interface FoodDisplayLayoutProps {
     diningHall: string
     selectedDate: string
     availableDates: string[]
+    /**
+     * Where the date stepper navigates, as `${dateBasePath}/${date}`.
+     *
+     * The halls are the only pages whose URL can be derived from the hall name, and this
+     * component used to do exactly that. A campus venue page reuses the whole layout, so it
+     * passes its own base path instead of having its date arrows silently jump to Lenoir.
+     */
+    dateBasePath?: string
+    /** Replaces the hall switcher on pages that are not one of the two halls. */
+    switchLink?: { label: string; href: string }
     selectedPeriod: string
     availablePeriods: string[]
     onPeriodChange: (period: string) => void
@@ -135,6 +145,8 @@ export default function FoodDisplayLayout({
     diningHall,
     selectedDate,
     availableDates,
+    dateBasePath,
+    switchLink,
     selectedPeriod,
     availablePeriods,
     onPeriodChange,
@@ -150,7 +162,6 @@ export default function FoodDisplayLayout({
     children
 }: FoodDisplayLayoutProps) {
     const router = useRouter()
-    const searchParams = useSearchParams()
 
     // Calendar picker state
     const [isCalendarOpen, setIsCalendarOpen] = useState(false)
@@ -185,6 +196,8 @@ export default function FoodDisplayLayout({
     const handleDateChange = (date: string) => {
         if (onDateChange) {
             onDateChange(date)
+        } else if (dateBasePath) {
+            router.push(`${dateBasePath}/${date}`)
         } else {
             // Updated to path-based routing: /{diningHall}/{date}
             const hallSlug = diningHall === 'Chase' ? 'chase' : 'lenoir'
@@ -286,15 +299,21 @@ export default function FoodDisplayLayout({
                             {/* Dining Hall Switcher Button */}
                             <motion.button
                                 data-tutorial-target="hall-switcher"
-                                onClick={handleSwitchHall}
+                                onClick={() => (switchLink ? router.push(switchLink.href) : handleSwitchHall())}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 className="flex items-center justify-center gap-1.5 px-3 sm:px-6 py-1.5 min-h-[52px] rounded-xl bg-zinc-100 text-zinc-900 border border-zinc-200/50 font-bold text-md sm:text-base hover:bg-zinc-200 active:bg-zinc-300 transition-all touch-manipulation"
                             >
                                 <ArrowLeftRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-500 shrink-0" />
                                 <span className="whitespace-nowrap">
-                                    <span className="hidden sm:inline">Switch to </span>
-                                    {getOppositeDiningHall()}
+                                    {switchLink ? (
+                                        switchLink.label
+                                    ) : (
+                                        <>
+                                            <span className="hidden sm:inline">Switch to </span>
+                                            {getOppositeDiningHall()}
+                                        </>
+                                    )}
                                 </span>
                             </motion.button>
 
