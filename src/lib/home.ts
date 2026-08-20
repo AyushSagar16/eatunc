@@ -4,6 +4,7 @@ import {
     getLocations,
     getMenuPreview,
     getOpenNow,
+    isBottomOfLenoir,
     locationPath,
     HALL_SLUG_BY_LOCATION_SLUG,
     type Location,
@@ -46,7 +47,7 @@ export type OpenVenue = {
     /** location_hours row id — unique per venue+period, safe as a React key. */
     id: string
     name: string
-    /** venue_group, e.g. "Student Union". */
+    /** venue_group, e.g. "Student Union" — or "Bottom of Lenoir", which UNC does not name. */
     building: string
     /** Canonical site path from locationPath(). */
     href: string
@@ -69,7 +70,7 @@ export type HomeSnapshot = {
     today: string
     /** Always length 2: Chase then Top of Lenoir, in that order. */
     halls: HallStatus[]
-    /** Non-hall venues open right now, soonest to close first. */
+    /** Non-hall venues open right now: Bottom of Lenoir first, then soonest to close. */
     openVenues: OpenVenue[]
     /** Non-hall venues opening next, soonest first. At most 4. */
     nextVenues: NextVenue[]
@@ -226,10 +227,20 @@ export async function getHomeSnapshot(now: Date = new Date()): Promise<HomeSnaps
 
     const openVenues: OpenVenue[] = openNow.open
         .filter((entry) => !isHallLocation(entry.location))
+        // Bottom of Lenoir first, then everything else, each still soonest-to-close within its
+        // group. `getOpenNow` sorts by closing time alone, which is the right tiebreak but the
+        // wrong headline: the ground floor of Lenoir is where most of campus actually eats when
+        // the halls are not the answer, and burying Chick-fil-A under a coffee cart that happens
+        // to close ten minutes earlier makes the list read as arbitrary. `Array.prototype.sort`
+        // is stable, so the closing-time order survives inside each group untouched.
+        .sort((a, b) => Number(isBottomOfLenoir(b.location)) - Number(isBottomOfLenoir(a.location)))
         .map((entry) => ({
             id: entry.period.id,
             name: entry.location.name,
-            building: entry.location.venue_group,
+            // "Lenoir Hall" is the string UNC files, and it is the same one Top of Lenoir
+            // carries — so the rows now sitting at the top of the list would have named the
+            // building they share with the dining hall rather than the food court they are.
+            building: isBottomOfLenoir(entry.location) ? 'Bottom of Lenoir' : entry.location.venue_group,
             href: locationPath(entry.location),
             period: entry.period.period_name,
             closesAt: entry.closesAt,

@@ -36,6 +36,19 @@ export const HALL_SLUG_BY_LOCATION_SLUG: Record<string, string> = {
     'top-of-lenoir': 'lenoir',
 }
 
+/**
+ * The ground-floor food court, which UNC does not name.
+ *
+ * Every Lenoir Hall venue except the hall upstairs is what students call Bottom of Lenoir —
+ * UNC files one `venue_group` for the whole building and leaves the split to us. This is the
+ * single definition of that rule: `groupByBuilding` headings and the homepage's open-now
+ * ranking both read it, and a second copy that drifted would put Chick-fil-A in one place on
+ * `/locations` and another on the homepage.
+ */
+export function isBottomOfLenoir(location: Pick<Location, 'slug' | 'venue_group'>): boolean {
+    return location.venue_group === 'Lenoir Hall' && location.slug !== 'top-of-lenoir'
+}
+
 /** Canonical site path for a location — halls keep their historic short URLs. */
 export function locationPath(location: Pick<Location, 'slug'>): string {
     const hall = HALL_SLUG_BY_LOCATION_SLUG[location.slug]

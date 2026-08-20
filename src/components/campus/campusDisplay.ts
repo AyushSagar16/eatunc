@@ -1,4 +1,4 @@
-import { CAMPUS_TIMEZONE } from '@/lib/campus'
+import { CAMPUS_TIMEZONE, isBottomOfLenoir } from '@/lib/campus'
 import type { Location, LocationHours } from '@/lib/campus'
 
 /**
@@ -201,19 +201,17 @@ export function buildingMeta(venueGroup: string): BuildingMeta {
 
 export type BuildingGroup<T> = { venueGroup: string; meta: BuildingMeta; items: T[] }
 
-/** The hall upstairs. Everything else filed under `Lenoir Hall` is the food court downstairs. */
-const TOP_OF_LENOIR_SLUG = 'top-of-lenoir'
-
 /**
  * UNC files one `venue_group` for the whole of Lenoir Hall, but nobody on campus talks about it
  * that way: upstairs is Top of Lenoir, the all-you-can-eat hall, and the ground floor is Bottom
  * of Lenoir, a food court of separate counters. Grouping them together put Chick-fil-A under the
  * same heading as the dining hall. The split is by slug rather than by `kind`, because the two
- * are genuinely different places rather than two kinds of the same place.
+ * are genuinely different places rather than two kinds of the same place — `isBottomOfLenoir`
+ * in `lib/campus` owns that test.
  */
 function displayGroup(row: { venue_group: string; slug: string }): string {
     if (row.venue_group !== 'Lenoir Hall') return row.venue_group
-    return row.slug === TOP_OF_LENOIR_SLUG ? 'Top of Lenoir' : 'Bottom of Lenoir'
+    return isBottomOfLenoir(row) ? 'Bottom of Lenoir' : 'Top of Lenoir'
 }
 
 /** Groups any location-shaped row by building, biggest and best-known buildings first. */

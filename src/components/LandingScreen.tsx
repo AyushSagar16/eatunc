@@ -23,12 +23,9 @@ export default function LandingScreen({
     today,
     halls,
     catchphrase,
-    campusStatus,
     children,
 }: Pick<HomeSnapshot, 'today' | 'halls'> & {
     catchphrase: string
-    /** Live line under the headline — how many places are serving, or what opens next. */
-    campusStatus: string
     children: React.ReactNode
 }) {
     return (
@@ -68,18 +65,18 @@ export default function LandingScreen({
                         className="mx-auto h-[clamp(1.75rem,5.5vh,3.25rem)] w-auto drop-shadow-lg"
                     />
 
-                    <h1 className="mt-[clamp(1rem,4vh,2.75rem)] bg-gradient-to-r from-blue-200 via-white to-blue-200 bg-clip-text text-[clamp(1.75rem,min(8vw,9vh),4.5rem)] font-black leading-[1] tracking-tighter text-transparent drop-shadow-2xl [@media(forced-colors:active)]:text-white">
+                    {/*
+                        `leading-[1.12] pb-[0.1em]` rather than `leading-[1]`: `bg-clip-text`
+                        paints the gradient over the element's box and clips it to the glyphs, so
+                        anything a glyph does outside that box is simply not painted. At a
+                        line-height of 1 the descenders of "g", "y" and "?" hang below it and the
+                        bottom of every one of them was sheared off. The padding is what actually
+                        guarantees the cover; the looser leading keeps a wrapped headline from
+                        colliding with itself on a narrow phone.
+                    */}
+                    <h1 className="mt-[clamp(1rem,4vh,2.75rem)] bg-gradient-to-r from-blue-200 via-white to-blue-200 bg-clip-text pb-[0.1em] text-[clamp(1.75rem,min(8vw,9vh),4.5rem)] font-black leading-[1.12] tracking-tighter text-transparent drop-shadow-2xl [@media(forced-colors:active)]:text-white">
                         {catchphrase}
                     </h1>
-
-                    {/*
-                        Replaces the static uppercase eyebrow that used to sit above the headline.
-                        It is drawn from the same snapshot the cards below use, so it is true at
-                        the minute it renders rather than being a slogan.
-                    */}
-                    <p className="mt-[clamp(0.375rem,1.4vh,0.75rem)] text-[clamp(0.75rem,1.9vh,1rem)] font-medium text-blue-200/75">
-                        {campusStatus}
-                    </p>
                 </motion.header>
 
                 <motion.section
