@@ -78,7 +78,7 @@ export default function NoMenuAvailable({
                         transition={{ duration: 0.5 }}
                         className="max-w-xl w-full"
                     >
-                        <div className="px-8 py-12 md:px-12 md:py-16 rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col items-center">
+                        <div className="px-8 py-12 md:px-12 md:py-16 rounded-[1.875rem] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col items-center">
                             {/* Clock Icon */}
                             <motion.div
                                 initial={{ scale: 0, rotate: -20 }}

@@ -86,7 +86,7 @@ export default function HallBentoCard({ hall, today }: { hall: HallStatus; today
             transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
             whileHover={{ scale: 1.02, y: -4 }}
             whileTap={{ scale: 0.98 }}
-            className="group focus-ring relative flex min-h-[clamp(7rem,19vh,11rem)] min-w-0 flex-col justify-between overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 p-[clamp(0.625rem,1.7vh,1.25rem)] text-left backdrop-blur-md sm:rounded-[2rem]"
+            className="group focus-ring relative flex min-h-[clamp(7rem,19vh,11rem)] min-w-0 flex-col justify-between overflow-hidden rounded-[1.25rem] border border-white/10 bg-white/5 p-[clamp(0.625rem,1.7vh,1.25rem)] text-left backdrop-blur-md sm:rounded-[1.5rem]"
         >
             <div
                 aria-hidden

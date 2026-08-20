@@ -97,7 +97,7 @@ export default function OpenNowRail({
                 </p>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/5 backdrop-blur-md">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.125rem] border border-white/10 bg-white/5 backdrop-blur-md">
                 <div className="no-visible-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain">
                     {hasOpen ? (
                         <ul>
