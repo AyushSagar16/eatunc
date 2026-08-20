@@ -5,10 +5,7 @@ import NoMenuAvailable from "@/components/NoMenuAvailable";
 import BackButton from "@/components/BackButton";
 import StructuredData from "@/components/StructuredData";
 import MenuTutorial from "@/components/MenuTutorial";
-import FeedbackPopup from "@/components/FeedbackPopup";
-import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
 import type { Metadata } from "next";
 import { compareMealPeriods } from "@/lib/utils";
 import MenuOutline from "@/components/MenuOutline";
@@ -246,30 +243,15 @@ export default async function Page({ params }: PageProps) {
     return shell(
         <div className="relative">
             <MenuTutorial />
-            <FeedbackPopup />
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                <div className="flex justify-start">
-                    <Link href="/" className="inline-block hover:opacity-80 transition-opacity">
-                        <Image
-                            src="/eat_unc_text_logo_nw.png"
-                            alt="EAT UNC"
-                            width={600}
-                            height={180}
-                            className="h-28 md:h-36 w-auto"
-                            priority
-                        />
-                    </Link>
-                </div>
-
-                {/* The page had no h1 at all — its only heading-level content was a logo image. */}
-                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
-                    {hallDisplayName} Menu
-                </h1>
-                <p className="mt-1 mb-2 text-zinc-500 dark:text-zinc-400">
-                    {formattedDate} · {availablePeriods.length > 0 ? availablePeriods.map(p => p.split('(')[0].trim()).join(', ') : 'No meals scheduled'} · {hallFilteredEntries.length} items with nutrition
-                </p>
-            </div>
+            {/*
+                No masthead here. The sticky header inside `FoodDisplayLayout` already opens with
+                `<h1>{diningHall}</h1>` — "Chase" at the top left — so the logo and the
+                "Chase Dining Hall Menu" block that used to sit above it were a second masthead
+                and, worse, a second `h1` on the same page. The keyword headings the SEO pass
+                needed live on in `MenuOutline` ("Chase Dining Hall Breakfast", and so on) and in
+                the title and JSON-LD.
+            */}
 
             <MenuContainer
                 key={`${date}-${selectedHall}`}
