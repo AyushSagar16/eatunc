@@ -10,6 +10,43 @@ import { appLink } from '@/lib/app-store'
 
 const DISMISSED_KEY = 'eatunc_app_banner_dismissed'
 const IMPRESSION_KEY = 'eatunc_app_banner_seen'
+const VISIT_COUNT_KEY = 'eatunc_visits'
+const VISIT_COUNTED_KEY = 'eatunc_visit_counted'
+
+/**
+ * The banner shows on a visitor's first three visits and then stops for good.
+ *
+ * A visit is a browsing session, not a page view — the count is incremented once per session
+ * (the sessionStorage flag) and kept across sessions (localStorage), so someone who reads four
+ * menu pages in one sitting has visited once, not four times. Somebody who has already seen it
+ * three times and never tapped it has answered the question.
+ */
+const MAX_VISITS_WITH_BANNER = 3
+
+/**
+ * Counted at most once per page load and then memoised, so the `useSyncExternalStore` snapshot
+ * below is stable — it must return the same value every time React asks, and the underlying
+ * counter increments.
+ */
+let visitNumber: number | null = null
+
+/** Returns the visitor's visit number, counting this session if it has not been counted yet. */
+function countVisit(): number {
+    try {
+        const stored = Number(localStorage.getItem(VISIT_COUNT_KEY) ?? '0')
+        const previous = Number.isFinite(stored) && stored > 0 ? stored : 0
+        if (sessionStorage.getItem(VISIT_COUNTED_KEY) !== null) return previous
+
+        const current = previous + 1
+        sessionStorage.setItem(VISIT_COUNTED_KEY, 'true')
+        localStorage.setItem(VISIT_COUNT_KEY, String(current))
+        return current
+    } catch {
+        // Safari in private mode throws on storage access. Treat that as "past the limit"
+        // rather than showing the banner on every single page load forever.
+        return MAX_VISITS_WITH_BANNER + 1
+    }
+}
 
 interface AppInstallBannerProps {
     className?: string
@@ -19,6 +56,11 @@ interface AppInstallBannerProps {
 const neverChanges = () => () => { }
 
 const readDismissed = () => localStorage.getItem(DISMISSED_KEY) !== null
+
+const readWithinVisitLimit = () => {
+    if (visitNumber === null) visitNumber = countVisit()
+    return visitNumber <= MAX_VISITS_WITH_BANNER
+}
 
 /**
  * Promotes the Eat UNC iOS app at the top of every page.
@@ -40,7 +82,13 @@ export default function AppInstallBanner({ className = '' }: AppInstallBannerPro
     // document flow, so on `/` it would push the screen taller than the viewport. That page
     // carries its own App Store badge, which is the same ask in a place that fits.
     const isLanding = pathname === '/'
-    const isHidden = wasDismissed || dismissedNow || isLanding
+
+    // Same shape as the dismissal flag above: the server snapshot hides the banner and hydration
+    // reveals it, which is the supported way for the two renders to differ. A `useState` lazy
+    // initialiser would disagree with the server HTML and trip a hydration mismatch.
+    const withinVisitLimit = useSyncExternalStore(neverChanges, readWithinVisitLimit, () => false)
+
+    const isHidden = wasDismissed || dismissedNow || isLanding || !withinVisitLimit
 
     useEffect(() => {
         if (isHidden) return
