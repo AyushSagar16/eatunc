@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useMemo, useEffect, useCallback, useRef, Suspense } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { usePostHog } from 'posthog-js/react'
 import { MasterFoodItem } from '@/lib/api'
@@ -32,6 +32,13 @@ interface MenuContainerProps {
     selectedDate: string
     selectedHall: string
     initialPeriod?: string
+    /**
+     * Passed straight through to `FoodDisplayLayout`. The two halls leave both undefined and
+     * keep their built-in `/{hall}/{date}` stepping and hall switcher; `/locations/<slug>`
+     * reuses this same container for a campus venue and supplies its own.
+     */
+    dateBasePath?: string
+    switchLink?: { label: string; href: string }
 }
 
 interface StationSectionProps {
@@ -390,7 +397,9 @@ export default function MenuContainer({
     availableDates,
     selectedDate,
     selectedHall,
-    initialPeriod
+    initialPeriod,
+    dateBasePath,
+    switchLink
 }: MenuContainerProps) {
     // iOS CRASH DEBUG: Log render counts and payload sizes
     //     if (DEBUG_MENU && typeof window !== 'undefined') {
@@ -1032,6 +1041,8 @@ export default function MenuContainer({
                 diningHall={selectedHall}
                 selectedDate={selectedDate}
                 availableDates={availableDates}
+                dateBasePath={dateBasePath}
+                switchLink={switchLink}
                 selectedPeriod=""
                 availablePeriods={[]}
                 onPeriodChange={() => { }}
@@ -1071,6 +1082,8 @@ export default function MenuContainer({
             diningHall={selectedHall}
             selectedDate={selectedDate}
             availableDates={availableDates}
+            dateBasePath={dateBasePath}
+            switchLink={switchLink}
             selectedPeriod={selectedPeriod}
             availablePeriods={availablePeriods}
             onPeriodChange={setSelectedPeriod}
@@ -1083,16 +1096,26 @@ export default function MenuContainer({
             sortBy={sortBy}
             onSortChange={setSortBy}
         >
-            {/* Filter Sidebar - Now just the floating button */}
-            <FilterSidebar
-                activeFilters={activeFilters}
-                onToggleFilter={toggleFilter}
-                onClearAll={clearAllFilters}
-                activeDietaryPreferences={activeDietaryPreferences}
-                onToggleDietaryPreference={toggleDietaryPreference}
-                activeAllergens={activeAllergens}
-                onToggleAllergen={toggleAllergen}
-            />
+            {/*
+                Filter Sidebar - Now just the floating button.
+
+                Suspense-wrapped because `FilterSidebar` reads `useSearchParams()` for the
+                `?openFilter=true` deep link, and that bails the whole tree out of static
+                prerendering. The hall routes are `force-dynamic` so it never showed, but
+                `/locations/<slug>` is ISR and the build refused it. The boundary confines the
+                client-only render to the floating button instead of the entire menu.
+            */}
+            <Suspense fallback={null}>
+                <FilterSidebar
+                    activeFilters={activeFilters}
+                    onToggleFilter={toggleFilter}
+                    onClearAll={clearAllFilters}
+                    activeDietaryPreferences={activeDietaryPreferences}
+                    onToggleDietaryPreference={toggleDietaryPreference}
+                    activeAllergens={activeAllergens}
+                    onToggleAllergen={toggleAllergen}
+                />
+            </Suspense>
 
             {/* Main Content - Full Width */}
             <div className="w-full flex flex-col gap-8 transition-all duration-500 ease-in-out animate-in fade-in slide-in-from-bottom-2">

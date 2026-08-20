@@ -42,6 +42,9 @@ export function locationPath(location: Pick<Location, 'slug'>): string {
     return hall ? `/${hall}` : `/locations/${location.slug}`
 }
 
+/** Supabase truncates a nested relation at exactly this many rows, and reports no error. */
+const MAX_NESTED_ROWS = 1000
+
 /**
  * Supabase caps nested relations at 1000 rows (see `getFullMenuByDateAndHall`). Hours are
  * fetched flat and paginated rather than nested for exactly that reason: 42 venues over a
@@ -254,6 +257,47 @@ export async function getVenueMenu(locationId: string, date: string) {
         .maybeSingle()
 
     if (error) throw error
+
+    // Supabase caps a nested relation at 1000 rows and returns exactly 1000 when it truncates,
+    // with no error. Satellite venues publish a few dozen items a day and never come close, but
+    // the cap is a property of the query rather than of the venue — so this repeats the explicit
+    // pagination `getFullMenuByDateAndHall` uses rather than assuming the venue stays small.
+    if (data && data.menu_entries?.length === MAX_NESTED_ROWS) {
+        const all: typeof data.menu_entries = []
+
+        for (let offset = 0; ; offset += MAX_NESTED_ROWS) {
+            const { data: page, error: pageError } = await supabase
+                .from('menu_entries')
+                .select(
+                    `
+                    meal_period,
+                    meal_station,
+                    recipe_number,
+                    master_food_items (
+                        recipe_number,
+                        food_name,
+                        calories_kcal,
+                        protein_g,
+                        fat_g,
+                        carbohydrates_g,
+                        amount_per_serving,
+                        dietary_preferences,
+                        allergens
+                    )
+                `,
+                )
+                .eq('menu_id', data.id)
+                .range(offset, offset + MAX_NESTED_ROWS - 1)
+
+            if (pageError) throw pageError
+            if (!page?.length) break
+            all.push(...page)
+            if (page.length < MAX_NESTED_ROWS) break
+        }
+
+        data.menu_entries = all
+    }
+
     return data
 }
 
