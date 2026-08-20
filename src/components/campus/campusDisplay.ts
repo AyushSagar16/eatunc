@@ -139,39 +139,53 @@ export type BuildingMeta = {
  * "bottom of lenoir". Both names have to be on the page for either query to find it.
  */
 const BUILDINGS: Record<string, BuildingMeta> = {
-    'Lenoir Hall': {
-        heading: 'Lenoir Hall — Bottom of Lenoir & Top of Lenoir',
-        short: 'Lenoir Hall',
-        blurb:
-            'Two different operations share one building. Top of Lenoir, upstairs, is the all-you-can-eat hall you swipe into. Downstairs is the food court students call Bottom of Lenoir, where you pay counter by counter — Chick-fil-A, Bento Sushi, Alpaca Peruvian Chicken, Bandido’s, La Farm Bakery, Mediterranean Deli, The Scoop and Zayka Indian Grill.',
+    'Top of Lenoir': {
+        heading: 'Top of Lenoir',
+        short: 'Top of Lenoir',
+        blurb: 'Upstairs in Lenoir Hall: the all-you-can-eat hall you swipe into.',
         order: 1,
+    },
+    'Bottom of Lenoir': {
+        heading: 'Bottom of Lenoir',
+        short: 'Bottom of Lenoir',
+        blurb:
+            'The food court on the ground floor of Lenoir Hall, where you pay counter by counter.',
+        order: 2,
+    },
+    // Kept as a fallback heading. `groupByBuilding` splits this venue_group in two before it is
+    // ever looked up, so nothing should reach it — but a new Lenoir venue arriving with an
+    // unexpected slug should still land somewhere sensible rather than under a bare string.
+    'Lenoir Hall': {
+        heading: 'Lenoir Hall',
+        short: 'Lenoir Hall',
+        order: 2,
     },
     'Brinkhous-Bullitt Building: The Beach Cafe': {
         heading: 'Brinkhous-Bullitt Building — The Beach Cafe',
         short: 'The Beach Cafe',
         blurb:
             'The Beach Cafe is the food court inside the Brinkhous-Bullitt Building, at the medical-school end of campus. It is the largest collection of counters outside Lenoir Hall, and the only place on campus serving Makus Empanadas and Hibachi & Co.',
-        order: 2,
+        order: 3,
     },
     'Chase Hall': {
         heading: 'Chase Hall — Chase Dining Hall, Cafe 1789 & Rams Market',
         short: 'Chase Hall',
         blurb:
             'South Campus. Chase itself is the all-you-can-eat hall; Cafe 1789, Rams Market and Subway share the building for a faster stop.',
-        order: 3,
+        order: 4,
     },
     'Carolina Union': {
         heading: 'Carolina Union',
         short: 'Carolina Union',
         blurb: 'Two counters inside the student union, in the middle of campus.',
-        order: 4,
+        order: 5,
     },
     'Food Trucks': {
         heading: 'Food Trucks',
         short: 'Food Trucks',
         blurb:
             'Trucks rotate through campus stops instead of keeping a room, and UNC files their hours under the stop they are parked at that day — which is why a truck shows up as SASB one afternoon and Marsico Hall the next.',
-        order: 5,
+        order: 6,
     },
 }
 
@@ -187,13 +201,31 @@ export function buildingMeta(venueGroup: string): BuildingMeta {
 
 export type BuildingGroup<T> = { venueGroup: string; meta: BuildingMeta; items: T[] }
 
+/** The hall upstairs. Everything else filed under `Lenoir Hall` is the food court downstairs. */
+const TOP_OF_LENOIR_SLUG = 'top-of-lenoir'
+
+/**
+ * UNC files one `venue_group` for the whole of Lenoir Hall, but nobody on campus talks about it
+ * that way: upstairs is Top of Lenoir, the all-you-can-eat hall, and the ground floor is Bottom
+ * of Lenoir, a food court of separate counters. Grouping them together put Chick-fil-A under the
+ * same heading as the dining hall. The split is by slug rather than by `kind`, because the two
+ * are genuinely different places rather than two kinds of the same place.
+ */
+function displayGroup(row: { venue_group: string; slug: string }): string {
+    if (row.venue_group !== 'Lenoir Hall') return row.venue_group
+    return row.slug === TOP_OF_LENOIR_SLUG ? 'Top of Lenoir' : 'Bottom of Lenoir'
+}
+
 /** Groups any location-shaped row by building, biggest and best-known buildings first. */
-export function groupByBuilding<T extends { venue_group: string }>(rows: T[]): BuildingGroup<T>[] {
+export function groupByBuilding<T extends { venue_group: string; slug: string }>(
+    rows: T[],
+): BuildingGroup<T>[] {
     const groups = new Map<string, T[]>()
     for (const row of rows) {
-        const existing = groups.get(row.venue_group)
+        const key = displayGroup(row)
+        const existing = groups.get(key)
         if (existing) existing.push(row)
-        else groups.set(row.venue_group, [row])
+        else groups.set(key, [row])
     }
 
     return Array.from(groups.entries())
