@@ -19,7 +19,21 @@ export const CATCHPHRASES = [
     "Let's find something.",
 ] as const
 
-export type Catchphrase = (typeof CATCHPHRASES)[number]
+/**
+ * Used when nothing at all is serving.
+ *
+ * The app keeps its eight phrases meal-neutral on purpose — "Nothing here claims to know what
+ * time it is or what is open; the cards underneath do that." The web homepage is a single screen
+ * with the campus state right under the headline, so "What are you craving?" over an empty
+ * campus reads as the page not knowing. These say the true thing instead.
+ */
+export const CLOSED_CATCHPHRASES = [
+    'Campus is quiet.',
+    'Nothing open right now.',
+    "Kitchen's closed.",
+] as const
+
+export type Catchphrase = (typeof CATCHPHRASES)[number] | (typeof CLOSED_CATCHPHRASES)[number]
 
 /**
  * Picked on the server, once per request, and passed down as a prop.
@@ -35,6 +49,7 @@ export type Catchphrase = (typeof CATCHPHRASES)[number]
  * to remember on; a stateless server request has nothing to compare against, so this is a plain
  * uniform pick and roughly one load in eight repeats.
  */
-export function pickCatchphrase(): Catchphrase {
-    return CATCHPHRASES[Math.floor(Math.random() * CATCHPHRASES.length)]
+export function pickCatchphrase({ anythingOpen }: { anythingOpen: boolean }): Catchphrase {
+    const pool = anythingOpen ? CATCHPHRASES : CLOSED_CATCHPHRASES
+    return pool[Math.floor(Math.random() * pool.length)]
 }

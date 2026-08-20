@@ -23,8 +23,14 @@ export default function LandingScreen({
     today,
     halls,
     catchphrase,
+    campusStatus,
     children,
-}: Pick<HomeSnapshot, 'today' | 'halls'> & { catchphrase: string; children: React.ReactNode }) {
+}: Pick<HomeSnapshot, 'today' | 'halls'> & {
+    catchphrase: string
+    /** Live line under the headline — how many places are serving, or what opens next. */
+    campusStatus: string
+    children: React.ReactNode
+}) {
     return (
         <div className="relative flex h-[100dvh] flex-col overflow-hidden" style={{ backgroundColor: '#3a4f5f' }}>
             <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
@@ -41,45 +47,39 @@ export default function LandingScreen({
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/20 to-zinc-950/40" />
             </div>
 
-            <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-[clamp(0.5rem,1.8vh,1.25rem)] px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
+            <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-[clamp(0.75rem,2.8vh,2.25rem)] px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
                 <motion.header
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                    className="flex shrink-0 flex-col items-center text-center"
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    className="flex shrink-0 flex-col"
                 >
                     {/*
-                        The app's own wordmark (`LogoText`), not the site's old `*_text_logo_*`
-                        files — despite their filenames those are the bare Old Well mark with no
-                        text in them at all, which is why the header used to read as an icon in a
-                        pill. Copied from the app's asset catalog and trimmed to its own bounds,
-                        because `object-contain` cannot tell transparent padding from ink.
+                        The wordmark centres; everything under it is left-aligned on the same axis
+                        as the cards. The mark reads as the site's signature at the top of the
+                        screen, and the headline reads as the start of the content.
                     */}
-                    <div className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/10 px-[clamp(1rem,3vh,2.25rem)] py-[clamp(0.5rem,1.5vh,1rem)] shadow-lg shadow-black/20 backdrop-blur-md">
-                        <Image
-                            src="/eat_unc_wordmark_white.png"
-                            alt="Eat UNC"
-                            width={837}
-                            height={221}
-                            priority
-                            className="h-[clamp(1.75rem,6vh,3.5rem)] w-auto"
-                        />
-                    </div>
+                    <Image
+                        src="/eat_unc_wordmark_white.png"
+                        alt="Eat UNC"
+                        width={837}
+                        height={221}
+                        priority
+                        className="mx-auto h-[clamp(1.75rem,5.5vh,3.25rem)] w-auto drop-shadow-lg"
+                    />
+
+                    <h1 className="mt-[clamp(1rem,4vh,2.75rem)] bg-gradient-to-r from-blue-200 via-white to-blue-200 bg-clip-text text-[clamp(1.75rem,min(8vw,9vh),4.5rem)] font-black leading-[1] tracking-tighter text-transparent drop-shadow-2xl [@media(forced-colors:active)]:text-white">
+                        {catchphrase}
+                    </h1>
 
                     {/*
-                        The keyword line stays inside the h1 and the catchphrase joins it, rather
-                        than replacing it. The phrase is drawn fresh on every request, so an h1
-                        made only of "Time to eat." would leave the page carrying 60% of the
-                        site's impressions with no stable heading at all.
+                        Replaces the static uppercase eyebrow that used to sit above the headline.
+                        It is drawn from the same snapshot the cards below use, so it is true at
+                        the minute it renders rather than being a slogan.
                     */}
-                    <h1 className="mt-[clamp(0.5rem,2vh,1.25rem)]">
-                        <span className="block text-[clamp(0.6rem,1.6vh,0.875rem)] font-semibold uppercase tracking-[0.25em] text-blue-200/80">
-                            UNC Chapel Hill Dining Menus
-                        </span>
-                        <span className="mt-1 block bg-gradient-to-r from-blue-200 via-white to-blue-200 bg-clip-text text-[clamp(1.5rem,min(7.5vw,8vh),4rem)] font-black leading-[1.05] tracking-tighter text-transparent drop-shadow-2xl [@media(forced-colors:active)]:text-white sm:mt-2">
-                            {catchphrase}
-                        </span>
-                    </h1>
+                    <p className="mt-[clamp(0.375rem,1.4vh,0.75rem)] text-[clamp(0.75rem,1.9vh,1rem)] font-medium text-blue-200/75">
+                        {campusStatus}
+                    </p>
                 </motion.header>
 
                 <motion.section
