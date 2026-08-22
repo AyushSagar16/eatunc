@@ -30,11 +30,67 @@ export function campusToday(now: Date = new Date()): string {
     }).format(now)
 }
 
-/** The two residential halls already own `/chase` and `/lenoir`; everything else is a venue. */
-export const HALL_SLUG_BY_LOCATION_SLUG: Record<string, string> = {
-    chase: 'chase',
-    'top-of-lenoir': 'lenoir',
+/**
+ * The single frontend registry of the two residential halls.
+ *
+ * Hall identity used to be restated per file — a route-slug map here, a location-slug map
+ * there, a display-name ternary somewhere else — which made any future rename a scavenger
+ * hunt. Every hall-shaped constant in the site now derives from this array. (The backend and
+ * the iOS app still carry their own copies, per the repo docs — this consolidates one client.)
+ */
+export type HallInfo = {
+    /** The site's historic short URL segment: /chase, /lenoir. */
+    routeSlug: string
+    /** `locations.slug` in the database. */
+    locationSlug: string
+    /** `menus.dining_hall`, the stored display name. */
+    diningHall: string
+    /** Full public name, as page titles say it. */
+    displayName: string
+    /** What a student calls it in a sentence. */
+    shortName: string
+    campus: string
+    /** Brand accent for the homepage bento card. */
+    accent: 'blue' | 'teal'
+    /** The hall's evergreen landing page. */
+    landingPath: string
 }
+
+/** Order here is render order everywhere the halls list together. */
+export const HALLS: HallInfo[] = [
+    {
+        routeSlug: 'chase',
+        locationSlug: 'chase',
+        diningHall: 'Chase',
+        displayName: 'Chase Dining Hall',
+        shortName: 'Chase',
+        campus: 'South Campus',
+        accent: 'blue',
+        landingPath: '/chase-menu',
+    },
+    {
+        routeSlug: 'lenoir',
+        locationSlug: 'top-of-lenoir',
+        diningHall: 'Top of Lenoir',
+        displayName: 'Lenoir Dining Hall',
+        shortName: 'Top of Lenoir',
+        campus: 'North Campus',
+        accent: 'teal',
+        landingPath: '/lenoir-menu',
+    },
+]
+
+export const HALL_BY_ROUTE_SLUG: Record<string, HallInfo> = Object.fromEntries(
+    HALLS.map((h) => [h.routeSlug, h]),
+)
+
+/** The halls already own `/chase` and `/lenoir`; everything else is a venue. */
+export const HALL_SLUG_BY_LOCATION_SLUG: Record<string, string> = Object.fromEntries(
+    HALLS.map((h) => [h.locationSlug, h.routeSlug]),
+)
+
+/** The `menus.dining_hall` values that belong to the halls, for query filters. */
+export const HALL_DINING_NAMES = HALLS.map((h) => h.diningHall)
 
 /**
  * The ground-floor food court, which UNC does not name.

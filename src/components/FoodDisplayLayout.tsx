@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, useTransition } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Tabs } from '@/components/ui/tabs'
 import { ChevronLeft, ChevronRight, ArrowLeftRight } from 'lucide-react'
@@ -163,6 +163,11 @@ export default function FoodDisplayLayout({
 }: FoodDisplayLayoutProps) {
     const router = useRouter()
 
+    // The menu route is force-dynamic and has no loading.tsx (deliberately — a root Suspense
+    // boundary is what let invalid URLs stream a 200 before notFound() ran), so without this
+    // a date step or hall switch gives no feedback until the server responds.
+    const [isNavigating, startNavigation] = useTransition()
+
     // Calendar picker state
     const [isCalendarOpen, setIsCalendarOpen] = useState(false)
     const datePickerRef = useRef<HTMLDivElement>(null)
@@ -197,11 +202,11 @@ export default function FoodDisplayLayout({
         if (onDateChange) {
             onDateChange(date)
         } else if (dateBasePath) {
-            router.push(`${dateBasePath}/${date}`)
+            startNavigation(() => router.push(`${dateBasePath}/${date}`))
         } else {
             // Updated to path-based routing: /{diningHall}/{date}
             const hallSlug = diningHall === 'Chase' ? 'chase' : 'lenoir'
-            router.push(`/${hallSlug}/${date}`)
+            startNavigation(() => router.push(`/${hallSlug}/${date}`))
         }
     }
 
@@ -264,7 +269,7 @@ export default function FoodDisplayLayout({
     const handleSwitchHall = () => {
         const oppositeSlug = getOppositeHallSlug()
         // Updated to path-based routing
-        router.push(`/${oppositeSlug}/${selectedDate}`)
+        startNavigation(() => router.push(`/${oppositeSlug}/${selectedDate}`))
     }
 
     // Meal tabs configuration for Aceternity Tabs
@@ -284,7 +289,15 @@ export default function FoodDisplayLayout({
     return (
         <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-white">
             {/* Sticky Header */}
-            <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-xl border-b border-zinc-200 shadow-sm">
+            <header
+                className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-xl border-b border-zinc-200 shadow-sm"
+                aria-busy={isNavigating}
+            >
+                {isNavigating && (
+                    <div aria-hidden className="absolute inset-x-0 top-0 h-0.5 overflow-hidden">
+                        <div className="h-full w-full bg-blue-500 animate-pulse" />
+                    </div>
+                )}
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         {/* Left: Back Button & Dining Hall Name */}
@@ -299,7 +312,11 @@ export default function FoodDisplayLayout({
                             {/* Dining Hall Switcher Button */}
                             <motion.button
                                 data-tutorial-target="hall-switcher"
-                                onClick={() => (switchLink ? router.push(switchLink.href) : handleSwitchHall())}
+                                onClick={() =>
+                                    switchLink
+                                        ? startNavigation(() => router.push(switchLink.href))
+                                        : handleSwitchHall()
+                                }
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 className="flex items-center justify-center gap-1.5 px-3 sm:px-6 py-1.5 min-h-[52px] rounded-xl bg-zinc-100 text-zinc-900 border border-zinc-200/50 font-bold text-md sm:text-base hover:bg-zinc-200 active:bg-zinc-300 transition-all touch-manipulation"

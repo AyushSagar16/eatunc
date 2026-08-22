@@ -1,40 +1,7 @@
 import { groupByPeriodAndStation, type OutlineEntry } from './MenuOutline'
-import { breadcrumbList, jsonLd, menuSchema, toOpeningHoursSpecification, canonical } from '@/lib/seo'
-import type { LocationHours } from '@/lib/campus'
-
-type HallProfile = {
-    name: string
-    alternateName: string[]
-    streetAddress: string
-    latitude: number
-    longitude: number
-    description: string
-}
-
-const HALL_PROFILES: Record<string, HallProfile> = {
-    chase: {
-        name: 'Chase Dining Hall',
-        // "Rams Head Dining Hall" was this building's name until the 2017 renaming, and it is
-        // still what a good number of people search for.
-        alternateName: ['Chase', 'Rams Head Dining Hall', 'Chase Dining Hall UNC'],
-        streetAddress: 'South Campus',
-        latitude: 35.9049,
-        longitude: -79.0469,
-        description:
-            "Chase Dining Hall is the all-you-care-to-eat dining hall on UNC Chapel Hill's South Campus, serving breakfast, lunch, late lunch and dinner across multiple stations.",
-    },
-    lenoir: {
-        name: 'Top of Lenoir Dining Hall',
-        // "Top of Lenoir" is the upstairs hall; "Bottom of Lenoir" is the downstairs food court
-        // and is a different set of venues, so it is deliberately NOT an alternate name here.
-        alternateName: ['Top of Lenoir', 'Lenoir Dining Hall', 'Lenoir Hall'],
-        streetAddress: 'Lenoir Hall, North Campus',
-        latitude: 35.9101,
-        longitude: -79.0481,
-        description:
-            "Top of Lenoir is the all-you-care-to-eat dining hall upstairs in Lenoir Hall on UNC Chapel Hill's North Campus.",
-    },
-}
+import { breadcrumbList, jsonLd, menuSchema, canonical } from '@/lib/seo'
+import { HALL_BY_ROUTE_SLUG, type LocationHours } from '@/lib/campus'
+import { HALL_PROFILES, hallRestaurantNode } from './hall/hallSchema'
 
 /**
  * Menu markup for a hall on a date, rendered into the server HTML.
@@ -65,7 +32,6 @@ export default function StructuredData({
 
     const url = canonical(`/${hall}/${date}`)
     const grouped = groupByPeriodAndStation(entries)
-    const openingHours = toOpeningHoursSpecification(hours)
 
     const sections = grouped.flatMap(({ period, stations }) =>
         stations.map((station) => ({
@@ -81,39 +47,16 @@ export default function StructuredData({
     // The @id is the hall's evergreen entity on its landing page, not the dated URL —
     // one physical restaurant, not a new entity per date. Every day's markup then merges
     // into the same node the /chase-menu and /lenoir-menu pages declare.
-    const stableId = `${canonical(hall === 'chase' ? '/chase-menu' : '/lenoir-menu')}#restaurant`
+    const landingPath = HALL_BY_ROUTE_SLUG[hall].landingPath
 
     const restaurant = {
         '@context': 'https://schema.org',
-        '@type': 'Restaurant',
-        '@id': stableId,
-        name: profile.name,
-        alternateName: profile.alternateName,
-        description: profile.description,
-        url,
-        servesCuisine: ['American', 'International', 'Vegetarian', 'Vegan'],
-        priceRange: '$$',
-        acceptsReservations: false,
-        address: {
-            '@type': 'PostalAddress',
-            streetAddress: profile.streetAddress,
-            addressLocality: 'Chapel Hill',
-            addressRegion: 'NC',
-            postalCode: '27599',
-            addressCountry: 'US',
-        },
-        geo: {
-            '@type': 'GeoCoordinates',
-            latitude: profile.latitude,
-            longitude: profile.longitude,
-        },
-        parentOrganization: {
-            '@type': 'Organization',
-            name: 'Carolina Dining Services',
-            alternateName: 'CDS',
-            url: 'https://dining.unc.edu',
-        },
-        ...(openingHours.length ? { openingHoursSpecification: openingHours } : {}),
+        ...hallRestaurantNode({
+            routeSlug: hall,
+            id: `${canonical(landingPath)}#restaurant`,
+            url,
+            hours,
+        }),
         ...(sections.length
             ? {
                   hasMenu: menuSchema({
@@ -128,7 +71,7 @@ export default function StructuredData({
 
     const breadcrumbs = breadcrumbList([
         { name: 'Eat UNC', path: '/' },
-        { name: profile.name, path: hall === 'chase' ? '/chase-menu' : '/lenoir-menu' },
+        { name: profile.name, path: landingPath },
         { name: formattedDate, path: `/${hall}/${date}` },
     ])
 

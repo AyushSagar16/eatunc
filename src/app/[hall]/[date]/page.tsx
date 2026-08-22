@@ -9,7 +9,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { compareMealPeriods } from "@/lib/utils";
 import MenuOutline from "@/components/MenuOutline";
-import { campusToday, getHoursForLocations, getLocationsBySlug, shiftDate } from "@/lib/campus";
+import { campusToday, getHoursForLocations, getLocationsBySlug, shiftDate, HALL_BY_ROUTE_SLUG } from "@/lib/campus";
 
 // Dynamic rendering - no caching, always fetch fresh data
 export const dynamic = 'force-dynamic';
@@ -20,11 +20,6 @@ interface PageProps {
         date: string;
     }>;
 }
-
-const HALL_MAP: Record<string, string> = {
-    chase: 'Chase',
-    lenoir: 'Top of Lenoir',
-};
 
 /**
  * How far either side of today a dated menu page is worth indexing.
@@ -40,9 +35,9 @@ const INDEXABLE_FUTURE_DAYS = 14;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { hall, date } = await params;
-    const hallName = HALL_MAP[hall];
+    const hallInfo = HALL_BY_ROUTE_SLUG[hall];
 
-    if (!hallName || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    if (!hallInfo || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
         return { title: 'Page Not Found', robots: { index: false, follow: false } };
     }
 
@@ -60,7 +55,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         date >= shiftDate(today, -INDEXABLE_PAST_DAYS) &&
         date <= shiftDate(today, INDEXABLE_FUTURE_DAYS);
 
-    const hallDisplayName = hall === 'chase' ? 'Chase Dining Hall' : 'Lenoir Dining Hall';
+    const hallDisplayName = hallInfo.displayName;
     const title = isToday
         ? `${hallDisplayName} Menu Today — ${shortDate}`
         : `${hallDisplayName} Menu — ${formattedDate}`;
@@ -102,12 +97,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 
-/** The two halls are rows in `locations`, under slugs that differ from the site's URL slugs. */
-const HALL_LOCATION_SLUG: Record<string, string> = {
-    chase: 'chase',
-    lenoir: 'top-of-lenoir',
-};
-
 function formatMenuDate(date: string) {
     return new Date(date + 'T12:00:00').toLocaleDateString('en-US', {
         weekday: 'long',
@@ -125,7 +114,7 @@ function formatMenuDate(date: string) {
  */
 async function loadHallHours(hallSlug: string) {
     try {
-        const locations = await getLocationsBySlug(HALL_LOCATION_SLUG[hallSlug]);
+        const locations = await getLocationsBySlug(HALL_BY_ROUTE_SLUG[hallSlug].locationSlug);
         if (locations.length === 0) return [];
         const today = campusToday();
         // One week forward, never back: `toOpeningHoursSpecification` collapses these rows
@@ -143,13 +132,14 @@ async function loadHallHours(hallSlug: string) {
 
 export default async function Page({ params }: PageProps) {
     const { hall: hallSlug, date } = await params;
-    const selectedHall = HALL_MAP[hallSlug];
+    const hallInfo = HALL_BY_ROUTE_SLUG[hallSlug];
 
     // Validated before any fetching so that notFound() sets a real 404 status. Under
     // `force-dynamic` the response streams, and a notFound() reached after the first flush
     // arrives too late to change the status line — which is how /notahall/2026-08-19 and
     // /chase/not-a-date both came to answer 200.
-    if (!selectedHall) notFound();
+    if (!hallInfo) notFound();
+    const selectedHall = hallInfo.diningHall;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) notFound();
 
     let menu: Awaited<ReturnType<typeof getFullMenuByDateAndHall>> | undefined;
@@ -192,7 +182,7 @@ export default async function Page({ params }: PageProps) {
 
     const availableDates = Array.from(new Set(dateData?.map(d => d.menu_date) || [])).sort();
     const formattedDate = formatMenuDate(date);
-    const hallDisplayName = hallSlug === 'chase' ? 'Chase Dining Hall' : 'Lenoir Dining Hall';
+    const hallDisplayName = hallInfo.displayName;
 
     const shell = (children: React.ReactNode, extra?: React.ReactNode) => (
         <main className="min-h-screen bg-transparent relative overflow-hidden">

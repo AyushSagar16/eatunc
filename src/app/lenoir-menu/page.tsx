@@ -1,21 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Clock, MapPin, Store, UtensilsCrossed } from "lucide-react";
-import {
-    campusToday,
-    getHoursForLocations,
-    getLocations,
-    getLocationsBySlug,
-    getMenuPreview,
-    locationPath,
-    shiftDate,
-    type LocationHours,
-    type MenuPreviewItem,
-} from "@/lib/campus";
-import { breadcrumbList, canonical, jsonLd, toOpeningHoursSpecification } from "@/lib/seo";
-import { compareMealPeriods } from "@/lib/utils";
+import { Store } from "lucide-react";
+import { getLocations, isBottomOfLenoir, locationPath, HALL_BY_ROUTE_SLUG } from "@/lib/campus";
+import { canonical } from "@/lib/seo";
+import HallLanding, { AccentLink, HallCard, loadHallLanding } from "@/components/hall/HallLanding";
 
 export const revalidate = 900;
+
+const LENOIR = HALL_BY_ROUTE_SLUG.lenoir;
 
 export const metadata: Metadata = {
     title: "Lenoir Dining Hall Menu & Hours — Top & Bottom of Lenoir",
@@ -34,53 +26,24 @@ export const metadata: Metadata = {
         title: "Lenoir Dining Hall Menu & Hours — Top & Bottom of Lenoir",
         description:
             "Today's Top of Lenoir menu with calories for every dish, plus what's open downstairs at Bottom of Lenoir.",
-        url: canonical("/lenoir-menu"),
+        url: canonical(LENOIR.landingPath),
         siteName: "Eat UNC",
         type: "website",
     },
-    alternates: { canonical: canonical("/lenoir-menu") },
+    alternates: { canonical: canonical(LENOIR.landingPath) },
 };
 
-function groupPreview(items: MenuPreviewItem[]) {
-    const byPeriod = new Map<string, MenuPreviewItem[]>();
-    for (const item of items) {
-        byPeriod.set(item.period, [...(byPeriod.get(item.period) ?? []), item]);
-    }
-    return Array.from(byPeriod.entries()).sort(([a], [b]) => compareMealPeriods(a, b));
-}
-
 export default async function LenoirMenuPage() {
-    const today = campusToday();
-
-    // These throw on failure deliberately: under ISR a swallowed error would bake an empty
-    // page — with the FAQ asserting the hall is closed — and serve it for 15 minutes. A
-    // failed regeneration keeps the last good page instead.
-    const [locations, preview, allLocations] = await Promise.all([
-        getLocationsBySlug("top-of-lenoir"),
-        getMenuPreview("Top of Lenoir", today),
-        getLocations(),
-    ]);
+    // getLocations throws on failure for the same reason loadHallLanding does: an ISR page
+    // must not bake an empty Bottom of Lenoir listing on a transient error.
+    const [data, allLocations] = await Promise.all([loadHallLanding(LENOIR), getLocations()]);
+    const { hours } = data;
+    const closesToday = hours.length > 0 ? hours[hours.length - 1].closes_label : null;
 
     // "Bottom of Lenoir" is student slang, not a venue UNC lists — it is the ground-floor food
     // court, meaning every Lenoir Hall venue except the hall upstairs. It draws real search
     // volume that neither dining.unc.edu nor anyone else has a page for.
-    const bottomOfLenoir = allLocations.filter(
-        (l) => l.venue_group === "Lenoir Hall" && l.slug !== "top-of-lenoir",
-    );
-
-    let hours: LocationHours[] = [];
-    let weekHours: LocationHours[] = [];
-    if (locations.length > 0) {
-        weekHours = await getHoursForLocations(
-            locations.map((l) => l.id),
-            today,
-            shiftDate(today, 6),
-        );
-        hours = weekHours.filter((h) => h.service_date === today);
-    }
-
-    const periods = groupPreview(preview);
-    const closesToday = hours.length > 0 ? hours[hours.length - 1].closes_label : null;
+    const bottomOfLenoir = allLocations.filter(isBottomOfLenoir);
 
     const faqs = [
         {
@@ -107,218 +70,86 @@ export default async function LenoirMenuPage() {
         },
     ];
 
-    const structuredData = {
-        "@context": "https://schema.org",
-        "@graph": [
-            {
-                "@type": "Restaurant",
-                "@id": `${canonical("/lenoir-menu")}#restaurant`,
-                name: "Top of Lenoir Dining Hall",
-                alternateName: ["Top of Lenoir", "Lenoir Dining Hall", "Lenoir Hall"],
-                url: canonical("/lenoir-menu"),
-                description:
-                    "Top of Lenoir is the all-you-care-to-eat dining hall upstairs in Lenoir Hall on UNC Chapel Hill's North Campus.",
-                address: {
-                    "@type": "PostalAddress",
-                    streetAddress: "Lenoir Hall, North Campus",
-                    addressLocality: "Chapel Hill",
-                    addressRegion: "NC",
-                    postalCode: "27599",
-                    addressCountry: "US",
-                },
-                geo: { "@type": "GeoCoordinates", latitude: 35.9101, longitude: -79.0481 },
-                servesCuisine: ["American", "International", "Vegetarian", "Vegan"],
-                priceRange: "$$",
-                acceptsReservations: false,
-                parentOrganization: {
-                    "@type": "Organization",
-                    name: "Carolina Dining Services",
-                    alternateName: "CDS",
-                    url: "https://dining.unc.edu",
-                },
-                ...(weekHours.length
-                    ? { openingHoursSpecification: toOpeningHoursSpecification(weekHours) }
-                    : {}),
-            },
-            // The Q&A stays visible on the page, but FAQPage markup lives on /faq alone —
-            // near-duplicate FAQPage blocks across pages read as spam to Google.
-            breadcrumbList([
-                { name: "Eat UNC", path: "/" },
-                { name: "Lenoir Dining Hall", path: "/lenoir-menu" },
-            ]),
-        ],
-    };
-
     return (
-        <>
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }}
-            />
-            <main className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 md:py-16">
-                    <Link
-                        href="/"
-                        className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 mb-8 transition-colors"
-                    >
-                        ← Eat UNC
-                    </Link>
-
-                    <div className="flex items-start gap-5 mb-6">
-                        <div className="w-16 h-16 rounded-2xl bg-teal-500/10 border border-teal-400/20 flex items-center justify-center shrink-0">
-                            <UtensilsCrossed className="w-8 h-8 text-teal-500" />
+        <HallLanding
+            hall={LENOIR}
+            data={data}
+            heading="Lenoir Dining Hall Menu"
+            intro={
+                <>
+                    Lenoir Hall is really two places. <strong>Top of Lenoir</strong> upstairs is the
+                    all-you-care-to-eat dining hall — one swipe, everything included.{" "}
+                    <strong>Bottom of Lenoir</strong> downstairs is a food court where you pay per
+                    item. This page covers both.
+                </>
+            }
+            ctaLabel="View today's Top of Lenoir menu"
+            hoursTitle="Top of Lenoir hours today"
+            hoursFootnote={
+                <>
+                    Venues downstairs keep their own hours —{" "}
+                    <AccentLink hall={LENOIR} href="/hours">
+                        see all campus hours
+                    </AccentLink>
+                    .
+                </>
+            }
+            hoursEmpty={
+                <>
+                    Nothing is scheduled at Top of Lenoir today.{" "}
+                    <AccentLink hall={LENOIR} href="/open-now">
+                        See what is open right now
+                    </AccentLink>
+                    .
+                </>
+            }
+            secondCard={
+                <HallCard
+                    icon={
+                        <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                            <Store className="w-5 h-5 text-purple-600" />
                         </div>
-                        <div>
-                            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2">
-                                Lenoir Dining Hall Menu
-                            </h1>
-                            <p className="text-lg text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-                                <MapPin className="w-4 h-4" />
-                                UNC Chapel Hill · North Campus
+                    }
+                    title="Bottom of Lenoir"
+                >
+                    {bottomOfLenoir.length > 0 ? (
+                        <>
+                            <p className="text-zinc-600 dark:text-zinc-400 mb-3">
+                                The ground-floor food court, paid per item:
                             </p>
-                        </div>
-                    </div>
-
-                    <p className="text-lg text-zinc-600 dark:text-zinc-300 max-w-2xl mb-8 leading-relaxed">
-                        Lenoir Hall is really two places. <strong>Top of Lenoir</strong> upstairs is
-                        the all-you-care-to-eat dining hall — one swipe, everything included.{" "}
-                        <strong>Bottom of Lenoir</strong> downstairs is a food court where you pay
-                        per item. This page covers both.
-                    </p>
-
-                    <Link
-                        href={`/lenoir/${today}`}
-                        className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-lg transition-all shadow-lg shadow-teal-600/25 hover:-translate-y-0.5"
-                    >
-                        View today&apos;s Top of Lenoir menu
-                        <ArrowRight className="w-5 h-5" />
-                    </Link>
-
-                    <div className="grid md:grid-cols-2 gap-6 mt-12">
-                        <section className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                                    <Clock className="w-5 h-5 text-amber-600" />
-                                </div>
-                                <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-                                    Top of Lenoir hours today
-                                </h2>
-                            </div>
-                            {hours.length > 0 ? (
-                                <div className="space-y-3 text-zinc-600 dark:text-zinc-400">
-                                    {hours.map((row) => (
-                                        <div key={row.id} className="flex justify-between gap-4">
-                                            <span>{row.period_name}</span>
-                                            <span className="font-medium tabular-nums">
-                                                {row.opens_label} – {row.closes_label}
-                                            </span>
-                                        </div>
-                                    ))}
-                                    <p className="text-sm text-zinc-500 pt-3 border-t border-zinc-100 dark:border-zinc-800">
-                                        Venues downstairs keep their own hours —{" "}
-                                        <Link href="/hours" className="text-teal-600 dark:text-teal-400 hover:underline">
-                                            see all campus hours
+                            <ul className="space-y-1.5">
+                                {bottomOfLenoir.map((venue) => (
+                                    <li key={venue.id}>
+                                        <Link
+                                            href={locationPath(venue)}
+                                            className="text-zinc-700 dark:text-zinc-300 hover:text-teal-600 dark:hover:text-teal-400 hover:underline"
+                                        >
+                                            {venue.name}
                                         </Link>
-                                        .
-                                    </p>
-                                </div>
-                            ) : (
-                                <p className="text-zinc-600 dark:text-zinc-400">
-                                    Nothing is scheduled at Top of Lenoir today.{" "}
-                                    <Link href="/open-now" className="text-teal-600 dark:text-teal-400 hover:underline">
-                                        See what is open right now
-                                    </Link>
-                                    .
-                                </p>
-                            )}
-                        </section>
-
-                        <section className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                                    <Store className="w-5 h-5 text-purple-600" />
-                                </div>
-                                <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-                                    Bottom of Lenoir
-                                </h2>
-                            </div>
-                            {bottomOfLenoir.length > 0 ? (
-                                <>
-                                    <p className="text-zinc-600 dark:text-zinc-400 mb-3">
-                                        The ground-floor food court, paid per item:
-                                    </p>
-                                    <ul className="space-y-1.5">
-                                        {bottomOfLenoir.map((venue) => (
-                                            <li key={venue.id}>
-                                                <Link
-                                                    href={locationPath(venue)}
-                                                    className="text-zinc-700 dark:text-zinc-300 hover:text-teal-600 dark:hover:text-teal-400 hover:underline"
-                                                >
-                                                    {venue.name}
-                                                </Link>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </>
-                            ) : (
-                                <p className="text-zinc-600 dark:text-zinc-400">
-                                    Venue listings for the ground floor are unavailable right now.
-                                </p>
-                            )}
-                        </section>
-                    </div>
-
-                    {periods.length > 0 && (
-                        <section className="mt-12">
-                            <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 mb-4">
-                                On the Top of Lenoir menu today
-                            </h2>
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                {periods.map(([period, items]) => (
-                                    <div
-                                        key={period}
-                                        className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
-                                    >
-                                        <h3 className="font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
-                                            {period}
-                                        </h3>
-                                        <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                                            {items.slice(0, 10).map((i) => i.name).join(" · ")}
-                                        </p>
-                                    </div>
+                                    </li>
                                 ))}
-                            </div>
-                        </section>
+                            </ul>
+                        </>
+                    ) : (
+                        <p className="text-zinc-600 dark:text-zinc-400">
+                            Venue listings for the ground floor are unavailable right now.
+                        </p>
                     )}
-
-                    <section className="mt-12 p-8 rounded-2xl bg-gradient-to-br from-teal-50 to-teal-100/50 dark:from-teal-950/30 dark:to-teal-900/20 border border-teal-200/50 dark:border-teal-800/30">
-                        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 mb-4">
-                            Common questions about Lenoir
-                        </h2>
-                        <dl className="space-y-5">
-                            {faqs.map((faq) => (
-                                <div key={faq.question}>
-                                    <dt className="font-semibold text-zinc-900 dark:text-zinc-100">
-                                        {faq.question}
-                                    </dt>
-                                    <dd className="mt-1 text-zinc-600 dark:text-zinc-300 leading-relaxed">
-                                        {faq.answer}
-                                    </dd>
-                                </div>
-                            ))}
-                        </dl>
-                    </section>
-
-                    <div className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                        <Link href="/chase-menu" className="text-teal-600 dark:text-teal-400 font-semibold hover:underline">
-                            Chase Dining Hall menu (South Campus) →
-                        </Link>
-                        <Link href="/locations" className="text-teal-600 dark:text-teal-400 font-semibold hover:underline">
-                            All 42 campus dining locations →
-                        </Link>
-                    </div>
-                </div>
-            </main>
-        </>
+                </HallCard>
+            }
+            menuHeading="On the Top of Lenoir menu today"
+            faqHeading="Common questions about Lenoir"
+            faqs={faqs}
+            footerLinks={
+                <>
+                    <AccentLink hall={LENOIR} href="/chase-menu" bold>
+                        Chase Dining Hall menu (South Campus) →
+                    </AccentLink>
+                    <AccentLink hall={LENOIR} href="/locations" bold>
+                        All 42 campus dining locations →
+                    </AccentLink>
+                </>
+            }
+        />
     );
 }

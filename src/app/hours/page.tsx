@@ -9,6 +9,7 @@ import {
     getLocations,
     locationPath,
     shiftDate,
+    HALLS,
 } from '@/lib/campus'
 import type { Location, LocationHours } from '@/lib/campus'
 import { breadcrumbList, canonical } from '@/lib/seo'
@@ -78,7 +79,7 @@ const CRUMBS = [
 ]
 
 /** Chase carries roughly three times Lenoir's search volume, so it leads. */
-const HALL_ORDER = ['chase', 'top-of-lenoir']
+const HALL_ORDER = HALLS.map((hall) => hall.locationSlug)
 
 /** Local hour in Chapel Hill for a stored instant. Midnight can format as 24, hence the %24. */
 function campusHour(iso: string): number {

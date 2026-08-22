@@ -7,6 +7,7 @@ import {
     isBottomOfLenoir,
     locationPath,
     HALL_SLUG_BY_LOCATION_SLUG,
+    HALLS,
     type Location,
     type LocationHours,
     type MenuPreviewItem,
@@ -78,15 +79,13 @@ export type HomeSnapshot = {
     totalLocations: number
 }
 
-/**
- * Static per-hall metadata that has no home in the DB — the schema has no notion of "campus"
- * or a brand accent colour, and there are only ever two of these, so it is not worth a table.
- * Order here is the order the bento grid renders in.
- */
-const HALL_CONFIGS: { locationSlug: string; name: string; campus: string; accent: 'blue' | 'teal' }[] = [
-    { locationSlug: 'chase', name: 'Chase', campus: 'South Campus', accent: 'blue' },
-    { locationSlug: 'top-of-lenoir', name: 'Top of Lenoir', campus: 'North Campus', accent: 'teal' },
-]
+/** Derived from the hall registry; HALLS order is the order the bento grid renders in. */
+const HALL_CONFIGS = HALLS.map((hall) => ({
+    locationSlug: hall.locationSlug,
+    name: hall.shortName,
+    campus: hall.campus,
+    accent: hall.accent,
+}))
 
 function isHallLocation(location: Pick<Location, 'slug'>): boolean {
     return location.slug in HALL_SLUG_BY_LOCATION_SLUG

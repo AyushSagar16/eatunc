@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { HALL_DINING_NAMES } from './campus'
 import { Database } from '@/lib/database.types'
 
 export type Menu = Database['public']['Tables']['menus']['Row']
@@ -202,7 +203,7 @@ export async function getAvailableDates() {
     const { data, error } = await supabase
         .from('menus')
         .select('menu_date')
-        .in('dining_hall', ['Chase', 'Top of Lenoir'])
+        .in('dining_hall', HALL_DINING_NAMES)
         .order('menu_date', { ascending: false })
 
     if (error) throw error
