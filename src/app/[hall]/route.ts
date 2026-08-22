@@ -19,8 +19,14 @@ const HALL_SLUGS = new Set(['chase', 'lenoir'])
 export async function GET(request: NextRequest, context: { params: Promise<{ hall: string }> }) {
     const { hall } = await context.params
 
+    // This dynamic segment catches every single-segment URL no static route claims, so a typo
+    // like /chse lands here. Route handlers cannot render the app's not-found page; a minimal
+    // HTML body keeps the 404 presentable instead of two words of bare text.
     if (!HALL_SLUGS.has(hall)) {
-        return new NextResponse('Not Found', { status: 404 })
+        return new NextResponse(
+            `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Page not found — Eat UNC</title><meta name="robots" content="noindex"></head><body style="font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;background:#fafafa;color:#18181b"><main style="text-align:center;padding:2rem"><h1 style="font-size:1.5rem;margin:0 0 .5rem">Page not found</h1><p style="color:#71717a;margin:0 0 1.5rem">There is no dining page at this address.</p><a href="/" style="color:#2563eb">Back to today&#39;s menus</a></main></body></html>`,
+            { status: 404, headers: { 'content-type': 'text/html; charset=utf-8' } },
+        )
     }
 
     const today = campusToday()

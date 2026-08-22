@@ -37,7 +37,7 @@ export const metadata: Metadata = {
         description:
             'Calories, protein, fat, carbs and allergens for every third-party restaurant on UNC Chapel Hill campus, with each number marked published or estimated.',
         url: canonical(PATH),
-        siteName: 'UNC Dining Menu',
+        siteName: 'Eat UNC',
         type: 'website',
     },
     twitter: {

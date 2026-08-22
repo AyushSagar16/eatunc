@@ -11,7 +11,7 @@ import {
     shiftDate,
 } from '@/lib/campus'
 import type { Location, LocationHours } from '@/lib/campus'
-import { breadcrumbList, canonical, faqPage } from '@/lib/seo'
+import { breadcrumbList, canonical } from '@/lib/seo'
 import type { Faq } from '@/lib/seo'
 import { Badge, Breadcrumbs, CampusPage, Card, IconTile, Prose, Stat } from '@/components/campus/CampusChrome'
 import { JsonLd } from '@/components/campus/JsonLd'
@@ -31,8 +31,9 @@ import {
 /**
  * Today's hours are a calendar answer, so this route can never be a frozen static build —
  * `/today` shipped a six-day-old date for exactly that reason. Fifteen minutes is far shorter
- * than the nightly sweep that produces the underlying rows, so a visitor never reads a
- * yesterday's schedule; `/open-now` is the to-the-minute answer and is uncached.
+ * than the nightly sweep that produces the underlying rows; the one stale window is the
+ * ≤15 minutes after midnight ET, when a page built late yesterday can still say "today"
+ * about the previous date. `/open-now` is the to-the-minute answer and is uncached.
  */
 export const revalidate = 900
 
@@ -310,10 +311,12 @@ export default async function HoursPage() {
     let failed = false
 
     try {
+        // A rejected hours fetch must land in the `failed` branch, not read as zero rows —
+        // zero rows renders as an authoritative "nothing is scheduled" statement.
         const [loaded, todayRows, tomorrowRows] = await Promise.all([
             getLocations(),
-            getHoursForDate(today).catch(() => [] as LocationHours[]),
-            getHoursForDate(tomorrow).catch(() => [] as LocationHours[]),
+            getHoursForDate(today),
+            getHoursForDate(tomorrow),
         ])
         locations = loaded
         todayHours = todayRows
@@ -352,7 +355,8 @@ export default async function HoursPage() {
     return (
         <CampusPage>
             <JsonLd data={breadcrumbList(CRUMBS)} />
-            {faqs.length > 0 && <JsonLd data={faqPage(faqs)} />}
+            {/* The Q&A stays visible below, but FAQPage markup lives on /faq alone —
+                near-duplicate FAQPage blocks across pages read as spam to Google. */}
 
             <Breadcrumbs crumbs={CRUMBS} />
 

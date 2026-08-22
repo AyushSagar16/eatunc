@@ -4,7 +4,7 @@ import { Clock, DoorOpen, MapPin, Timer } from 'lucide-react'
 
 import { CAMPUS_TIMEZONE, campusToday, getHoursForDate, getOpenNow, locationPath } from '@/lib/campus'
 import type { Location, LocationHours, OpenPeriod } from '@/lib/campus'
-import { breadcrumbList, canonical, faqPage } from '@/lib/seo'
+import { breadcrumbList, canonical } from '@/lib/seo'
 import type { Faq } from '@/lib/seo'
 import { Badge, Breadcrumbs, CampusPage, Card, IconTile, Prose, Stat } from '@/components/campus/CampusChrome'
 import { JsonLd } from '@/components/campus/JsonLd'
@@ -157,7 +157,9 @@ export default async function OpenNowPage() {
     let failed = false
 
     try {
-        const [live, hours] = await Promise.all([getOpenNow(now), getHoursForDate(today).catch(() => [])])
+        // A rejected hours fetch must land in the `failed` branch, not read as zero rows —
+        // zero rows renders as "nothing is open late tonight" stated as fact.
+        const [live, hours] = await Promise.all([getOpenNow(now), getHoursForDate(today)])
         open = dedupeByLocation(live.open)
         openingSoon = live.openingSoon
         locations = live.locations
@@ -171,7 +173,8 @@ export default async function OpenNowPage() {
     return (
         <CampusPage>
             <JsonLd data={breadcrumbList(CRUMBS)} />
-            {faqs.length > 0 && <JsonLd data={faqPage(faqs)} />}
+            {/* The Q&A stays visible below, but FAQPage markup lives on /faq alone —
+                near-duplicate FAQPage blocks across pages read as spam to Google. */}
 
             <Breadcrumbs crumbs={CRUMBS} />
 

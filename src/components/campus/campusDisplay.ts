@@ -209,7 +209,7 @@ export type BuildingGroup<T> = { venueGroup: string; meta: BuildingMeta; items: 
  * are genuinely different places rather than two kinds of the same place — `isBottomOfLenoir`
  * in `lib/campus` owns that test.
  */
-function displayGroup(row: { venue_group: string; slug: string }): string {
+export function displayGroup(row: { venue_group: string; slug: string }): string {
     if (row.venue_group !== 'Lenoir Hall') return row.venue_group
     return isBottomOfLenoir(row) ? 'Bottom of Lenoir' : 'Top of Lenoir'
 }

@@ -16,11 +16,13 @@ import type { Metadata } from 'next'
 const LAST_UPDATED = 'August 19, 2026'
 
 export const metadata: Metadata = {
-    title: 'iOS App Privacy Policy | Eat UNC',
+    // `absolute` on purpose: the privacy layout's plain-string title replaces the root
+    // title object for this subtree, so the "%s | Eat UNC" template never reaches here.
+    title: { absolute: 'iOS App Privacy Policy | Eat UNC' },
     description:
         'Privacy policy for the Eat UNC iOS app: no account and no location, anonymous usage analytics and an optional meal log, both switchable off in one place.',
     openGraph: {
-        title: 'iOS App Privacy Policy | Eat UNC',
+        title: 'iOS App Privacy Policy',
         description:
             'Privacy policy for the Eat UNC iOS app: no account and no location, anonymous usage analytics and an optional meal log, both switchable off in one place.',
         url: 'https://eatunc.com/privacy/ios',

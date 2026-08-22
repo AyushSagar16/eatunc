@@ -52,7 +52,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         { path: '/brands', priority: 0.7, changeFrequency: 'weekly' as const },
         { path: '/unc-dining-app', priority: 0.6, changeFrequency: 'monthly' as const },
         { path: '/about', priority: 0.6, changeFrequency: 'monthly' as const },
-        { path: '/feedback', priority: 0.4, changeFrequency: 'monthly' as const },
         { path: '/legal', priority: 0.3, changeFrequency: 'yearly' as const },
         { path: '/privacy', priority: 0.3, changeFrequency: 'yearly' as const },
         // The App Store requires the iOS policy to stay reachable at a stable URL.

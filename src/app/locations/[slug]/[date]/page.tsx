@@ -20,9 +20,15 @@ interface PageProps {
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
+// The regex alone admits calendar-invalid strings like 2026-02-30, which make every
+// Intl formatter downstream throw RangeError — a 500 where a 404 belongs.
+function isValidIsoDate(date: string): boolean {
+    return ISO_DATE.test(date) && !Number.isNaN(Date.parse(`${date}T12:00:00Z`))
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { slug, date } = await params
-    if (!ISO_DATE.test(date) || HALL_SLUG_BY_LOCATION_SLUG[slug]) {
+    if (!isValidIsoDate(date) || HALL_SLUG_BY_LOCATION_SLUG[slug]) {
         return { robots: { index: false, follow: true } }
     }
     return venueMetadata(slug, `/locations/${slug}/${date}`, `/locations/${slug}`, date)
@@ -36,7 +42,7 @@ export default async function VenueDatePage({ params }: PageProps) {
 
     // Validated before any fetching so notFound() sets a real 404 rather than arriving after
     // the response has started streaming.
-    if (!ISO_DATE.test(date)) notFound()
+    if (!isValidIsoDate(date)) notFound()
 
     const data = await loadVenue(slug, date)
     if (!data) notFound()

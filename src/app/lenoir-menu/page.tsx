@@ -9,11 +9,10 @@ import {
     getMenuPreview,
     locationPath,
     shiftDate,
-    type Location,
     type LocationHours,
     type MenuPreviewItem,
 } from "@/lib/campus";
-import { breadcrumbList, canonical, faqPage, jsonLd, toOpeningHoursSpecification } from "@/lib/seo";
+import { breadcrumbList, canonical, jsonLd, toOpeningHoursSpecification } from "@/lib/seo";
 import { compareMealPeriods } from "@/lib/utils";
 
 export const revalidate = 900;
@@ -53,10 +52,13 @@ function groupPreview(items: MenuPreviewItem[]) {
 export default async function LenoirMenuPage() {
     const today = campusToday();
 
+    // These throw on failure deliberately: under ISR a swallowed error would bake an empty
+    // page — with the FAQ asserting the hall is closed — and serve it for 15 minutes. A
+    // failed regeneration keeps the last good page instead.
     const [locations, preview, allLocations] = await Promise.all([
-        getLocationsBySlug("top-of-lenoir").catch(() => [] as Location[]),
-        getMenuPreview("Top of Lenoir", today).catch(() => [] as MenuPreviewItem[]),
-        getLocations().catch(() => [] as Location[]),
+        getLocationsBySlug("top-of-lenoir"),
+        getMenuPreview("Top of Lenoir", today),
+        getLocations(),
     ]);
 
     // "Bottom of Lenoir" is student slang, not a venue UNC lists — it is the ground-floor food
@@ -73,7 +75,7 @@ export default async function LenoirMenuPage() {
             locations.map((l) => l.id),
             today,
             shiftDate(today, 6),
-        ).catch(() => []);
+        );
         hours = weekHours.filter((h) => h.service_date === today);
     }
 
@@ -138,7 +140,8 @@ export default async function LenoirMenuPage() {
                     ? { openingHoursSpecification: toOpeningHoursSpecification(weekHours) }
                     : {}),
             },
-            faqPage(faqs),
+            // The Q&A stays visible on the page, but FAQPage markup lives on /faq alone —
+            // near-duplicate FAQPage blocks across pages read as spam to Google.
             breadcrumbList([
                 { name: "Eat UNC", path: "/" },
                 { name: "Lenoir Dining Hall", path: "/lenoir-menu" },

@@ -18,7 +18,7 @@ import { groupByBuilding } from '@/components/campus/campusDisplay'
 export const revalidate = 300
 
 const PATH = '/locations'
-const TITLE = 'UNC Campus Dining Locations — Every Venue, Building by Building'
+const TITLE = 'UNC Campus Dining Locations — Every Venue & Building'
 const DESCRIPTION =
     'Every UNC Chapel Hill campus dining location, grouped by building: the Chase and Top of Lenoir dining halls, the Bottom of Lenoir and Beach Cafe food courts, department cafes, markets and food trucks — with hours and menus for each.'
 

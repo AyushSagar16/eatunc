@@ -78,10 +78,15 @@ export default function StructuredData({
         })),
     )
 
+    // The @id is the hall's evergreen entity on its landing page, not the dated URL —
+    // one physical restaurant, not a new entity per date. Every day's markup then merges
+    // into the same node the /chase-menu and /lenoir-menu pages declare.
+    const stableId = `${canonical(hall === 'chase' ? '/chase-menu' : '/lenoir-menu')}#restaurant`
+
     const restaurant = {
         '@context': 'https://schema.org',
         '@type': 'Restaurant',
-        '@id': `${url}#restaurant`,
+        '@id': stableId,
         name: profile.name,
         alternateName: profile.alternateName,
         description: profile.description,

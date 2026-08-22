@@ -10,7 +10,7 @@ import {
     type LocationHours,
     type MenuPreviewItem,
 } from "@/lib/campus";
-import { breadcrumbList, canonical, faqPage, jsonLd, toOpeningHoursSpecification } from "@/lib/seo";
+import { breadcrumbList, canonical, jsonLd, toOpeningHoursSpecification } from "@/lib/seo";
 import { compareMealPeriods } from "@/lib/utils";
 
 // Prerendered without this, the page froze at the build date and pointed its only call to
@@ -52,16 +52,19 @@ function groupPreview(items: MenuPreviewItem[]) {
 export default async function ChaseMenuPage() {
     const today = campusToday();
 
+    // These throw on failure deliberately: under ISR a swallowed error would bake an empty
+    // page — with the FAQ asserting the hall is closed — and serve it for 15 minutes. A
+    // failed regeneration keeps the last good page instead.
     const [locations, preview] = await Promise.all([
-        getLocationsBySlug("chase").catch(() => []),
-        getMenuPreview("Chase", today).catch(() => [] as MenuPreviewItem[]),
+        getLocationsBySlug("chase"),
+        getMenuPreview("Chase", today),
     ]);
 
     let hours: LocationHours[] = [];
     let weekHours: LocationHours[] = [];
     if (locations.length > 0) {
         const ids = locations.map((l) => l.id);
-        weekHours = await getHoursForLocations(ids, today, shiftDate(today, 6)).catch(() => []);
+        weekHours = await getHoursForLocations(ids, today, shiftDate(today, 6));
         hours = weekHours.filter((h) => h.service_date === today);
     }
 
@@ -124,7 +127,8 @@ export default async function ChaseMenuPage() {
                     ? { openingHoursSpecification: toOpeningHoursSpecification(weekHours) }
                     : {}),
             },
-            faqPage(faqs),
+            // The Q&A stays visible on the page, but FAQPage markup lives on /faq alone —
+            // near-duplicate FAQPage blocks across pages read as spam to Google.
             breadcrumbList([
                 { name: "Eat UNC", path: "/" },
                 { name: "Chase Dining Hall", path: "/chase-menu" },

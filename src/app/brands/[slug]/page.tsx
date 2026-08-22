@@ -12,6 +12,7 @@ import {
 } from '@/lib/campus'
 import { breadcrumbList, canonical, jsonLd, menuSchema } from '@/lib/seo'
 import BrandItemsTable, { BrandCategoryNav } from '@/components/brands/BrandItemsTable'
+import { displayGroup } from '@/components/campus/campusDisplay'
 import NutritionSourceLegend from '@/components/brands/NutritionSourceLegend'
 import {
     formatStoredDate,
@@ -79,7 +80,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             title,
             description,
             url: canonical(path),
-            siteName: 'UNC Dining Menu',
+            siteName: 'Eat UNC',
             type: 'website',
         },
         twitter: { card: 'summary_large_image', title, description },
@@ -113,7 +114,9 @@ export default async function BrandPage({ params }: PageProps) {
     for (const location of locations) {
         const href = locationPath(location)
         const entry = venueLinks.get(href) ?? { path: href, labels: [] }
-        const label = location.venue_group
+        // "Lenoir Hall" is the stored group for both floors; students call the ground-floor
+        // food court Bottom of Lenoir, and that is the label the rest of the site uses.
+        const label = displayGroup(location)
         if (!entry.labels.includes(label)) entry.labels.push(label)
         venueLinks.set(href, entry)
     }

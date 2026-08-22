@@ -258,8 +258,9 @@ function venueDescription(data: VenueData): string {
 /**
  * Metadata for both the undated and dated venue routes.
  *
- * `canonicalPath` differs from `path` only on a dated URL, which points its canonical at the
- * venue's own page — the ranking signal belongs on one URL, not on one per stored date.
+ * Dated URLs are self-canonical + noindex, matching the hall pages. Pointing a noindexed
+ * page's canonical at the undated page is a documented conflict — Google may carry the
+ * noindex over to the canonical target. The dated pages simply do not compete.
  */
 export async function venueMetadata(
     slug: string,
@@ -285,7 +286,7 @@ export async function venueMetadata(
     return {
         title: { absolute: title },
         description,
-        alternates: { canonical: canonical(canonicalPath) },
+        alternates: { canonical: canonical(requestedDate ? path : canonicalPath) },
         openGraph: { title, description, url: canonical(path), siteName: 'Eat UNC', type: 'website' },
         twitter: { card: 'summary_large_image', title, description },
         ...(requestedDate ? { robots: { index: false, follow: true } } : {}),

@@ -77,7 +77,9 @@ export default function HallBentoCard({ hall, today }: { hall: HallStatus; today
 
     return (
         <MotionLink
-            href={`/${hall.slug}/${today}`}
+            // No menu today (a break, or the sweep hasn't landed) → the bare hall route,
+            // which resolves to the nearest date that has one instead of an empty page.
+            href={hall.itemCount > 0 ? `/${hall.slug}/${today}` : `/${hall.slug}`}
             aria-label={`${hall.name}, ${hall.campus}, ${status.long}`}
             variants={{
                 hidden: { opacity: 0, y: 24, scale: 0.94 },

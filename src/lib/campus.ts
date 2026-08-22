@@ -216,6 +216,30 @@ export async function getBrandBySlug(slug: string): Promise<BrandWithItems | nul
     if (!data) return null
 
     const brand = data as BrandWithItems
+
+    // Supabase caps a nested relation at 1000 rows and returns exactly 1000 when it truncates,
+    // with no error. No brand is near that today, but the cap is a property of the query — the
+    // same guard getVenueMenu carries.
+    if (brand.external_food_items.length === MAX_NESTED_ROWS) {
+        const all: typeof brand.external_food_items = []
+
+        for (let offset = 0; ; offset += MAX_NESTED_ROWS) {
+            const { data: page, error: pageError } = await supabase
+                .from('external_food_items')
+                .select('*')
+                .eq('brand_id', brand.id)
+                .order('id')
+                .range(offset, offset + MAX_NESTED_ROWS - 1)
+
+            if (pageError) throw pageError
+            if (!page?.length) break
+            all.push(...page)
+            if (page.length < MAX_NESTED_ROWS) break
+        }
+
+        brand.external_food_items = all
+    }
+
     brand.external_food_items.sort(
         (a, b) => a.category.localeCompare(b.category) || a.item_name.localeCompare(b.item_name),
     )

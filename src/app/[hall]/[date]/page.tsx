@@ -5,7 +5,7 @@ import NoMenuAvailable from "@/components/NoMenuAvailable";
 import BackButton from "@/components/BackButton";
 import StructuredData from "@/components/StructuredData";
 import MenuTutorial from "@/components/MenuTutorial";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { compareMealPeriods } from "@/lib/utils";
 import MenuOutline from "@/components/MenuOutline";
@@ -128,10 +128,13 @@ async function loadHallHours(hallSlug: string) {
         const locations = await getLocationsBySlug(HALL_LOCATION_SLUG[hallSlug]);
         if (locations.length === 0) return [];
         const today = campusToday();
+        // One week forward, never back: `toOpeningHoursSpecification` collapses these rows
+        // into a weekly pattern, and a 15-day window holds two of each weekday — two
+        // different Mondays with different hours would emit contradictory markup.
         return await getHoursForLocations(
             locations.map((l) => l.id),
-            shiftDate(today, -7),
-            shiftDate(today, 7),
+            today,
+            shiftDate(today, 6),
         );
     } catch {
         return [];

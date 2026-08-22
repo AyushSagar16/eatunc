@@ -3,13 +3,13 @@ import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Legal & Privacy | UNC Dining Menu",
+    title: "Legal & Privacy",
     description: "Legal information, privacy policy, and terms of use for Eat UNC - the unofficial UNC dining hall menu dashboard.",
     openGraph: {
-        title: "Legal & Privacy | UNC Dining Menu",
+        title: "Legal & Privacy",
         description: "Legal information, privacy policy, and terms of use for Eat UNC.",
         url: "https://eatunc.com/legal",
-        siteName: "UNC Dining Menu",
+        siteName: "Eat UNC",
         type: "website",
     },
     alternates: {
