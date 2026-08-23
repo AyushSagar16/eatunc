@@ -12,7 +12,11 @@ function FooterContent() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const isLanding = pathname === "/" && !searchParams.get("hall");
-    const isMenuPage = pathname.includes("/chase") || pathname.includes("/lenoir");
+    // Every page that mounts <MenuTutorial />, which is the only listener for the restart
+    // event the Tutorial button dispatches. Anchored rather than `.includes`, which also
+    // matched anything with "chase" anywhere in the path.
+    const isMenuPage =
+        /^\/(chase|lenoir)(\/|$)/.test(pathname) || /^\/locations\/[^/]+/.test(pathname);
 
     const handleRestartTutorial = () => {
         // Clear tutorial completion status and dispatch restart event

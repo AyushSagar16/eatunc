@@ -394,6 +394,41 @@ export async function getVenueMenu(locationId: string, date: string) {
     return data
 }
 
+/**
+ * Dates each of these locations actually has food for, within a window, oldest first.
+ *
+ * A stored `menus` row is not evidence of food. UNC publishes an empty menu for a day a venue
+ * is shut, so between terms most of campus has a row for today with nothing under it — which
+ * is exactly when `/locations/<slug>` used to default to today and show a dead end. `!inner`
+ * turns the join into a filter, so an entry-less menu never comes back, and the embedded
+ * `limit(1)` keeps the payload one row per menu instead of the whole day's dishes. The result
+ * is bounded by (locations x days in the window), so it cannot approach the 1000-row cap.
+ */
+export async function getVenueMenuDatesWithFood(
+    locationIds: string[],
+    fromDate: string,
+    toDate: string,
+): Promise<Map<string, string[]>> {
+    const byLocation = new Map<string, string[]>(locationIds.map((id) => [id, []]))
+    if (locationIds.length === 0) return byLocation
+
+    const { data, error } = await supabase
+        .from('menus')
+        .select('menu_date, location_id, menu_entries!inner (recipe_number)')
+        .in('location_id', locationIds)
+        .gte('menu_date', fromDate)
+        .lte('menu_date', toDate)
+        .limit(1, { foreignTable: 'menu_entries' })
+        .order('menu_date', { ascending: true })
+
+    if (error) throw error
+
+    for (const row of data ?? []) {
+        if (row.location_id) byLocation.get(row.location_id)?.push(row.menu_date)
+    }
+    return byLocation
+}
+
 /** Dates a venue has a stored menu for, newest first. */
 export async function getVenueMenuDates(locationId: string): Promise<string[]> {
     const { data, error } = await supabase

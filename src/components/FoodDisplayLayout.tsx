@@ -34,6 +34,20 @@ interface FoodDisplayLayoutProps {
     dateBasePath?: string
     /** Replaces the hall switcher on pages that are not one of the two halls. */
     switchLink?: { label: string; href: string }
+    /**
+     * Rendered inside the page chrome, directly under the sticky header.
+     *
+     * A server-rendered node passed down from a server component, the same way `children` is:
+     * the venue pages put their breadcrumbs and open/closed line here, and breadcrumbs have to
+     * stay real `<a>` elements in the HTML.
+     */
+    subHeader?: React.ReactNode
+    /**
+     * Replaces the date stepper and calendar with a static "Same menu every day" badge. For a
+     * menu that has no date — a third-party brand publishes one menu that is the same every
+     * day, so arrows to step through would invent a distinction that does not exist.
+     */
+    hideDateNav?: boolean
     selectedPeriod: string
     availablePeriods: string[]
     onPeriodChange: (period: string) => void
@@ -147,6 +161,8 @@ export default function FoodDisplayLayout({
     availableDates,
     dateBasePath,
     switchLink,
+    subHeader,
+    hideDateNav = false,
     selectedPeriod,
     availablePeriods,
     onPeriodChange,
@@ -286,6 +302,11 @@ export default function FoodDisplayLayout({
     // Find active tab based on selected period
     const activeTabValue = selectedPeriod.toLowerCase().replace(/\s+/g, '-')
 
+    // A one-item tab strip is dead chrome: nearly every campus venue outside the two halls
+    // stores `Open` as its only service period. Gated on the count, never on whether the page
+    // is a hall — Beach Grille keeps its real Breakfast/Lunch tabs.
+    const showPeriodTabs = availablePeriods.length > 1
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-white">
             {/* Sticky Header */}
@@ -334,7 +355,14 @@ export default function FoodDisplayLayout({
                                 </span>
                             </motion.button>
 
-                            {/* Date Selector */}
+                            {/* Date Selector, or what stands in its place on a menu with no date:
+                                the slot is filled rather than left empty so the header keeps its
+                                shape and the badge answers the question the arrows would have. */}
+                            {hideDateNav ? (
+                                <div className="flex items-center justify-center px-3 sm:px-5 min-h-[52px] rounded-xl bg-zinc-100 border border-zinc-200/50 text-xs sm:text-sm font-bold text-zinc-500 text-center shrink-0">
+                                    Same menu every day
+                                </div>
+                            ) : (
                             <div ref={datePickerRef} className="relative flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-zinc-100 rounded-xl border border-zinc-200/50 min-h-[52px] shrink-0" data-tutorial-target="date-nav">
                                 <motion.button
                                     onClick={handlePrevDate}
@@ -379,51 +407,67 @@ export default function FoodDisplayLayout({
                                     )}
                                 </AnimatePresence>
                             </div>
+                            )}
                         </div>
                     </div>
                 </div>
             </header>
 
-            {/* Meal selection and Filtering */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+            {subHeader}
+
+            {/* Meal selection and Filtering. Dropped entirely rather than left as an empty
+                band: the zero-item card passes neither periods nor search handlers. */}
+            <div
+                className={`max-w-7xl mx-auto px-4 sm:px-6 pt-6 ${
+                    showPeriodTabs || (onSearchChange && onSortChange) ? '' : 'hidden'
+                }`}
+            >
                 {/* Mobile View: Same row for Period and Sort */}
                 <div className="flex sm:hidden flex-row items-stretch gap-3 mb-6 w-full">
-                    <div className="relative flex-1" data-tutorial-target="meal-dropdown">
-                        <select
-                            value={selectedPeriod}
-                            onChange={(e) => onPeriodChange(e.target.value)}
-                            className="w-full h-14 px-4 bg-blue-600 border border-blue-500 rounded-2xl text-base font-bold text-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all appearance-none cursor-pointer pr-12 shadow-lg shadow-blue-500/20"
-                        >
-                            {availablePeriods.map((period) => (
-                                <option key={period} value={period} className="bg-white text-zinc-900">
-                                    {getMealLabel(period)}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-white">
-                            <ChevronRight className="w-5 h-5 rotate-90" />
+                    {showPeriodTabs && (
+                        <div className="relative flex-1" data-tutorial-target="meal-dropdown">
+                            <select
+                                value={selectedPeriod}
+                                onChange={(e) => onPeriodChange(e.target.value)}
+                                className="w-full h-14 px-4 bg-blue-600 border border-blue-500 rounded-2xl text-base font-bold text-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all appearance-none cursor-pointer pr-12 shadow-lg shadow-blue-500/20"
+                            >
+                                {availablePeriods.map((period) => (
+                                    <option key={period} value={period} className="bg-white text-zinc-900">
+                                        {getMealLabel(period)}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-white">
+                                <ChevronRight className="w-5 h-5 rotate-90" />
+                            </div>
                         </div>
-                    </div>
+                    )}
                     {onSearchChange && onSortChange && (
-                        <SearchAndSort
-                            searchQuery={searchQuery}
-                            onSearchChange={onSearchChange}
-                            sortBy={sortBy}
-                            onSortChange={onSortChange}
-                        />
+                        // Without a period control beside it the sort button is the whole row,
+                        // and it keeps its right edge rather than sliding to the left margin.
+                        <div className={showPeriodTabs ? '' : 'flex-1'}>
+                            <SearchAndSort
+                                searchQuery={searchQuery}
+                                onSearchChange={onSearchChange}
+                                sortBy={sortBy}
+                                onSortChange={onSortChange}
+                            />
+                        </div>
                     )}
                 </div>
 
                 {/* Desktop View: Tabs and Search/Sort separated */}
                 <div className="hidden sm:block">
-                    <div className="flex justify-center mb-6 w-full">
-                        <MealTabsWithScrollIndicators
-                            availablePeriods={availablePeriods}
-                            selectedPeriod={selectedPeriod}
-                            onPeriodChange={onPeriodChange}
-                            getMealLabel={getMealLabel}
-                        />
-                    </div>
+                    {showPeriodTabs && (
+                        <div className="flex justify-center mb-6 w-full">
+                            <MealTabsWithScrollIndicators
+                                availablePeriods={availablePeriods}
+                                selectedPeriod={selectedPeriod}
+                                onPeriodChange={onPeriodChange}
+                                getMealLabel={getMealLabel}
+                            />
+                        </div>
+                    )}
 
                     {onSearchChange && onSortChange && (
                         <div className="mb-3">

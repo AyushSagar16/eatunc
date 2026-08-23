@@ -20,10 +20,13 @@ interface PageProps {
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
-// The regex alone admits calendar-invalid strings like 2026-02-30, which make every
-// Intl formatter downstream throw RangeError — a 500 where a 404 belongs.
+// The regex alone admits calendar-invalid strings like 2026-02-30. A NaN check is not
+// enough either: V8 rolls that over to March 2 instead of rejecting it, so the date must
+// round-trip — parse it, format it back, and demand the same string.
 function isValidIsoDate(date: string): boolean {
-    return ISO_DATE.test(date) && !Number.isNaN(Date.parse(`${date}T12:00:00Z`))
+    if (!ISO_DATE.test(date)) return false
+    const parsed = new Date(`${date}T12:00:00Z`)
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

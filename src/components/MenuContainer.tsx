@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback, useRef, Suspense } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import Link from 'next/link'
 import { usePostHog } from 'posthog-js/react'
 import { MasterFoodItem } from '@/lib/api'
 import FoodCard from '@/components/FoodCard'
@@ -39,6 +40,21 @@ interface MenuContainerProps {
      */
     dateBasePath?: string
     switchLink?: { label: string; href: string }
+    /** Passed straight through to `FoodDisplayLayout`; see the props there. */
+    subHeader?: React.ReactNode
+    hideDateNav?: boolean
+    /**
+     * Where the empty-menu card sends someone. A venue is shut on plenty of days UNC still
+     * files a menu row for, so "no items" needs a route onward and not just a link off the
+     * site; the halls resolve their default date in a route handler and pass nothing.
+     */
+    resumeLink?: { label: string; href: string }
+    /**
+     * Wording for the zero-item card. The default noun is a dining hall, which is wrong for a
+     * campus venue — and for a venue UNC files no items for at all, "might be closed" is not
+     * merely the wrong word but untrue.
+     */
+    emptyState?: { title: string; body: string }
 }
 
 interface StationSectionProps {
@@ -399,7 +415,11 @@ export default function MenuContainer({
     selectedHall,
     initialPeriod,
     dateBasePath,
-    switchLink
+    switchLink,
+    subHeader,
+    hideDateNav,
+    resumeLink,
+    emptyState
 }: MenuContainerProps) {
     // iOS CRASH DEBUG: Log render counts and payload sizes
     //     if (DEBUG_MENU && typeof window !== 'undefined') {
@@ -1043,6 +1063,8 @@ export default function MenuContainer({
                 availableDates={availableDates}
                 dateBasePath={dateBasePath}
                 switchLink={switchLink}
+                subHeader={subHeader}
+                hideDateNav={hideDateNav}
                 selectedPeriod=""
                 availablePeriods={[]}
                 onPeriodChange={() => { }}
@@ -1055,22 +1077,40 @@ export default function MenuContainer({
                             </svg>
                         </div>
                         <h2 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 mb-3">
-                            {selectedHall} isn't open on {formattedDate}
+                            {emptyState ? emptyState.title : `${selectedHall} isn't open on ${formattedDate}`}
                         </h2>
                         <p className="text-zinc-500 mb-8 leading-relaxed">
-                            We couldn't find any menu items for this date. It looks like the dining hall might be closed.
+                            {emptyState
+                                ? emptyState.body
+                                : "We couldn't find any menu items for this date. It looks like the dining hall might be closed."}
                         </p>
-                        <a
-                            href="https://dining.unc.edu/menu-hours/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors w-full sm:w-auto"
-                        >
-                            <span>Double Check Official Schedule</span>
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                        </a>
+                        <div className="flex flex-col sm:flex-row sm:justify-center items-stretch sm:items-center gap-3">
+                            {/* The useful answer leads: this is the date someone can actually eat here. */}
+                            {resumeLink && (
+                                <Link
+                                    href={resumeLink.href}
+                                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors"
+                                >
+                                    <span>{resumeLink.label}</span>
+                                    <span aria-hidden="true">→</span>
+                                </Link>
+                            )}
+                            <a
+                                href="https://dining.unc.edu/menu-hours/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={
+                                    resumeLink
+                                        ? "inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 font-bold hover:border-blue-500 transition-colors"
+                                        : "inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors w-full sm:w-auto"
+                                }
+                            >
+                                <span>Double Check Official Schedule</span>
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </FoodDisplayLayout>
@@ -1084,6 +1124,8 @@ export default function MenuContainer({
             availableDates={availableDates}
             dateBasePath={dateBasePath}
             switchLink={switchLink}
+            subHeader={subHeader}
+            hideDateNav={hideDateNav}
             selectedPeriod={selectedPeriod}
             availablePeriods={availablePeriods}
             onPeriodChange={setSelectedPeriod}

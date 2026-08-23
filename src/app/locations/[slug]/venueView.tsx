@@ -11,19 +11,23 @@ import {
     getLocationsBySlug,
     getVenueMenu,
     getVenueMenuDates,
+    getVenueMenuDatesWithFood,
     shiftDate,
 } from '@/lib/campus'
 import type { BrandWithItems, ExternalBrand, Location, LocationHours } from '@/lib/campus'
 import type { MasterFoodItem } from '@/lib/api'
+import { BRAND_MEAL_PERIOD, brandMenuEntries } from '@/lib/brandMenu'
 import { breadcrumbList, canonical, menuSchema, toOpeningHoursSpecification } from '@/lib/seo'
 import type { MenuSectionInput } from '@/lib/seo'
 import { compareMealPeriods } from '@/lib/utils'
 import MenuContainer from '@/components/MenuContainer'
 import MenuOutline from '@/components/MenuOutline'
+import MenuPageShell from '@/components/MenuPageShell'
+import MenuTutorial from '@/components/MenuTutorial'
 import { Breadcrumbs } from '@/components/campus/CampusChrome'
 import { JsonLd } from '@/components/campus/JsonLd'
 import { PeriodSummary } from '@/components/campus/HoursList'
-import BrandItemsTable, { BrandCategoryNav } from '@/components/brands/BrandItemsTable'
+import BrandItemsTable from '@/components/brands/BrandItemsTable'
 import NutritionSourceLegend from '@/components/brands/NutritionSourceLegend'
 import {
     buildingMeta,
@@ -38,6 +42,14 @@ import {
 
 /** How far ahead hours are loaded — enough to answer "when does it open again" over a weekend. */
 const HOURS_AHEAD = 7
+
+/**
+ * How far either side of today the page looks for a day this venue actually serves food.
+ * The same window the sitemap submits, so every date this page can send someone to is a date
+ * the site already asks to have crawled.
+ */
+const SERVED_BACK = 7
+const SERVED_AHEAD = 14
 
 /**
  * One `menu_entries` row shaped exactly as `MenuContainer` wants it.
@@ -65,6 +77,18 @@ export type VenueData = {
     selectedDate: string
     /** Dates the primary location has a stored menu for, oldest first, for the date stepper. */
     availableDates: string[]
+    /**
+     * The nearest date that does have food, when the one being shown has none. It is what
+     * keeps a closed day from being a dead end; `null` when the venue serves nothing anywhere
+     * in the window, which is a genuinely closed venue rather than a gap.
+     */
+    resumesOn: string | null
+    /**
+     * Whether the venue serves food on any date in the window at all. Five venues — Ram's
+     * Market, Raynor, Friends Cafe, The Atrium, Cafe Converge — publish hours and have never had
+     * a single item filed against them, and their empty menu is not a closure to apologise for.
+     */
+    everServes: boolean
     entries: VenueMenuEntry[]
     brand: BrandWithItems | null
     /**
@@ -131,7 +155,7 @@ function isOpenAt(row: LocationHours, atMs: number): boolean {
 function pickPrimary(
     locations: Location[],
     hours: LocationHours[],
-    menuDates: Map<string, string[]>,
+    servedDates: Map<string, string[]>,
     targetDate: string,
     today: string,
     nowMs: number,
@@ -140,23 +164,33 @@ function pickPrimary(
 
     const score = (l: Location) =>
         (hours.some((h) => h.location_id === l.id && isOpenAt(h, nowMs)) ? 4 : 0) +
-        ((menuDates.get(l.id) ?? []).includes(targetDate) ? 2 : 0) +
+        ((servedDates.get(l.id) ?? []).includes(targetDate) ? 2 : 0) +
         (hours.some((h) => h.location_id === l.id && h.service_date === today) ? 1 : 0)
 
     return locations.reduce((best, l) => (score(l) > score(best) ? l : best), locations[0])
 }
 
 /**
+ * Where to send someone from `from`: the soonest date that serves food, else the most recent
+ * one before it. Upcoming beats past because the question this page answers is "when can I eat
+ * here next", not "when could I have". `served` is oldest first.
+ */
+function nearestServed(from: string, served: string[]): string | null {
+    return served.find((d) => d >= from) ?? served.filter((d) => d < from).pop() ?? null
+}
+
+/**
  * The date whose menu to show.
  *
  * An explicit date in the URL is honoured verbatim, closed or not — the same contract
- * `/chase/2026-01-08` has. Without one the page wants today, and falls back to the nearest
- * stored date so a venue between publishing runs still shows food rather than an empty shell.
+ * `/chase/2026-01-08` has. Without one the page resolves a default the way `/chase` does, but
+ * on food rather than on rows: a shut venue still gets a `menus` row, empty, and defaulting to
+ * today landed the page on "isn't open on Sat, Aug 22" while the same venue had a full menu on
+ * the Monday. Only dates with entries are candidates, so today has to earn it.
  */
-function resolveDate(requested: string | undefined, today: string, availableDates: string[]): string {
+function resolveDate(requested: string | undefined, today: string, served: string[]): string {
     if (requested) return requested
-    if (availableDates.includes(today)) return today
-    return availableDates.find((d) => d >= today) ?? availableDates[availableDates.length - 1] ?? today
+    return nearestServed(today, served) ?? today
 }
 
 export const loadVenue = cache(async (slug: string, requestedDate?: string): Promise<VenueData | null> => {
@@ -174,24 +208,44 @@ export const loadVenue = cache(async (slug: string, requestedDate?: string): Pro
         shiftDate(today, HOURS_AHEAD),
     ).catch(() => [] as LocationHours[])
 
-    // Which dates each counter has food for. One small query per location — a colliding slug
-    // has two — and it is what lets the page lead with the counter that is actually serving.
-    const menuDates = new Map<string, string[]>(
-        await Promise.all(
-            locations.map(async (l): Promise<[string, string[]]> => [
-                l.id,
-                l.has_menu ? (await getVenueMenuDates(l.id).catch(() => [] as string[])).slice().sort() : [],
-            ]),
-        ),
-    )
+    // Which dates each counter actually serves food on. One query for the slug, and it decides
+    // both which date the page opens on and which counter leads it.
+    const servedDates = await getVenueMenuDatesWithFood(
+        locations.filter((l) => l.has_menu).map((l) => l.id),
+        shiftDate(today, -SERVED_BACK),
+        shiftDate(today, SERVED_AHEAD),
+    ).catch(() => new Map<string, string[]>())
 
-    const primary = pickPrimary(locations, hours, menuDates, requestedDate ?? today, today, nowMs)
+    // Both counters of a colliding slug count towards the date: the link back through this
+    // resolver will lead with whichever of them is serving that day.
+    const served = Array.from(new Set(Array.from(servedDates.values()).flat())).sort()
+    const selectedDate = resolveDate(requestedDate, today, served)
+    const primary = pickPrimary(locations, hours, servedDates, selectedDate, today, nowMs)
 
-    const availableDates = menuDates.get(primary.id) ?? []
-    const selectedDate = resolveDate(requestedDate, today, availableDates)
-    const entries = primary.has_menu
-        ? toEntries(await getVenueMenu(primary.id, selectedDate).catch(() => null))
-        : []
+    const [availableDates, entries] = await Promise.all([
+        primary.has_menu
+            ? getVenueMenuDates(primary.id)
+                  .then((dates) => dates.slice().sort())
+                  .catch(() => [] as string[])
+            : Promise.resolve([] as string[]),
+        primary.has_menu
+            ? getVenueMenu(primary.id, selectedDate)
+                  .then(toEntries)
+                  .catch(() => [] as VenueMenuEntry[])
+            : Promise.resolve([] as VenueMenuEntry[]),
+    ])
+
+    // A day with nothing on it is only a dead end if there is nowhere to go. The search starts
+    // after the date being shown so the card can never link to the page it is already on, and
+    // never before today — a stale dated URL should offer the next meal, not an older one.
+    const searchFrom = [shiftDate(selectedDate, 1), today].sort().pop()!
+    const resumesOn =
+        entries.length > 0
+            ? null
+            : nearestServed(
+                  searchFrom,
+                  served.filter((d) => d !== selectedDate),
+              )
 
     // Third-party nutrition attaches to the brand, not to this location or this date — Alpaca's
     // two counters share one menu, and Chick-fil-A's is the same every day.
@@ -203,7 +257,20 @@ export const loadVenue = cache(async (slug: string, requestedDate?: string): Pro
         if (meta) brand = await getBrandBySlug(meta.slug).catch(() => null)
     }
 
-    return { slug, locations, primary, hours, today, selectedDate, availableDates, entries, brand, nowMs }
+    return {
+        slug,
+        locations,
+        primary,
+        hours,
+        today,
+        selectedDate,
+        availableDates,
+        resumesOn,
+        everServes: served.length > 0,
+        entries,
+        brand,
+        nowMs,
+    }
 })
 
 function venueTitle(locations: Location[]): string {
@@ -228,7 +295,7 @@ function venueTitle(locations: Location[]): string {
  * false. Hours belong on the page, where they are current.
  */
 function venueDescription(data: VenueData): string {
-    const { locations, entries, brand } = data
+    const { locations, entries, brand, selectedDate, today } = data
     const name = locations[0].name
     const buildings = Array.from(new Set(locations.map((l) => buildingMeta(l.venue_group).short)))
     const isTruck = locations.some((l) => l.venue_group === 'Food Trucks')
@@ -241,7 +308,10 @@ function venueDescription(data: VenueData): string {
 
     let extra: string
     if (entries.length > 0) {
-        extra = `Today's menu — ${entries.length} items with calories, protein and allergens — searchable, sortable and filterable by diet.`
+        // "Today's" only when it is: the page lands on the next day this venue serves, which
+        // between terms is days away, and the description outlives the page in the index.
+        const when = selectedDate === today ? "Today's menu" : 'The menu here'
+        extra = `${when} — ${entries.length} items with calories, protein and allergens — searchable, sortable and filterable by diet.`
     } else if (brand) {
         extra = `Nutrition for ${brand.external_food_items.length} ${brand.name} items — calories, protein, fat, carbs and allergens, each marked as published by the operator or estimated by us.`
     } else {
@@ -464,8 +534,103 @@ function BrandLink({ brand }: { brand: BrandWithItems }) {
     )
 }
 
+/**
+ * Every brand item, server-rendered, underneath the grid.
+ *
+ * `MenuContainer` is the interface a person uses, and it cannot answer a crawler: it virtualises
+ * past 50 items and its filter state lives in `localStorage`. `BrandItemsTable` is shape two's
+ * `MenuOutline` — the same disclosure, and the only place the serving descriptions, the allergen
+ * lists and every estimated row's derivation reach the HTML.
+ */
+function BrandMenuFallback({ brand, venueName }: { brand: BrandWithItems; venueName: string }) {
+    return (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-16 pt-4">
+            <details className="group rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                <summary className="cursor-pointer list-none px-6 py-5 flex items-center justify-between gap-4 rounded-2xl">
+                    <span className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                        Full {venueName} nutrition table
+                        <span className="ml-2 font-normal text-zinc-500 dark:text-zinc-400">
+                            {brand.external_food_items.length} items
+                        </span>
+                    </span>
+                    <span
+                        aria-hidden
+                        className="shrink-0 text-zinc-400 transition-transform group-open:rotate-180"
+                    >
+                        ▾
+                    </span>
+                </summary>
+
+                <div className="px-6 pb-6 pt-2">
+                    <BrandItemsTable items={brand.external_food_items} />
+                </div>
+            </details>
+        </section>
+    )
+}
+
+/**
+ * The way out of a closed day.
+ *
+ * UNC files a menu row for days a venue is shut, so "no items" is a routine state rather than
+ * an error, and the card that says so used to offer nothing but a link off the site. The label
+ * distinguishes the two directions because "resumes" would be a lie pointing backwards — at the
+ * end of a publishing window the only date with food is behind you.
+ */
+function resumeLinkFor(slug: string, selectedDate: string, resumesOn: string | null) {
+    if (!resumesOn) return undefined
+    const label =
+        resumesOn > selectedDate
+            ? `Menu resumes ${formatCampusDateShort(resumesOn)}`
+            : `See the menu for ${formatCampusDateShort(resumesOn)}`
+    return { label, href: `/locations/${slug}/${resumesOn}` }
+}
+
+/**
+ * What the empty card says, for a venue rather than a dining hall.
+ *
+ * Two different silences. A venue that serves on other dates is shut on this one, and the way
+ * out is another date. A venue UNC has never filed an item for is not shut at all — Ram's Market
+ * is open right now — so saying "might be closed" would be plainly false. That page leads with
+ * the hours, which are the part this site can stand behind.
+ */
+function venueEmptyState(data: VenueData): { title: string; body: string } {
+    const { primary, everServes, selectedDate } = data
+
+    if (!everServes) {
+        return {
+            title: `UNC doesn't publish an item-level menu for ${primary.name}`,
+            body: `${primary.name} keeps hours without UNC listing what it sells, so there is nothing to itemise here. The service times above are current, and they are the answer this page can give.`,
+        }
+    }
+
+    return {
+        title: `${primary.name} isn't serving on ${formatCampusDateShort(selectedDate)}`,
+        body: `UNC hasn't published a menu for this venue on this date. Its hours are above — they are filed separately from the food, so an open venue with no menu happens.`,
+    }
+}
+
+/**
+ * The date line for a menu that is not today's.
+ *
+ * The page opens on the nearest date this venue actually serves, which over a weekend is days
+ * out; unexplained, the header's date reads as a bug. Satellite menus barely move day to day, so
+ * the honest framing is the venue's regular menu rather than a forecast for one particular day.
+ */
+function MenuDateNote({ selectedDate, today }: { selectedDate: string; today: string }) {
+    if (selectedDate === today) return null
+
+    return (
+        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+            Menu for {formatCampusDateShort(selectedDate)}, not today. This venue runs much the same
+            menu on the days it opens.
+        </p>
+    )
+}
+
 export function VenueView({ data }: { data: VenueData }) {
-    const { locations, primary, hours, selectedDate, availableDates, entries, brand } = data
+    const { locations, primary, hours, today, selectedDate, availableDates, resumesOn, everServes, entries, brand } =
+        data
     const multi = locations.length > 1
     const menuTitle = multi ? `${primary.name} · ${buildingMeta(primary.venue_group).short}` : primary.name
 
@@ -545,10 +710,13 @@ export function VenueView({ data }: { data: VenueData }) {
     const availablePeriods = Array.from(new Set(entries.map((e) => e.meal_period)))
     availablePeriods.sort(compareMealPeriods)
 
+    // Server-rendered and handed down as a node, never rebuilt inside the client container:
+    // breadcrumbs only work as real `<a>` elements in the HTML.
     const header = (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-3">
             <Breadcrumbs crumbs={crumbs} />
             <VenueStatusBar data={data} />
+            {entries.length > 0 && <MenuDateNote selectedDate={selectedDate} today={today} />}
         </div>
     )
 
@@ -566,77 +734,90 @@ export function VenueView({ data }: { data: VenueData }) {
     // even when the venue is shut: the menu is the reason someone is here.
     if (primary.has_menu) {
         return (
-            <div className="min-h-screen">
+            <MenuPageShell>
                 {structuredData}
-                {header}
+                <MenuTutorial />
                 <MenuContainer
                     key={`${selectedDate}-${primary.id}`}
                     allEntries={entries}
                     availablePeriods={availablePeriods}
                     availableDates={availableDates}
                     selectedDate={selectedDate}
-                    selectedHall={menuTitle}
+                    // The `<h1>`, so the name alone: a shared slug's building already rides on
+                    // `StatusLine`, and "Name · Building" wrapped to three lines on a phone.
+                    selectedHall={primary.name}
                     dateBasePath={`/locations/${data.slug}`}
                     switchLink={{ label: 'All venues', href: '/locations' }}
+                    subHeader={header}
+                    resumeLink={
+                        everServes
+                            ? resumeLinkFor(data.slug, selectedDate, resumesOn)
+                            : { label: 'Hours for every campus venue', href: '/hours' }
+                    }
+                    emptyState={entries.length === 0 ? venueEmptyState(data) : undefined}
                 />
+                {brand && (
+                    <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-8">
+                        <BrandLink brand={brand} />
+                    </section>
+                )}
                 <MenuOutline
                     entries={entries}
                     hallName={menuTitle}
                     formattedDate={formatCampusDate(selectedDate)}
                 />
-                {brand && (
-                    <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
-                        <BrandLink brand={brand} />
-                    </section>
-                )}
-            </div>
+            </MenuPageShell>
         )
     }
 
     // Shape two: a third-party brand. There is no per-date UNC menu to show and inventing one
-    // would be a lie, so the brand's own nutrition set is rendered here and /brands/<slug>
-    // stays the page that owns it.
+    // would be a lie — but the food is still food, so the brand's own items go through the same
+    // container the halls use, undated, and /brands/<slug> stays the page that owns the brand.
     if (brand) {
-        return (
-            <main className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
-                {structuredData}
-                {header}
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
-                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mt-4 mb-3">
-                        {primary.name}
-                    </h1>
-                    <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed max-w-3xl mb-6">
-                        {primary.name} serves a brand menu rather than a UNC-published daily one, so it
-                        does not change day to day and its nutrition is the same at every campus counter
-                        that carries it.
-                    </p>
-                    <div className="mb-8">
-                        <BrandLink brand={brand} />
-                    </div>
+        const brandItems = brand.external_food_items
+        const brandEntries = brandMenuEntries(brandItems)
+        const brandHeader = (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-3">
+                <Breadcrumbs crumbs={crumbs} />
+                <VenueStatusBar data={data} />
+                <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400 max-w-3xl">
+                    {primary.name} serves a brand menu rather than a UNC-published daily one, so it
+                    does not change day to day and its nutrition is the same at every campus counter
+                    that carries it.
+                </p>
+            </div>
+        )
 
-                    {brand.external_food_items.length > 0 ? (
-                        <>
-                            <div className="mb-6">
-                                <NutritionSourceLegend />
-                            </div>
-                            <div className="mb-6">
-                                <BrandCategoryNav items={brand.external_food_items} />
-                            </div>
-                            <BrandItemsTable items={brand.external_food_items} />
-                        </>
-                    ) : (
-                        <p className="text-zinc-600 dark:text-zinc-300">
-                            We do not have nutrition on file for {brand.name} yet.
-                        </p>
-                    )}
-                </div>
-            </main>
+        return (
+            <MenuPageShell>
+                {structuredData}
+                <MenuTutorial />
+                <MenuContainer
+                    allEntries={brandEntries}
+                    availablePeriods={brandEntries.length > 0 ? [BRAND_MEAL_PERIOD] : []}
+                    availableDates={[]}
+                    selectedDate={today}
+                    selectedHall={primary.name}
+                    switchLink={{ label: 'All venues', href: '/locations' }}
+                    subHeader={brandHeader}
+                    hideDateNav
+                    emptyState={{
+                        title: `We don't have ${brand.name}'s nutrition on file yet`,
+                        body: `${primary.name} publishes its own menu rather than a UNC one, and until we have read it there is nothing here we can stand behind. Its hours are above.`,
+                    }}
+                />
+                <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-4 flex flex-col gap-6">
+                    <BrandLink brand={brand} />
+                    {brandItems.length > 0 && <NutritionSourceLegend />}
+                </section>
+                {brandItems.length > 0 && <BrandMenuFallback brand={brand} venueName={primary.name} />}
+            </MenuPageShell>
         )
     }
 
     // Shape three: neither. Say so in one line rather than padding the page out.
     return (
-        <main className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
+        <MenuPageShell>
             {structuredData}
             {header}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
@@ -655,6 +836,6 @@ export function VenueView({ data }: { data: VenueData }) {
                     All campus dining locations
                 </Link>
             </div>
-        </main>
+        </MenuPageShell>
     )
 }
