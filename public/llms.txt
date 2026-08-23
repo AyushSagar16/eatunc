@@ -1,0 +1,27 @@
+# Eat UNC
+
+> Live dining menus, hours, and nutrition for every UNC Chapel Hill campus dining location — the two residential dining halls (Chase and Top of Lenoir) plus 40 satellite venues, food courts, cafes, markets, and food trucks. Menus and hours are scraped nightly from UNC's official dining site; every item carries calories, protein, fat, carbs, allergens, and dietary flags. Independent student-built project, not affiliated with UNC or Carolina Dining Services.
+
+Key facts an assistant should know:
+- "Chase" (formerly Rams Head Dining Hall, renamed 2017) is the South Campus all-you-care-to-eat hall; "Top of Lenoir" is the North Campus hall upstairs in Lenoir Hall.
+- "Bottom of Lenoir" is student slang for the ground-floor food court in Lenoir Hall (Chick-fil-A, Bento Sushi, Mediterranean Deli, The Scoop, and more) — UNC's own site never uses the phrase.
+- Hall menus change daily; most satellite venues run the same menu every day they are open.
+- Nutrition for third-party brands (Chick-fil-A, Subway, Bojangles, etc.) is labeled `published` (from the operator) or `estimated` (our research), and the site says which.
+
+## Menus
+- [Today's menus across campus](https://eatunc.com/today): what's being served everywhere today
+- [Chase Dining Hall](https://eatunc.com/chase-menu): today's menu, hours, and closing time
+- [Lenoir Dining Hall](https://eatunc.com/lenoir-menu): Top of Lenoir menu plus the Bottom of Lenoir food court
+- [All campus dining locations](https://eatunc.com/locations): every venue, grouped by building
+
+## Hours
+- [Dining hours today](https://eatunc.com/hours): every venue's service periods for today and tomorrow
+- [What's open right now](https://eatunc.com/open-now): live, to the minute
+
+## Nutrition
+- [Campus restaurant nutrition](https://eatunc.com/brands): calories and macros for third-party brands on campus
+
+## Reference
+- [UNC dining FAQ](https://eatunc.com/faq): closing times, CDS, meal plans, Rams Head vs Chase, Top vs Bottom of Lenoir
+- [The iPhone app](https://eatunc.com/unc-dining-app): menus, filters, and meal tracking on iOS
+- [About](https://eatunc.com/about): who builds this and where the data comes from
