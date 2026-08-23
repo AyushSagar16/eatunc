@@ -12,7 +12,11 @@ function FooterContent() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const isLanding = pathname === "/" && !searchParams.get("hall");
-    const isMenuPage = pathname.includes("/chase") || pathname.includes("/lenoir");
+    // Every page that mounts <MenuTutorial />, which is the only listener for the restart
+    // event the Tutorial button dispatches. Anchored rather than `.includes`, which also
+    // matched anything with "chase" anywhere in the path.
+    const isMenuPage =
+        /^\/(chase|lenoir)(\/|$)/.test(pathname) || /^\/locations\/[^/]+/.test(pathname);
 
     const handleRestartTutorial = () => {
         // Clear tutorial completion status and dispatch restart event
@@ -58,7 +62,7 @@ function FooterContent() {
                     {/* Dining Halls Column */}
                     <div className="space-y-4">
                         <h4 className="text-xs font-semibold uppercase tracking-wider opacity-80">
-                            Dining Halls
+                            Where to Eat
                         </h4>
                         <ul className="space-y-1.5 text-sm">
                             <li>
@@ -85,6 +89,38 @@ function FooterContent() {
                                     Today's Menu
                                 </Link>
                             </li>
+                            <li>
+                                <Link
+                                    href="/open-now"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    What&apos;s Open Now
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href="/hours"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    Dining Hours
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href="/locations"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    All Campus Locations
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href="/brands"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    Restaurant Nutrition
+                                </Link>
+                            </li>
                         </ul>
                     </div>
 
@@ -94,6 +130,22 @@ function FooterContent() {
                             Resources
                         </h4>
                         <ul className="space-y-1.5 text-sm">
+                            <li>
+                                <Link
+                                    href="/faq"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    UNC Dining FAQ
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href="/unc-dining-app"
+                                    className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    iPhone App
+                                </Link>
+                            </li>
                             <li>
                                 <Link
                                     href="/about"

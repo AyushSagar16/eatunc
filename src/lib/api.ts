@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { HALL_DINING_NAMES } from './campus'
 import { Database } from '@/lib/database.types'
 
 export type Menu = Database['public']['Tables']['menus']['Row']
@@ -192,11 +193,17 @@ export async function getAllFoodItems() {
 /**
  * Fetch unique available menu dates.
  * No caching - always fetches fresh data from Supabase.
+ *
+ * Filtered to the two dining halls: `menus` also holds a row per satellite venue per day,
+ * and without the filter every caller (the hall date strip, the /[hall] redirect resolver,
+ * the sitemap's dated URLs) would treat a date only a satellite venue serves as a date the
+ * halls have a menu.
  */
 export async function getAvailableDates() {
     const { data, error } = await supabase
         .from('menus')
         .select('menu_date')
+        .in('dining_hall', HALL_DINING_NAMES)
         .order('menu_date', { ascending: false })
 
     if (error) throw error

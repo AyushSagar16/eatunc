@@ -35,10 +35,13 @@ export const viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL('https://eatunc.com'),
   title: {
-    default: "UNC Dining Menu Today | Chase & Lenoir Dining Halls",
-    template: "%s | UNC Dining"
+    default: "UNC Dining Menus Today — Chase, Lenoir & 40 Campus Spots",
+    // Page titles carry their own descriptive tail, so the template adds the brand only.
+    // It previously appended "| UNC Dining" on top of a suffix each page already had,
+    // shipping titles like "Chase Dining Hall Menu Today | UNC Campus Dining | UNC Dining".
+    template: "%s | Eat UNC"
   },
-  description: "Check UNC dining menus for Chase and Lenoir dining halls. View today's menu, meal times, and nutrition facts at UNC Chapel Hill's dining locations.",
+  description: "Today's menus, hours and calories for every UNC Chapel Hill dining location — Chase, Top of Lenoir, the Beach Cafe, Bottom of Lenoir and 38 more. Filter by protein, calories, allergens and diet. Updated nightly.",
   keywords: [
     // Primary target keywords
     "unc menu",
@@ -72,24 +75,14 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: 'https://eatunc.com',
-    siteName: 'UNC Dining Menu',
-    title: 'UNC Dining Menu Today | Chase & Lenoir Dining Halls',
-    description: 'Check UNC dining menus for Chase and Lenoir dining halls. View today\'s menu, meal times, and nutrition facts at UNC Chapel Hill.',
-    images: [
-      {
-        url: '/eat_unc_logo_square.png',
-        width: 512,
-        height: 512,
-        alt: 'UNC Dining Menu - Eat UNC',
-      }
-    ],
+    siteName: 'Eat UNC',
+    title: 'UNC Dining Menus Today — Chase, Lenoir & 40 Campus Spots',
+    description: "Today's menus, hours and calories for every UNC Chapel Hill dining location. Filter by protein, calories, allergens and diet.",
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'UNC Dining Menu Today | Chase & Lenoir Dining Halls',
-    description: 'Check UNC dining menus for Chase and Lenoir dining halls. View today\'s menu, meal times, and nutrition facts at UNC Chapel Hill.',
-    images: ['/eat_unc_logo_square.png'],
-    creator: '@UNC',
+    title: 'UNC Dining Menus Today — Chase, Lenoir & 40 Campus Spots',
+    description: "Today's menus, hours and calories for every UNC Chapel Hill dining location. Filter by protein, calories, allergens and diet.",
   },
   robots: {
     index: true,
@@ -126,9 +119,6 @@ export const metadata: Metadata = {
   // Native Safari-on-iOS "Smart App Banner" for the Eat UNC iOS app.
   itunes: {
     appId: APP_STORE_ID,
-  },
-  alternates: {
-    canonical: 'https://eatunc.com',
   },
 };
 

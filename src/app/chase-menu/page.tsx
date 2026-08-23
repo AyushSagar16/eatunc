@@ -1,237 +1,151 @@
-import { Metadata } from "next";
-import Link from "next/link";
-import Image from "next/image";
-import Script from "next/script";
-import { ArrowRight, Clock, MapPin, Utensils, Leaf } from "lucide-react";
+import type { Metadata } from "next";
+import { Leaf } from "lucide-react";
+import { HALL_BY_ROUTE_SLUG } from "@/lib/campus";
+import { canonical } from "@/lib/seo";
+import HallLanding, { AccentLink, HallCard, loadHallLanding } from "@/components/hall/HallLanding";
+
+// Prerendered without this, the page froze at the build date and pointed its only call to
+// action at a six-day-old menu URL.
+export const revalidate = 900;
+
+const CHASE = HALL_BY_ROUTE_SLUG.chase;
 
 export const metadata: Metadata = {
-    title: "Chase Dining Hall Menu Today | UNC South Campus",
-    description: "View today's Chase Dining Hall menu at UNC Chapel Hill. Check breakfast, lunch, and dinner options with nutrition facts at South Campus's main dining location.",
+    title: "Chase Dining Hall Menu & Hours — UNC South Campus",
+    description:
+        "Today's Chase Dining Hall menu at UNC Chapel Hill with calories and allergens for every item, plus tonight's closing time. Chase is the South Campus hall formerly called Rams Head. Free, updated nightly.",
     keywords: [
         "chase dining hall menu",
         "chase menu unc",
+        "chase dining hall hours",
         "unc chase dining",
-        "unc south campus dining",
+        "rams head dining hall",
         "chase dining hall unc chapel hill",
-        "chase menu today",
-        "unc dining hall menu"
+        "unc south campus dining",
     ],
     openGraph: {
-        title: "Chase Dining Hall Menu Today | UNC South Campus",
-        description: "View today's Chase Dining Hall menu at UNC Chapel Hill. Check breakfast, lunch, and dinner options with nutrition facts.",
-        url: "https://eatunc.com/chase-menu",
-        siteName: "UNC Dining Menu",
+        title: "Chase Dining Hall Menu & Hours — UNC South Campus",
+        description:
+            "Today's Chase Dining Hall menu at UNC Chapel Hill with calories and allergens for every item, plus tonight's closing time.",
+        url: canonical(CHASE.landingPath),
+        siteName: "Eat UNC",
         type: "website",
     },
-    twitter: {
-        card: "summary_large_image",
-        title: "Chase Dining Hall Menu Today | UNC South Campus",
-        description: "View today's Chase Dining Hall menu at UNC Chapel Hill. Check breakfast, lunch, and dinner options with nutrition facts.",
-    },
-    alternates: {
-        canonical: "https://eatunc.com/chase-menu",
-    },
+    alternates: { canonical: canonical(CHASE.landingPath) },
 };
 
-// Structured data for Chase Dining Hall
-const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "FoodEstablishment",
-    "name": "Chase Dining Hall",
-    "alternateName": "Chase",
-    "url": "https://eatunc.com/chase-menu",
-    "description": "Chase Dining Hall is the main dining facility on UNC Chapel Hill's South Campus, serving breakfast, lunch, and dinner with a variety of food stations.",
-    "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "South Campus",
-        "addressLocality": "Chapel Hill",
-        "addressRegion": "NC",
-        "postalCode": "27599",
-        "addressCountry": "US"
-    },
-    "geo": {
-        "@type": "GeoCoordinates",
-        "latitude": 35.9049,
-        "longitude": -79.0469
-    },
-    "servesCuisine": ["American", "International", "Vegetarian", "Vegan"],
-    "priceRange": "$$",
-    "acceptsReservations": false,
-    "parentOrganization": {
-        "@type": "Organization",
-        "name": "UNC Chapel Hill Dining Services",
-        "url": "https://dining.unc.edu"
-    },
-    "openingHoursSpecification": [
+export default async function ChaseMenuPage() {
+    const data = await loadHallLanding(CHASE);
+    const { hours } = data;
+    const closesToday = hours.length > 0 ? hours[hours.length - 1].closes_label : null;
+
+    const faqs = [
         {
-            "@type": "OpeningHoursSpecification",
-            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-            "opens": "07:00",
-            "closes": "21:00"
+            question: "What time does Chase Dining Hall close?",
+            // "No service periods scheduled" is only claimed when the fetch succeeded with
+            // zero rows — a failed fetch must not read as a closure.
+            answer: closesToday
+                ? `Chase closes at ${closesToday} today. Its service periods today are ${hours
+                      .map((h) => `${h.period_name} ${h.opens_label}–${h.closes_label}`)
+                      .join(", ")}.`
+                : data.failed
+                  ? "Today's hours could not be loaded just now. Check back in a few minutes, or see UNC's own schedule at dining.unc.edu."
+                  : "Chase has no service periods scheduled today. The hall closes over university breaks and between semesters.",
         },
         {
-            "@type": "OpeningHoursSpecification",
-            "dayOfWeek": ["Saturday", "Sunday"],
-            "opens": "10:00",
-            "closes": "20:00"
-        }
-    ]
-};
-
-function getTodayDate() {
-    const now = new Date();
-    return new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/New_York',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    }).format(now);
-}
-
-export default function ChaseMenuPage() {
-    const today = getTodayDate();
+            question: "Is Chase Dining Hall the same as Rams Head?",
+            answer:
+                "Yes. Rams Head Dining Hall was renamed Chase Dining Hall in 2017. It is the same building in the same place on South Campus, and many students and alumni still call it Rams Head.",
+        },
+        {
+            question: "Does Chase close between lunch and dinner?",
+            answer:
+                "Chase runs a Late Lunch period on most weekdays, so it generally stays open through the afternoon rather than closing between lunch and dinner. The exact periods change day to day — today's are listed on this page.",
+        },
+    ];
 
     return (
-        <>
-            <Script
-                id="chase-structured-data"
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-            />
-            <main className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
-                {/* Hero Section */}
-                <div className="relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-transparent to-blue-400/5 pointer-events-none" />
-                    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 md:py-20">
-                        <Link
-                            href="/"
-                            className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 mb-8 transition-colors"
-                        >
-                            ← Back to Home
-                        </Link>
-
-                        <div className="flex items-start gap-6 mb-8">
-                            <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center shrink-0">
-                                <Utensils className="w-8 h-8 md:w-10 md:h-10 text-blue-500" />
-                            </div>
-                            <div>
-                                <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2">
-                                    Chase Dining Hall Menu
-                                </h1>
-                                <p className="text-lg text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-                                    <MapPin className="w-4 h-4" />
-                                    UNC Chapel Hill · South Campus
-                                </p>
-                            </div>
+        <HallLanding
+            hall={CHASE}
+            data={data}
+            heading="Chase Dining Hall Menu"
+            intro={
+                <>
+                    Chase is the all-you-care-to-eat dining hall on South Campus — the one most
+                    students living in Hinton James, Ehringhaus, Craige and Morrison walk to. It was
+                    called <strong>Rams Head Dining Hall</strong> until 2017, so both names refer to
+                    this same building.
+                </>
+            }
+            ctaLabel="View today's full menu"
+            hoursTitle="Chase dining hall hours today"
+            hoursFootnote={
+                <>
+                    Straight from the hours UNC publishes for today. See{" "}
+                    <AccentLink hall={CHASE} href="/hours">
+                        every campus location&apos;s hours
+                    </AccentLink>
+                    .
+                </>
+            }
+            hoursEmpty={
+                data.failed ? (
+                    <>
+                        Today&apos;s hours could not be loaded just now — check back in a few
+                        minutes, or{" "}
+                        <AccentLink hall={CHASE} href="/hours">
+                            see every campus location&apos;s hours
+                        </AccentLink>
+                        .
+                    </>
+                ) : (
+                    <>
+                        Nothing is scheduled at Chase today — the hall closes over university
+                        breaks.{" "}
+                        <AccentLink hall={CHASE} href="/open-now">
+                            See what is open right now
+                        </AccentLink>
+                        .
+                    </>
+                )
+            }
+            secondCard={
+                <HallCard
+                    icon={
+                        <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                            <Leaf className="w-5 h-5 text-green-600" />
                         </div>
-
-                        <p className="text-lg text-zinc-600 dark:text-zinc-300 max-w-2xl mb-8 leading-relaxed">
-                            Chase Dining Hall is UNC Chapel Hill&apos;s premier South Campus dining destination.
-                            Explore today&apos;s breakfast, lunch, and dinner menu with complete nutrition information,
-                            dietary filters, and allergen details.
-                        </p>
-
-                        <Link
-                            href={`/chase/${today}`}
-                            className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg transition-all shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-0.5"
-                        >
-                            View Today&apos;s Menu
-                            <ArrowRight className="w-5 h-5" />
-                        </Link>
-                    </div>
-                </div>
-
-                {/* Info Sections */}
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
-                    <div className="grid md:grid-cols-2 gap-8">
-                        {/* Meal Times */}
-                        <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                                    <Clock className="w-5 h-5 text-amber-600" />
-                                </div>
-                                <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-                                    Chase Dining Hall Hours
-                                </h2>
-                            </div>
-                            <div className="space-y-3 text-zinc-600 dark:text-zinc-400">
-                                <div className="flex justify-between">
-                                    <span>Breakfast</span>
-                                    <span className="font-medium">7:00 AM - 10:30 AM</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>Lunch</span>
-                                    <span className="font-medium">11:00 AM - 2:00 PM</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>Dinner</span>
-                                    <span className="font-medium">4:30 PM - 9:00 PM</span>
-                                </div>
-                                <p className="text-sm text-zinc-500 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                                    Weekend hours may vary. Check the menu for current availability.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Dietary Options */}
-                        <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-                                    <Leaf className="w-5 h-5 text-green-600" />
-                                </div>
-                                <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-                                    Dietary Options
-                                </h2>
-                            </div>
-                            <ul className="space-y-2 text-zinc-600 dark:text-zinc-400">
-                                <li className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                                    Vegetarian and vegan options daily
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                                    Allergen information available
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                                    Nutrition facts for every item
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                                    High protein and low calorie filters
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    {/* About Section */}
-                    <div className="mt-12 p-8 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/30">
-                        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 mb-4">
-                            About Chase Dining Hall
-                        </h2>
-                        <div className="prose prose-zinc dark:prose-invert max-w-none">
-                            <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed">
-                                Located in the heart of South Campus, Chase Dining Hall serves thousands of UNC students daily.
-                                The dining hall features multiple food stations including grill, deli, pizza, international cuisine,
-                                and a fresh salad bar. Whether you&apos;re looking for a quick breakfast between classes or a
-                                hearty dinner, Chase offers diverse menu options to fit your dietary needs and preferences.
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Cross-link to Lenoir */}
-                    <div className="mt-8 text-center">
-                        <p className="text-zinc-500 mb-2">Looking for North Campus dining?</p>
-                        <Link
-                            href="/lenoir-menu"
-                            className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 font-medium transition-colors"
-                        >
-                            View Lenoir Dining Hall Menu
-                            <ArrowRight className="w-4 h-4" />
-                        </Link>
-                    </div>
-                </div>
-            </main>
-        </>
+                    }
+                    title="Nutrition and dietary filters"
+                >
+                    <ul className="space-y-2 text-zinc-600 dark:text-zinc-400">
+                        <li>Calories, protein, fat and carbs on every item</li>
+                        <li>Allergen labels taken from UNC&apos;s own menu anchors</li>
+                        <li>Vegan, vegetarian, halal and gluten-free flags</li>
+                        <li>Sort by protein or calories to find what fits your day</li>
+                    </ul>
+                    <p className="text-sm text-zinc-500 mt-4">
+                        Allergen filters dim matching dishes rather than hiding them, so nothing
+                        disappears from the menu without you noticing.
+                    </p>
+                </HallCard>
+            }
+            menuHeading="On the Chase menu today"
+            faqHeading="Common questions about Chase"
+            faqs={faqs}
+            footerLinks={
+                <>
+                    <AccentLink hall={CHASE} href="/lenoir-menu" bold>
+                        Top of Lenoir menu (North Campus) →
+                    </AccentLink>
+                    <AccentLink hall={CHASE} href="/locations/cafe-1789" bold>
+                        Cafe 1789, also in Chase Hall →
+                    </AccentLink>
+                    <AccentLink hall={CHASE} href="/locations/subway" bold>
+                        Subway in Chase Hall →
+                    </AccentLink>
+                </>
+            }
+        />
     );
 }

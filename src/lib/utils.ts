@@ -6,11 +6,18 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function normalizeMealPeriod(period: string): string {
-    const p = period.toLowerCase().trim();
+    // Stored menu labels carry a parenthetical time — "LATE NIGHT (9PM-12AM)" — while
+    // location_hours labels are clean ("Late Night"). Strip the suffix so both normalize
+    // identically, and keep the "late" periods distinct from their daytime namesakes:
+    // Late Lunch collapsing into Lunch mixed the wrong meal into the homepage highlights.
+    const p = period.toLowerCase().replace(/\s*\(.*\)\s*/g, ' ').trim();
     if (p.includes('breakfast')) return 'breakfast';
     if (p.includes('lite-lunch') || p.includes('lite lunch') || p.includes('light lunch')) return 'lite-lunch';
+    if (p.includes('late-lunch') || p.includes('late lunch')) return 'late lunch';
     if (p.includes('lunch')) return 'lunch';
+    if (p.includes('late-dinner') || p.includes('late dinner')) return 'late dinner';
     if (p.includes('dinner')) return 'dinner';
+    if (p.includes('late-night') || p.includes('late night')) return 'late night';
     return p;
 }
 

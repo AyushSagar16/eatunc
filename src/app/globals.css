@@ -104,7 +104,10 @@ body {
 }
 
 :root {
-  --radius: 0.625rem;
+  /* Drives the whole rounded-sm..rounded-4xl scale via the @theme block above, so this one
+     value is what sets how sharp every corner on the site is. At 0.375rem the scale lands on
+     whole pixels throughout: sm 2, md 4, lg 6, xl 10, 2xl 14, 3xl 18, 4xl 22. */
+  --radius: 0.375rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);

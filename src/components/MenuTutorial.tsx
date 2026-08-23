@@ -54,9 +54,11 @@ const DESKTOP_STEPS: Step[] = [
         spotlightPadding: 8,
     },
     {
+        // Generic wording: the same tutorial runs on the campus venue pages, where this button
+        // reads "All venues" rather than naming the other hall.
         target: '[data-tutorial-target="hall-switcher"]',
-        content: 'Switch between Chase and Top of Lenoir',
-        title: 'Dining Hall Switcher',
+        content: 'Jump to the other dining hall, or to every campus venue',
+        title: 'Switch Where You Are Eating',
         placement: 'bottom',
         disableBeacon: true,
         spotlightPadding: 8,
@@ -107,13 +109,26 @@ const MOBILE_STEPS: Step[] = [
     },
     {
         target: '[data-tutorial-target="hall-switcher"]',
-        content: 'Switch between dining halls',
-        title: 'Dining Hall Switcher',
+        content: 'Jump to the other dining hall, or to every campus venue',
+        title: 'Switch Where You Are Eating',
         placement: 'bottom',
         disableBeacon: true,
         spotlightPadding: 8,
     },
 ]
+
+/**
+ * The steps this page can actually show, read off the DOM when the tour opens.
+ *
+ * Not every menu page mounts every target: a venue whose only service period is `Open` has no
+ * meal tabs and no meal dropdown, and a brand venue has no date stepper either. react-joyride
+ * cannot find a target that is not there — it warns and parks the tour on a step with nothing
+ * under it — so the tour is built from what is on screen rather than from a fixed list.
+ */
+function stepsOnScreen(): Step[] {
+    const base = window.innerWidth < 768 ? MOBILE_STEPS : DESKTOP_STEPS
+    return base.filter((step) => typeof step.target === 'string' && document.querySelector(step.target))
+}
 
 // Glassmorphic tooltip styles matching Eat UNC aesthetic
 const joyrideStyles: Partial<Styles> = {
@@ -201,7 +216,7 @@ const joyrideStyles: Partial<Styles> = {
 export default function MenuTutorial() {
     const posthog = usePostHog()
     const [run, setRun] = useState(false)
-    const [isMobile, setIsMobile] = useState(false)
+    const [steps, setSteps] = useState<Step[]>([])
     const [isClient, setIsClient] = useState(false)
 
     // iOS CRASH DEBUG: Disable react-joyride on iOS to test if it's causing crashes
@@ -212,17 +227,9 @@ export default function MenuTutorial() {
         return null;
     }
 
-    // Detect client-side rendering and viewport size
+    // Detect client-side rendering
     useEffect(() => {
         setIsClient(true)
-
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768)
-        }
-
-        checkMobile()
-        window.addEventListener('resize', checkMobile)
-        return () => window.removeEventListener('resize', checkMobile)
     }, [])
 
     // Check if tutorial should run on mount
@@ -234,7 +241,9 @@ export default function MenuTutorial() {
         if (!hasCompletedTutorial) {
             // Delay start to ensure all elements are rendered
             const timer = setTimeout(() => {
-                setRun(true)
+                const mounted = stepsOnScreen()
+                setSteps(mounted)
+                setRun(mounted.length > 0)
             }, 1000)
             return () => clearTimeout(timer)
         }
@@ -243,7 +252,9 @@ export default function MenuTutorial() {
     // Listen for restart event from footer help button
     useEffect(() => {
         const handleRestart = () => {
-            setRun(true)
+            const mounted = stepsOnScreen()
+            setSteps(mounted)
+            setRun(mounted.length > 0)
         }
 
         window.addEventListener('restartTutorial', handleRestart)
@@ -253,7 +264,6 @@ export default function MenuTutorial() {
     // Handle Joyride callbacks
     const handleJoyrideCallback = useCallback((data: CallBackProps) => {
         const { status, action, type, index } = data
-        const steps = isMobile ? MOBILE_STEPS : DESKTOP_STEPS
         const deviceType = window.innerWidth < 768 ? 'mobile' : 'desktop'
 
         // Track step completion
@@ -293,12 +303,10 @@ export default function MenuTutorial() {
             setRun(false)
             localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true')
         }
-    }, [isMobile, posthog])
+    }, [steps, posthog])
 
     // Don't render on server
     if (!isClient) return null
-
-    const steps = isMobile ? MOBILE_STEPS : DESKTOP_STEPS
 
     return (
         <Joyride

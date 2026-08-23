@@ -1,6 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'motion/react'
+import Image from 'next/image'
 
 interface LoadingScreenProps {
     isLoading: boolean
@@ -73,9 +74,12 @@ export default function LoadingScreen({ isLoading }: LoadingScreenProps) {
                             />
 
                             {/* Logo Image */}
-                            <img
-                                src="/eat_unc_logo_white_nb.svg"
-                                alt="EatUNC Logo"
+                            <Image
+                                src="/eat_unc_logo_white_nb.png"
+                                alt="Eat UNC"
+                                width={256}
+                                height={256}
+                                priority
                                 className="relative w-56 h-56 md:w-64 md:h-64 object-contain drop-shadow-2xl"
                             />
                         </motion.div>

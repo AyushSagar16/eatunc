@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, useTransition } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Tabs } from '@/components/ui/tabs'
 import { ChevronLeft, ChevronRight, ArrowLeftRight } from 'lucide-react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 
 import SearchAndSort, { SortOption } from '@/components/SearchAndSort'
@@ -24,6 +24,30 @@ interface FoodDisplayLayoutProps {
     diningHall: string
     selectedDate: string
     availableDates: string[]
+    /**
+     * Where the date stepper navigates, as `${dateBasePath}/${date}`.
+     *
+     * The halls are the only pages whose URL can be derived from the hall name, and this
+     * component used to do exactly that. A campus venue page reuses the whole layout, so it
+     * passes its own base path instead of having its date arrows silently jump to Lenoir.
+     */
+    dateBasePath?: string
+    /** Replaces the hall switcher on pages that are not one of the two halls. */
+    switchLink?: { label: string; href: string }
+    /**
+     * Rendered inside the page chrome, directly under the sticky header.
+     *
+     * A server-rendered node passed down from a server component, the same way `children` is:
+     * the venue pages put their breadcrumbs and open/closed line here, and breadcrumbs have to
+     * stay real `<a>` elements in the HTML.
+     */
+    subHeader?: React.ReactNode
+    /**
+     * Replaces the date stepper and calendar with a static "Same menu every day" badge. For a
+     * menu that has no date — a third-party brand publishes one menu that is the same every
+     * day, so arrows to step through would invent a distinction that does not exist.
+     */
+    hideDateNav?: boolean
     selectedPeriod: string
     availablePeriods: string[]
     onPeriodChange: (period: string) => void
@@ -135,6 +159,10 @@ export default function FoodDisplayLayout({
     diningHall,
     selectedDate,
     availableDates,
+    dateBasePath,
+    switchLink,
+    subHeader,
+    hideDateNav = false,
     selectedPeriod,
     availablePeriods,
     onPeriodChange,
@@ -150,7 +178,11 @@ export default function FoodDisplayLayout({
     children
 }: FoodDisplayLayoutProps) {
     const router = useRouter()
-    const searchParams = useSearchParams()
+
+    // The menu route is force-dynamic and has no loading.tsx (deliberately — a root Suspense
+    // boundary is what let invalid URLs stream a 200 before notFound() ran), so without this
+    // a date step or hall switch gives no feedback until the server responds.
+    const [isNavigating, startNavigation] = useTransition()
 
     // Calendar picker state
     const [isCalendarOpen, setIsCalendarOpen] = useState(false)
@@ -185,10 +217,12 @@ export default function FoodDisplayLayout({
     const handleDateChange = (date: string) => {
         if (onDateChange) {
             onDateChange(date)
+        } else if (dateBasePath) {
+            startNavigation(() => router.push(`${dateBasePath}/${date}`))
         } else {
             // Updated to path-based routing: /{diningHall}/{date}
             const hallSlug = diningHall === 'Chase' ? 'chase' : 'lenoir'
-            router.push(`/${hallSlug}/${date}`)
+            startNavigation(() => router.push(`/${hallSlug}/${date}`))
         }
     }
 
@@ -251,7 +285,7 @@ export default function FoodDisplayLayout({
     const handleSwitchHall = () => {
         const oppositeSlug = getOppositeHallSlug()
         // Updated to path-based routing
-        router.push(`/${oppositeSlug}/${selectedDate}`)
+        startNavigation(() => router.push(`/${oppositeSlug}/${selectedDate}`))
     }
 
     // Meal tabs configuration for Aceternity Tabs
@@ -268,10 +302,23 @@ export default function FoodDisplayLayout({
     // Find active tab based on selected period
     const activeTabValue = selectedPeriod.toLowerCase().replace(/\s+/g, '-')
 
+    // A one-item tab strip is dead chrome: nearly every campus venue outside the two halls
+    // stores `Open` as its only service period. Gated on the count, never on whether the page
+    // is a hall — Beach Grille keeps its real Breakfast/Lunch tabs.
+    const showPeriodTabs = availablePeriods.length > 1
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-white">
             {/* Sticky Header */}
-            <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-xl border-b border-zinc-200 shadow-sm">
+            <header
+                className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-xl border-b border-zinc-200 shadow-sm"
+                aria-busy={isNavigating}
+            >
+                {isNavigating && (
+                    <div aria-hidden className="absolute inset-x-0 top-0 h-0.5 overflow-hidden">
+                        <div className="h-full w-full bg-blue-500 animate-pulse" />
+                    </div>
+                )}
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         {/* Left: Back Button & Dining Hall Name */}
@@ -286,19 +333,36 @@ export default function FoodDisplayLayout({
                             {/* Dining Hall Switcher Button */}
                             <motion.button
                                 data-tutorial-target="hall-switcher"
-                                onClick={handleSwitchHall}
+                                onClick={() =>
+                                    switchLink
+                                        ? startNavigation(() => router.push(switchLink.href))
+                                        : handleSwitchHall()
+                                }
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 className="flex items-center justify-center gap-1.5 px-3 sm:px-6 py-1.5 min-h-[52px] rounded-xl bg-zinc-100 text-zinc-900 border border-zinc-200/50 font-bold text-md sm:text-base hover:bg-zinc-200 active:bg-zinc-300 transition-all touch-manipulation"
                             >
                                 <ArrowLeftRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-500 shrink-0" />
                                 <span className="whitespace-nowrap">
-                                    <span className="hidden sm:inline">Switch to </span>
-                                    {getOppositeDiningHall()}
+                                    {switchLink ? (
+                                        switchLink.label
+                                    ) : (
+                                        <>
+                                            <span className="hidden sm:inline">Switch to </span>
+                                            {getOppositeDiningHall()}
+                                        </>
+                                    )}
                                 </span>
                             </motion.button>
 
-                            {/* Date Selector */}
+                            {/* Date Selector, or what stands in its place on a menu with no date:
+                                the slot is filled rather than left empty so the header keeps its
+                                shape and the badge answers the question the arrows would have. */}
+                            {hideDateNav ? (
+                                <div className="flex items-center justify-center px-3 sm:px-5 min-h-[52px] rounded-xl bg-zinc-100 border border-zinc-200/50 text-xs sm:text-sm font-bold text-zinc-500 text-center shrink-0">
+                                    Same menu every day
+                                </div>
+                            ) : (
                             <div ref={datePickerRef} className="relative flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-zinc-100 rounded-xl border border-zinc-200/50 min-h-[52px] shrink-0" data-tutorial-target="date-nav">
                                 <motion.button
                                     onClick={handlePrevDate}
@@ -343,51 +407,67 @@ export default function FoodDisplayLayout({
                                     )}
                                 </AnimatePresence>
                             </div>
+                            )}
                         </div>
                     </div>
                 </div>
             </header>
 
-            {/* Meal selection and Filtering */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+            {subHeader}
+
+            {/* Meal selection and Filtering. Dropped entirely rather than left as an empty
+                band: the zero-item card passes neither periods nor search handlers. */}
+            <div
+                className={`max-w-7xl mx-auto px-4 sm:px-6 pt-6 ${
+                    showPeriodTabs || (onSearchChange && onSortChange) ? '' : 'hidden'
+                }`}
+            >
                 {/* Mobile View: Same row for Period and Sort */}
                 <div className="flex sm:hidden flex-row items-stretch gap-3 mb-6 w-full">
-                    <div className="relative flex-1" data-tutorial-target="meal-dropdown">
-                        <select
-                            value={selectedPeriod}
-                            onChange={(e) => onPeriodChange(e.target.value)}
-                            className="w-full h-14 px-4 bg-blue-600 border border-blue-500 rounded-2xl text-base font-bold text-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all appearance-none cursor-pointer pr-12 shadow-lg shadow-blue-500/20"
-                        >
-                            {availablePeriods.map((period) => (
-                                <option key={period} value={period} className="bg-white text-zinc-900">
-                                    {getMealLabel(period)}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-white">
-                            <ChevronRight className="w-5 h-5 rotate-90" />
+                    {showPeriodTabs && (
+                        <div className="relative flex-1" data-tutorial-target="meal-dropdown">
+                            <select
+                                value={selectedPeriod}
+                                onChange={(e) => onPeriodChange(e.target.value)}
+                                className="w-full h-14 px-4 bg-blue-600 border border-blue-500 rounded-2xl text-base font-bold text-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all appearance-none cursor-pointer pr-12 shadow-lg shadow-blue-500/20"
+                            >
+                                {availablePeriods.map((period) => (
+                                    <option key={period} value={period} className="bg-white text-zinc-900">
+                                        {getMealLabel(period)}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-white">
+                                <ChevronRight className="w-5 h-5 rotate-90" />
+                            </div>
                         </div>
-                    </div>
+                    )}
                     {onSearchChange && onSortChange && (
-                        <SearchAndSort
-                            searchQuery={searchQuery}
-                            onSearchChange={onSearchChange}
-                            sortBy={sortBy}
-                            onSortChange={onSortChange}
-                        />
+                        // Without a period control beside it the sort button is the whole row,
+                        // and it keeps its right edge rather than sliding to the left margin.
+                        <div className={showPeriodTabs ? '' : 'flex-1'}>
+                            <SearchAndSort
+                                searchQuery={searchQuery}
+                                onSearchChange={onSearchChange}
+                                sortBy={sortBy}
+                                onSortChange={onSortChange}
+                            />
+                        </div>
                     )}
                 </div>
 
                 {/* Desktop View: Tabs and Search/Sort separated */}
                 <div className="hidden sm:block">
-                    <div className="flex justify-center mb-6 w-full">
-                        <MealTabsWithScrollIndicators
-                            availablePeriods={availablePeriods}
-                            selectedPeriod={selectedPeriod}
-                            onPeriodChange={onPeriodChange}
-                            getMealLabel={getMealLabel}
-                        />
-                    </div>
+                    {showPeriodTabs && (
+                        <div className="flex justify-center mb-6 w-full">
+                            <MealTabsWithScrollIndicators
+                                availablePeriods={availablePeriods}
+                                selectedPeriod={selectedPeriod}
+                                onPeriodChange={onPeriodChange}
+                                getMealLabel={getMealLabel}
+                            />
+                        </div>
+                    )}
 
                     {onSearchChange && onSortChange && (
                         <div className="mb-3">
