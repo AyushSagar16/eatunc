@@ -42,11 +42,15 @@ export default async function ChaseMenuPage() {
     const faqs = [
         {
             question: "What time does Chase Dining Hall close?",
+            // "No service periods scheduled" is only claimed when the fetch succeeded with
+            // zero rows — a failed fetch must not read as a closure.
             answer: closesToday
                 ? `Chase closes at ${closesToday} today. Its service periods today are ${hours
                       .map((h) => `${h.period_name} ${h.opens_label}–${h.closes_label}`)
                       .join(", ")}.`
-                : "Chase has no service periods scheduled today. The hall closes over university breaks and between semesters.",
+                : data.failed
+                  ? "Today's hours could not be loaded just now. Check back in a few minutes, or see UNC's own schedule at dining.unc.edu."
+                  : "Chase has no service periods scheduled today. The hall closes over university breaks and between semesters.",
         },
         {
             question: "Is Chase Dining Hall the same as Rams Head?",
@@ -85,13 +89,25 @@ export default async function ChaseMenuPage() {
                 </>
             }
             hoursEmpty={
-                <>
-                    Nothing is scheduled at Chase today — the hall closes over university breaks.{" "}
-                    <AccentLink hall={CHASE} href="/open-now">
-                        See what is open right now
-                    </AccentLink>
-                    .
-                </>
+                data.failed ? (
+                    <>
+                        Today&apos;s hours could not be loaded just now — check back in a few
+                        minutes, or{" "}
+                        <AccentLink hall={CHASE} href="/hours">
+                            see every campus location&apos;s hours
+                        </AccentLink>
+                        .
+                    </>
+                ) : (
+                    <>
+                        Nothing is scheduled at Chase today — the hall closes over university
+                        breaks.{" "}
+                        <AccentLink hall={CHASE} href="/open-now">
+                            See what is open right now
+                        </AccentLink>
+                        .
+                    </>
+                )
             }
             secondCard={
                 <HallCard

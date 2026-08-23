@@ -28,39 +28,53 @@ export type HallLandingData = {
     periods: [string, MenuPreviewItem[]][]
     hours: LocationHours[]
     weekHours: LocationHours[]
+    /**
+     * True when the fetches failed — every list above is empty for that reason, not because
+     * the hall is closed. Pages must gate any "no service periods scheduled" claim on this:
+     * an ISR page asserting a closure because Supabase was unreachable caches a falsehood
+     * for 15 minutes.
+     */
+    failed: boolean
 }
 
 /**
- * Shared fetch sequence. These throw on failure deliberately: under ISR a swallowed error
- * would bake an empty page — with the FAQ asserting the hall is closed — and serve it for
- * 15 minutes. A failed regeneration keeps the last good page instead.
+ * Shared fetch sequence. Failure degrades to `failed: true` rather than throwing: these
+ * pages are prerendered at build time, and CI builds against a placeholder Supabase host
+ * where every fetch fails — a throw here fails the whole export. The honesty property
+ * lives in the pages instead, which swap the "hall is closed" copy for "couldn't load"
+ * whenever `failed` is set.
  */
 export async function loadHallLanding(hall: HallInfo): Promise<HallLandingData> {
     const today = campusToday()
 
-    const [locations, preview] = await Promise.all([
-        getLocationsBySlug(hall.locationSlug),
-        getMenuPreview(hall.diningHall, today),
-    ])
+    try {
+        const [locations, preview] = await Promise.all([
+            getLocationsBySlug(hall.locationSlug),
+            getMenuPreview(hall.diningHall, today),
+        ])
 
-    let hours: LocationHours[] = []
-    let weekHours: LocationHours[] = []
-    if (locations.length > 0) {
-        weekHours = await getHoursForLocations(
-            locations.map((l) => l.id),
-            today,
-            shiftDate(today, 6),
-        )
-        hours = weekHours.filter((h) => h.service_date === today)
+        let hours: LocationHours[] = []
+        let weekHours: LocationHours[] = []
+        if (locations.length > 0) {
+            weekHours = await getHoursForLocations(
+                locations.map((l) => l.id),
+                today,
+                shiftDate(today, 6),
+            )
+            hours = weekHours.filter((h) => h.service_date === today)
+        }
+
+        const byPeriod = new Map<string, MenuPreviewItem[]>()
+        for (const item of preview) {
+            byPeriod.set(item.period, [...(byPeriod.get(item.period) ?? []), item])
+        }
+        const periods = Array.from(byPeriod.entries()).sort(([a], [b]) => compareMealPeriods(a, b))
+
+        return { today, periods, hours, weekHours, failed: false }
+    } catch (error) {
+        console.error(`[${hall.landingPath}] hall landing data unavailable:`, error)
+        return { today, periods: [], hours: [], weekHours: [], failed: true }
     }
-
-    const byPeriod = new Map<string, MenuPreviewItem[]>()
-    for (const item of preview) {
-        byPeriod.set(item.period, [...(byPeriod.get(item.period) ?? []), item])
-    }
-    const periods = Array.from(byPeriod.entries()).sort(([a], [b]) => compareMealPeriods(a, b))
-
-    return { today, periods, hours, weekHours }
 }
 
 const ACCENTS = {

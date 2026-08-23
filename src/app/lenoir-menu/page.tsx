@@ -34,9 +34,16 @@ export const metadata: Metadata = {
 };
 
 export default async function LenoirMenuPage() {
-    // getLocations throws on failure for the same reason loadHallLanding does: an ISR page
-    // must not bake an empty Bottom of Lenoir listing on a transient error.
-    const [data, allLocations] = await Promise.all([loadHallLanding(LENOIR), getLocations()]);
+    // getLocations failure degrades to an empty list: the Bottom of Lenoir card already has
+    // an honest "listings are unavailable right now" branch, and a throw here would fail the
+    // build-time prerender the same way loadHallLanding's would.
+    const [data, allLocations] = await Promise.all([
+        loadHallLanding(LENOIR),
+        getLocations().catch((error) => {
+            console.error("[/lenoir-menu] getLocations unavailable:", error);
+            return [];
+        }),
+    ]);
     const { hours } = data;
     const closesToday = hours.length > 0 ? hours[hours.length - 1].closes_label : null;
 
@@ -57,11 +64,15 @@ export default async function LenoirMenuPage() {
         },
         {
             question: "What time does Top of Lenoir close?",
+            // "No service periods scheduled" is only claimed when the fetch succeeded with
+            // zero rows — a failed fetch must not read as a closure.
             answer: closesToday
                 ? `Top of Lenoir closes at ${closesToday} today. Its service periods today are ${hours
                       .map((h) => `${h.period_name} ${h.opens_label}–${h.closes_label}`)
                       .join(", ")}.`
-                : "Top of Lenoir has no service periods scheduled today. The hall closes over university breaks and between semesters.",
+                : data.failed
+                  ? "Today's hours could not be loaded just now. Check back in a few minutes, or see UNC's own schedule at dining.unc.edu."
+                  : "Top of Lenoir has no service periods scheduled today. The hall closes over university breaks and between semesters.",
         },
         {
             question: "Is there a Chick-fil-A in Lenoir?",
@@ -95,13 +106,24 @@ export default async function LenoirMenuPage() {
                 </>
             }
             hoursEmpty={
-                <>
-                    Nothing is scheduled at Top of Lenoir today.{" "}
-                    <AccentLink hall={LENOIR} href="/open-now">
-                        See what is open right now
-                    </AccentLink>
-                    .
-                </>
+                data.failed ? (
+                    <>
+                        Today&apos;s hours could not be loaded just now — check back in a few
+                        minutes, or{" "}
+                        <AccentLink hall={LENOIR} href="/hours">
+                            see every campus location&apos;s hours
+                        </AccentLink>
+                        .
+                    </>
+                ) : (
+                    <>
+                        Nothing is scheduled at Top of Lenoir today.{" "}
+                        <AccentLink hall={LENOIR} href="/open-now">
+                            See what is open right now
+                        </AccentLink>
+                        .
+                    </>
+                )
             }
             secondCard={
                 <HallCard
