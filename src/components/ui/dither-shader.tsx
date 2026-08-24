@@ -446,7 +446,7 @@ export const DitherShader: React.FC<DitherShaderProps> = ({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [src, dimensions, objectFit, animated, animationSpeed, applyDithering]);
+  }, [src, dimensions, objectFit, animated, animationSpeed, applyDithering, onLoad]);
 
   return (
     <div ref={containerRef} className={cn("relative h-full w-full", className)}>

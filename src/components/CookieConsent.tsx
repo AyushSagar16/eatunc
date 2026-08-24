@@ -1,42 +1,50 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
-import { checkAppDownloadPromptEligible } from '@/lib/app-download-prompt'
+import { isAppDownloadPromptEligible } from '@/lib/app-download-prompt'
+import { useOnboarding } from '@/providers/OnboardingProvider'
 
 // The usual delay before showing the cookie banner. When the app download prompt is
 // also showing this load, cookie consent waits behind it instead — surfacing two
 // unrelated popups within the same second reads as a wall of dialogs, not a homepage.
 const DEFAULT_DELAY_MS = 1000
 const DELAY_BEHIND_APP_PROMPT_MS = 8000
+const neverChanges = () => () => { }
+const readIsClient = () => true
 
 export default function CookieConsent() {
-    const [showBanner, setShowBanner] = useState(false)
-    const [mounted, setMounted] = useState(false)
+    const { appPromotionStatus, tutorialStatus } = useOnboarding()
+    const [delayElapsed, setDelayElapsed] = useState(false)
+    const [dismissedNow, setDismissedNow] = useState(false)
+    const mounted = useSyncExternalStore(neverChanges, readIsClient, () => false)
 
     useEffect(() => {
-        setMounted(true)
+        if (!mounted) return
 
         const consent = localStorage.getItem('cookie_consent')
 
         if (!consent) {
-            const delay = checkAppDownloadPromptEligible() ? DELAY_BEHIND_APP_PROMPT_MS : DEFAULT_DELAY_MS
-            const timer = setTimeout(() => setShowBanner(true), delay)
+            const delay = isAppDownloadPromptEligible() ? DELAY_BEHIND_APP_PROMPT_MS : DEFAULT_DELAY_MS
+            const timer = setTimeout(() => setDelayElapsed(true), delay)
             return () => clearTimeout(timer)
         } else if (consent === 'accepted') {
             posthog.opt_in_capturing()
         }
-    }, [])
+    }, [mounted])
 
     const handleAccept = () => {
         localStorage.setItem('cookie_consent', 'accepted')
         posthog.opt_in_capturing()
-        setShowBanner(false)
+        setDismissedNow(true)
     }
 
     if (!mounted) return null
+
+    const showBanner =
+        delayElapsed && appPromotionStatus === 'clear' && tutorialStatus === 'idle' && !dismissedNow
 
     return (
         <AnimatePresence>

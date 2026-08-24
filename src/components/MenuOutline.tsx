@@ -50,7 +50,7 @@ export function groupByPeriodAndStation(entries: OutlineEntry[]) {
  * 50 items, and its filter state reads `localStorage` behind `typeof window === 'undefined'`
  * guards that return `[]` on the server. The rendered response therefore carried 261 visible
  * words and no food names at all — the entire menu reached the browser only as an RSC payload,
- * which is why the brochure page at /chase-menu outranked the page that actually has the menu.
+ * which is why the old brochure page outranked the page that actually has the menu.
  *
  * This is a `<details>` rather than a hidden div on purpose. Collapsed content is indexed
  * normally under mobile-first indexing, and it is a disclosure a reader can genuinely open —
@@ -100,7 +100,7 @@ export default function MenuOutline({
                             <div className="space-y-5">
                                 {stations.map(({ station, items }) => (
                                     <div key={station}>
-                                        <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-2">
+                                        <h3 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 mb-2">
                                             {station}
                                         </h3>
                                         <ul className="space-y-1">

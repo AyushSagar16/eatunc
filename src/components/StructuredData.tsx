@@ -46,7 +46,7 @@ export default function StructuredData({
 
     // The @id is the hall's evergreen entity on its landing page, not the dated URL —
     // one physical restaurant, not a new entity per date. Every day's markup then merges
-    // into the same node the /chase-menu and /lenoir-menu pages declare.
+    // into the same stable hall entity instead of declaring a new restaurant for each date.
     const landingPath = HALL_BY_ROUTE_SLUG[hall].landingPath
 
     const restaurant = {

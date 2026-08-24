@@ -42,7 +42,7 @@ export function PostHogProvider({ children }: PostHogProviderProps) {
             // Privacy - start opted out, cookie consent will opt in
             opt_out_capturing_by_default: true,
 
-            loaded: (posthog) => {
+            loaded: () => {
                 if (process.env.NODE_ENV === 'development') {
                     console.log('[PostHog] Initialized')
                 }

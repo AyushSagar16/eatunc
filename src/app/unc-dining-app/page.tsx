@@ -370,7 +370,7 @@ export default function UncDiningAppPage() {
 
             <nav aria-label="Related pages" className="grid sm:grid-cols-3 gap-3">
                 <Link
-                    href="/chase-menu"
+                    href="/chase"
                     className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm p-4 hover:border-[#4B9CD3]/50 transition-colors"
                 >
                     <div className="font-semibold text-zinc-900 dark:text-zinc-50 flex items-center gap-1.5">

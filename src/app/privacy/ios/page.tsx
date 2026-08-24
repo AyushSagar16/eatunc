@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { ShieldCheck } from 'lucide-react'
+import { Breadcrumbs, CampusPage, PageHeading } from '@/components/campus/CampusChrome'
 
 /**
  * The App Store privacy policy for the iOS app.
@@ -60,27 +62,27 @@ const THIRD_PARTIES: { who: string; what: string; why: string }[] = [
 
 export default function AppPrivacyPage() {
     return (
-        <main className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
-            <div className="container mx-auto px-6 py-12 max-w-3xl">
-                <Link
-                    href="/"
-                    className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 mb-8"
-                >
-                    ← Back to Home
-                </Link>
-
-                <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50 mb-3">
-                    iOS App Privacy Policy
-                </h1>
-                <p className={`${P} mb-8`}>
-                    This policy covers the <strong>Eat UNC iOS app</strong>. The eatunc.com website has
-                    its{' '}
-                    <Link href="/privacy" className="underline hover:text-zinc-900 dark:hover:text-zinc-200">
-                        own, separate policy
-                    </Link>
-                    ; the two are not interchangeable.
-                </p>
-
+        <CampusPage>
+                <Breadcrumbs crumbs={[
+                    { name: 'Eat UNC', path: '/' },
+                    { name: 'Privacy', path: '/privacy' },
+                    { name: 'iOS app', path: '/privacy/ios' },
+                ]} />
+                <PageHeading
+                    icon={<ShieldCheck className="h-6 w-6" />}
+                    iconClassName="bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                    title="iOS App Privacy Policy"
+                    description={
+                        <>
+                            This policy covers the <strong>Eat UNC iOS app</strong>. The eatunc.com website has its{' '}
+                            <Link href="/privacy" className="underline hover:text-zinc-900 dark:hover:text-zinc-200">
+                                own, separate policy
+                            </Link>
+                            ; the two are not interchangeable.
+                        </>
+                    }
+                />
+                <div className="max-w-3xl">
                 <div className="prose prose-zinc dark:prose-invert max-w-none space-y-8">
                     <p className={`${P} text-sm`}>Last updated: {LAST_UPDATED}</p>
 
@@ -424,7 +426,7 @@ export default function AppPrivacyPage() {
                         </p>
                     </section>
                 </div>
-            </div>
-        </main>
+                </div>
+        </CampusPage>
     )
 }

@@ -61,6 +61,40 @@ export function IconTile({
     )
 }
 
+/** The title block used at the top of every public information and index page. */
+export function PageHeading({
+    icon,
+    title,
+    description,
+    iconClassName = '',
+    children,
+}: {
+    icon: React.ReactNode
+    title: React.ReactNode
+    description?: React.ReactNode
+    iconClassName?: string
+    children?: React.ReactNode
+}) {
+    return (
+        <header className="mb-8">
+            <div className="flex items-start gap-4">
+                <IconTile className={`w-12 h-12 ${iconClassName}`}>{icon}</IconTile>
+                <div className="min-w-0">
+                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                        {title}
+                    </h1>
+                    {description && (
+                        <div className="mt-2 text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                            {description}
+                        </div>
+                    )}
+                    {children}
+                </div>
+            </div>
+        </header>
+    )
+}
+
 export function Badge({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return (
         <span

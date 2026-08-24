@@ -2,14 +2,14 @@
 import { getAvailableDates, getFullMenuByDateAndHall } from "@/lib/api";
 import MenuContainer from "@/components/MenuContainer";
 import NoMenuAvailable from "@/components/NoMenuAvailable";
-import BackButton from "@/components/BackButton";
 import StructuredData from "@/components/StructuredData";
 import MenuTutorial from "@/components/MenuTutorial";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { compareMealPeriods } from "@/lib/utils";
 import MenuOutline from "@/components/MenuOutline";
-import { campusToday, getHoursForLocations, getLocationsBySlug, shiftDate, HALL_BY_ROUTE_SLUG } from "@/lib/campus";
+import { campusToday, getHoursForLocations, getLocationsBySlug, shiftDate, HALL_BY_ROUTE_SLUG, isValidIsoDate } from "@/lib/campus";
+import MenuPageShell from "@/components/MenuPageShell";
 
 // Dynamic rendering - no caching, always fetch fresh data
 export const dynamic = 'force-dynamic';
@@ -27,8 +27,7 @@ interface PageProps {
  * Google had indexed the whole back-catalogue and was serving /lenoir/2026-01-08 for
  * "lenoir dining hall menu" in August — a page that cannot answer the query at all. Old dates
  * stay reachable and keep a self-canonical, but they are marked noindex so the ranking signal
- * consolidates on today's menu and on /lenoir-menu instead of splitting across 236 near-
- * duplicate URLs.
+ * consolidates on the current menu instead of splitting across 236 near-duplicate URLs.
  */
 const INDEXABLE_PAST_DAYS = 7;
 const INDEXABLE_FUTURE_DAYS = 14;
@@ -37,7 +36,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const { hall, date } = await params;
     const hallInfo = HALL_BY_ROUTE_SLUG[hall];
 
-    if (!hallInfo || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    if (!hallInfo || !isValidIsoDate(date)) {
         return { title: 'Page Not Found', robots: { index: false, follow: false } };
     }
 
@@ -140,7 +139,7 @@ export default async function Page({ params }: PageProps) {
     // /chase/not-a-date both came to answer 200.
     if (!hallInfo) notFound();
     const selectedHall = hallInfo.diningHall;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) notFound();
+    if (!isValidIsoDate(date)) notFound();
 
     let menu: Awaited<ReturnType<typeof getFullMenuByDateAndHall>> | undefined;
     let dateData: Awaited<ReturnType<typeof getAvailableDates>> | undefined;
@@ -185,11 +184,10 @@ export default async function Page({ params }: PageProps) {
     const hallDisplayName = hallInfo.displayName;
 
     const shell = (children: React.ReactNode, extra?: React.ReactNode) => (
-        <main className="min-h-screen bg-transparent relative overflow-hidden">
+        <MenuPageShell>
             {extra}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-blue-500/10 blur-[120px] pointer-events-none -z-10 dark:bg-blue-600/5" />
             {children}
-        </main>
+        </MenuPageShell>
     );
 
     if (menuError) {

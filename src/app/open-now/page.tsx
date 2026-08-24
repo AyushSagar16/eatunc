@@ -6,10 +6,11 @@ import { CAMPUS_TIMEZONE, campusToday, getHoursForDate, getOpenNow, locationPath
 import type { Location, LocationHours, OpenPeriod } from '@/lib/campus'
 import { breadcrumbList, canonical } from '@/lib/seo'
 import type { Faq } from '@/lib/seo'
-import { Badge, Breadcrumbs, CampusPage, Card, IconTile, Prose, Stat } from '@/components/campus/CampusChrome'
+import { Badge, Breadcrumbs, CampusPage, Card, IconTile, PageHeading, Prose, Stat } from '@/components/campus/CampusChrome'
 import { JsonLd } from '@/components/campus/JsonLd'
 import {
     buildingMeta,
+    displayGroup,
     formatCampusDay,
     formatCampusTime,
     formatClock,
@@ -76,7 +77,7 @@ function dedupeByLocation(periods: OpenPeriod[]): OpenPeriod[] {
 }
 
 function venueLine(period: OpenPeriod): string {
-    return `${period.location.name} in ${buildingMeta(period.location.venue_group).short}`
+    return `${period.location.name} in ${buildingMeta(displayGroup(period.location)).short}`
 }
 
 function buildFaqs(
@@ -124,7 +125,7 @@ function buildFaqs(
             answer: `Yes. ${sentenceList(
                 lateTonight.slice(0, 4).map((row) => {
                     const location = byId.get(row.location_id)
-                    const where = location ? buildingMeta(location.venue_group).short : 'campus'
+                    const where = location ? buildingMeta(displayGroup(location)).short : 'campus'
                     return `${location?.name ?? 'A campus venue'} in ${where} until ${formatClock(row.closes_label)}`
                 }),
             )}. Those are UNC's own published closing times for today.`,
@@ -178,24 +179,17 @@ export default async function OpenNowPage() {
 
             <Breadcrumbs crumbs={CRUMBS} />
 
-            <header className="mb-8">
-                <div className="flex items-start gap-4">
-                    <IconTile className="w-12 h-12 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                        <DoorOpen className="w-6 h-6" />
-                    </IconTile>
-                    <div>
-                        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                            What&apos;s Open Right Now at UNC
-                        </h1>
-                        <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-zinc-500 dark:text-zinc-400">
-                            <Clock className="w-4 h-4 shrink-0" />
-                            <span>
-                                {formatCampusTime(now)} in Chapel Hill · {formatCampusDay(now)}
-                            </span>
-                        </p>
-                    </div>
-                </div>
-            </header>
+            <PageHeading
+                icon={<DoorOpen className="w-6 h-6" />}
+                iconClassName="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                title="What's Open Right Now at UNC"
+                description={
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <Clock className="w-4 h-4 shrink-0" />
+                        <span>{formatCampusTime(now)} in Chapel Hill · {formatCampusDay(now)}</span>
+                    </span>
+                }
+            />
 
             {failed ? (
                 <Card className="p-6">
@@ -250,7 +244,7 @@ export default async function OpenNowPage() {
                                                     <div className="mt-0.5 flex items-center gap-1.5 text-sm text-zinc-500 dark:text-zinc-400">
                                                         <MapPin className="w-3.5 h-3.5 shrink-0" />
                                                         <span className="truncate">
-                                                            {buildingMeta(entry.location.venue_group).short}
+                                                            {buildingMeta(displayGroup(entry.location)).short}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -311,7 +305,7 @@ export default async function OpenNowPage() {
                                                     <div className="mt-0.5 flex items-center gap-1.5 text-sm text-zinc-500 dark:text-zinc-400">
                                                         <MapPin className="w-3.5 h-3.5 shrink-0" />
                                                         <span className="truncate">
-                                                            {buildingMeta(entry.location.venue_group).short}
+                                                            {buildingMeta(displayGroup(entry.location)).short}
                                                         </span>
                                                     </div>
                                                 </div>

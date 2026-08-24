@@ -55,7 +55,7 @@ export default function Error({
                         className="space-y-6 relative z-10"
                     >
                         <motion.span
-                            className="inline-block px-4 py-1.5 rounded-full bg-red-500/10 border border-red-400/20 text-red-300 text-sm font-bold tracking-widest uppercase"
+                            className="inline-block px-4 py-1.5 rounded-full bg-red-500/10 border border-red-400/20 text-red-300 text-sm font-bold"
                             animate={{ scale: [1, 1.05, 1] }}
                             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                         >
@@ -63,11 +63,11 @@ export default function Error({
                         </motion.span>
 
                         <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-white">
-                            Kitchen's <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-200 via-white to-red-200">Overwhelmed</span>
+                            Kitchen&apos;s <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-200 via-white to-red-200">Overwhelmed</span>
                         </h1>
 
                         <p className="text-zinc-400 text-lg md:text-xl font-medium max-w-sm mx-auto leading-relaxed">
-                            Something went wrong while preparing this page. Let's try to reload the recipe.
+                            Something went wrong while preparing this page. Let&apos;s try to reload the recipe.
                         </p>
 
                         <motion.div

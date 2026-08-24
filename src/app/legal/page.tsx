@@ -1,6 +1,6 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { Scale } from "lucide-react";
 import type { Metadata } from "next";
+import { Breadcrumbs, CampusPage, PageHeading } from "@/components/campus/CampusChrome";
 
 export const metadata: Metadata = {
     title: "Legal & Privacy",
@@ -19,14 +19,15 @@ export const metadata: Metadata = {
 
 export default function LegalPage() {
     return (
-        <div className="container mx-auto px-4 py-8 max-w-2xl min-h-screen">
-            <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Menu
-            </Link>
-
-            <h1 className="text-3xl font-bold tracking-tight mb-6">Legal</h1>
-
+        <CampusPage>
+            <Breadcrumbs crumbs={[{ name: "Eat UNC", path: "/" }, { name: "Legal", path: "/legal" }]} />
+            <PageHeading
+                icon={<Scale className="h-6 w-6" />}
+                iconClassName="bg-zinc-500/10 text-zinc-700 dark:text-zinc-300"
+                title="Legal"
+                description="How Eat UNC sources dining information and the limits of that information."
+            />
+            <div className="max-w-2xl">
             <div className="prose dark:prose-invert">
                 <p className="text-muted-foreground mb-6">
                     Last updated: {new Date().toLocaleDateString()}
@@ -59,6 +60,7 @@ export default function LegalPage() {
                     </p>
                 </section>
             </div>
-        </div>
+            </div>
+        </CampusPage>
     );
 }

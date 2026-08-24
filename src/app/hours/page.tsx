@@ -14,11 +14,12 @@ import {
 import type { Location, LocationHours } from '@/lib/campus'
 import { breadcrumbList, canonical } from '@/lib/seo'
 import type { Faq } from '@/lib/seo'
-import { Badge, Breadcrumbs, CampusPage, Card, IconTile, Prose, Stat } from '@/components/campus/CampusChrome'
+import { Badge, Breadcrumbs, CampusPage, Card, IconTile, PageHeading, Prose, Stat } from '@/components/campus/CampusChrome'
 import { JsonLd } from '@/components/campus/JsonLd'
 import { PeriodRows, PeriodSummary } from '@/components/campus/HoursList'
 import {
     buildingMeta,
+    displayGroup,
     formatCampusDate,
     formatClock,
     formatHoursRange,
@@ -183,7 +184,7 @@ function buildFaqs(
                 ? `Yes. ${sentenceList(
                       lateTonight.slice(0, 5).map((row) => {
                           const location = byId.get(row.location_id)
-                          const where = location ? buildingMeta(location.venue_group).short : 'campus'
+                          const where = location ? buildingMeta(displayGroup(location)).short : 'campus'
                           return `${location?.name ?? 'A campus venue'} in ${where} serves until ${formatClock(
                               row.closes_label,
                           )}`
@@ -212,7 +213,7 @@ function buildFaqs(
             question: 'What time does UNC dining open in the morning?',
             answer: `The first UNC campus dining venue to open on ${dateText} is ${
                 location?.name ?? 'a campus venue'
-            }${location ? ` in ${buildingMeta(location.venue_group).short}` : ''}, at ${formatClock(
+            }${location ? ` in ${buildingMeta(displayGroup(location)).short}` : ''}, at ${formatClock(
                 firstOpen.opens_label,
             )}. ${servingToday} campus dining ${
                 servingToday === 1 ? 'venue has' : 'venues have'
@@ -361,22 +362,12 @@ export default async function HoursPage() {
 
             <Breadcrumbs crumbs={CRUMBS} />
 
-            <header className="mb-8">
-                <div className="flex items-start gap-4">
-                    <IconTile className="w-12 h-12 bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                        <Clock className="w-6 h-6" />
-                    </IconTile>
-                    <div>
-                        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                            UNC Dining Hall Hours Today
-                        </h1>
-                        <p className="mt-2 text-zinc-500 dark:text-zinc-400">
-                            {formatCampusDate(today)} in Chapel Hill · every campus venue&apos;s service times, as
-                            Carolina Dining Services published them.
-                        </p>
-                    </div>
-                </div>
-            </header>
+            <PageHeading
+                icon={<Clock className="w-6 h-6" />}
+                iconClassName="bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                title="UNC Dining Hall Hours Today"
+                description={<>{formatCampusDate(today)} in Chapel Hill · every campus venue&apos;s service times, as Carolina Dining Services published them.</>}
+            />
 
             {failed ? (
                 <Card className="p-6">
@@ -455,7 +446,7 @@ export default async function HoursPage() {
                                                         {hall.location.name} hours today
                                                     </h3>
                                                     <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                                                        {buildingMeta(hall.location.venue_group).short}
+                                                        {buildingMeta(displayGroup(hall.location)).short}
                                                     </p>
                                                 </div>
                                                 <Badge className={kindMeta(hall.location.kind).badgeClass}>

@@ -1,20 +1,21 @@
 'use client'
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'motion/react'
 import { usePostHog } from 'posthog-js/react'
 import { X } from 'lucide-react'
 import { appLink } from '@/lib/app-store'
-import { checkAppDownloadPromptEligible } from '@/lib/app-download-prompt'
+import { isAppDownloadPromptEligible } from '@/lib/app-download-prompt'
 import { isIOSDevice, isMacOSDevice, isSafariBrowser } from '@/lib/platform'
 import AppStoreBadge from './AppStoreBadge'
+import { useOnboarding } from '@/providers/OnboardingProvider'
 
 /** Nothing here changes after mount, so there is nothing to subscribe to — these are
  *  read once via `useSyncExternalStore` purely to defer them past hydration safely. */
 const neverChanges = () => () => { }
 
-const readEligible = () => checkAppDownloadPromptEligible()
+const readEligible = () => isAppDownloadPromptEligible()
 const readIsProminent = () => isIOSDevice() || isMacOSDevice() || isSafariBrowser()
 
 /**
@@ -25,14 +26,18 @@ const readIsProminent = () => isIOSDevice() || isMacOSDevice() || isSafariBrowse
  * iPhone, Mac and Safari visitors get a centered, more deliberate modal; everyone else
  * gets a small corner card that gets out of the way on the first outside click. A Mac
  * counts even though it cannot install the app itself — someone browsing from a MacBook
- * is a good bet to also own an iPhone, so it is worth the more deliberate ask. Eligibility
- * is shared with `AppInstallBanner` and `CookieConsent` through
- * `checkAppDownloadPromptEligible` so this never stacks with the top banner, and cookie
- * consent waits for this to be dismissed first.
+ * is a good bet to also own an iPhone, so it is worth the more deliberate ask.
+ *
+ * Eligibility is shared with `AppInstallBanner` and `CookieConsent` through
+ * `isAppDownloadPromptEligible`, so this never stacks with the top banner. Cookie consent
+ * additionally waits on `OnboardingProvider`'s app-promotion status, which this reports into
+ * below — so it holds until this is actually gone, not for a guessed number of seconds.
  */
 export default function AppDownloadPrompt() {
     const posthog = usePostHog()
     const cardRef = useRef<HTMLDivElement>(null)
+    const panelRef = useRef<HTMLDivElement>(null)
+    const { reportAppPromotionVisibility } = useOnboarding()
 
     // Server snapshot hides both, hydration reveals them — matches the pattern
     // AppInstallBanner uses so the client render doesn't fight the server HTML.
@@ -43,19 +48,26 @@ export default function AppDownloadPrompt() {
     const isOpen = isEligible && !dismissedNow
 
     useEffect(() => {
+        reportAppPromotionVisibility('download-prompt', isOpen ? 'visible' : 'hidden')
+    }, [isOpen, reportAppPromotionVisibility])
+
+    useEffect(() => {
         if (!isOpen) return
         posthog?.capture('app_download_prompt_shown', {
             variant: isProminent ? 'prominent' : 'compact',
         })
     }, [isOpen, isProminent, posthog])
 
-    const dismiss = (reason: 'close' | 'backdrop' | 'outside' | 'escape' | 'timeout') => {
-        setDismissedNow(true)
-        posthog?.capture('app_download_prompt_dismissed', {
-            variant: isProminent ? 'prominent' : 'compact',
-            reason,
-        })
-    }
+    const dismiss = useCallback(
+        (reason: 'close' | 'backdrop' | 'outside' | 'escape' | 'timeout') => {
+            setDismissedNow(true)
+            posthog?.capture('app_download_prompt_dismissed', {
+                variant: isProminent ? 'prominent' : 'compact',
+                reason,
+            })
+        },
+        [isProminent, posthog]
+    )
 
     const handleClick = () => {
         posthog?.capture('app_download_prompt_clicked', {
@@ -68,12 +80,43 @@ export default function AppDownloadPrompt() {
         if (!isOpen) return
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') dismiss('escape')
+            if (e.key === 'Escape') {
+                dismiss('escape')
+                return
+            }
+            // A dialog that claims `aria-modal` has to actually hold focus, or a keyboard or
+            // screen-reader user tabs straight out into the page behind the backdrop — which
+            // is still there, still blocking every one of those elements from being clicked.
+            if (e.key !== 'Tab' || !isProminent) return
+
+            const panel = panelRef.current
+            if (!panel) return
+            const stops = panel.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')
+            if (stops.length === 0) return
+
+            const first = stops[0]
+            const last = stops[stops.length - 1]
+            const active = document.activeElement
+            const outside = !panel.contains(active)
+
+            if (e.shiftKey && (outside || active === first)) {
+                e.preventDefault()
+                last.focus()
+            } else if (!e.shiftKey && (outside || active === last)) {
+                e.preventDefault()
+                first.focus()
+            }
         }
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen])
+    }, [isOpen, isProminent, dismiss])
+
+    // Opening moves focus into the dialog; nothing restores it on close because the prompt is
+    // one-shot and unfocusable afterwards, so there is no trigger element to return to.
+    useEffect(() => {
+        if (!isOpen || !isProminent) return
+        panelRef.current?.focus()
+    }, [isOpen, isProminent])
 
     // The compact variant has no backdrop, so "click-out-able" means a real outside
     // click on the page rather than a dedicated dismiss target.
@@ -87,8 +130,7 @@ export default function AppDownloadPrompt() {
         }
         document.addEventListener('pointerdown', handlePointerDown)
         return () => document.removeEventListener('pointerdown', handlePointerDown)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, isProminent])
+    }, [isOpen, isProminent, dismiss])
 
     // Auto-dismisses after five seconds the visitor actually spent looking at it — not five
     // seconds of wall-clock time. The countdown pauses while the tab is hidden (backgrounded,
@@ -122,8 +164,7 @@ export default function AppDownloadPrompt() {
             document.removeEventListener('visibilitychange', handleVisibilityChange)
             if (timerId !== null) window.clearTimeout(timerId)
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen])
+    }, [isOpen, dismiss])
 
     if (!isEligible) return null
 
@@ -156,7 +197,9 @@ export default function AppDownloadPrompt() {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.96, y: 12 }}
                             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                            className="relative w-full max-w-[22rem] overflow-hidden rounded-3xl border border-zinc-200 bg-white p-7 text-center shadow-2xl dark:border-zinc-800 dark:bg-zinc-900"
+                            ref={panelRef}
+                            tabIndex={-1}
+                            className="relative w-full max-w-[22rem] outline-none overflow-hidden rounded-3xl border border-zinc-200 bg-white p-7 text-center shadow-2xl dark:border-zinc-800 dark:bg-zinc-900"
                         >
                             <button
                                 onClick={() => dismiss('close')}
@@ -188,9 +231,7 @@ export default function AppDownloadPrompt() {
                             </p>
 
                             <div className="mt-5 flex flex-col items-center gap-3">
-                                <div onClick={handleClick}>
-                                    <AppStoreBadge source={source} className="mx-auto" />
-                                </div>
+                                <AppStoreBadge source={source} className="mx-auto" onClick={handleClick} />
                                 <button
                                     onClick={() => dismiss('close')}
                                     className="text-xs font-medium text-zinc-400 transition-colors hover:text-zinc-600 dark:hover:text-zinc-300"

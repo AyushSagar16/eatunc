@@ -1,9 +1,8 @@
 'use client'
 
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft, Bug, Lightbulb, MessageSquare, Send, CheckCircle, AlertCircle } from "lucide-react";
+import { Bug, Lightbulb, MessageSquare, Send, CheckCircle, AlertCircle } from "lucide-react";
 import { useState } from "react";
+import { Breadcrumbs, CampusPage, PageHeading } from "@/components/campus/CampusChrome";
 
 type FeedbackType = 'bug' | 'feature' | 'general';
 
@@ -99,28 +98,16 @@ export default function FeedbackPage() {
     const selectedOption = feedbackOptions.find(o => o.type === selectedType)!;
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-2xl min-h-screen">
-            <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Menu
-            </Link>
+        <CampusPage>
+            <Breadcrumbs crumbs={[{ name: "Eat UNC", path: "/" }, { name: "Feedback", path: "/feedback" }]} />
+            <PageHeading
+                icon={<MessageSquare className="h-6 w-6" />}
+                iconClassName="bg-[#4B9CD3]/10 text-[#2c6f9e] dark:text-[#7cc0ec]"
+                title="Feedback"
+                description="Report a problem, request a feature, or tell us what would make campus dining easier."
+            />
 
-            <div className="flex items-center gap-4 mb-6">
-                <div className="relative w-14 h-14 rounded-xl overflow-hidden shadow-lg border border-zinc-200 dark:border-zinc-800 shrink-0">
-                    <Image
-                        src="/eat_unc_logo_square.png"
-                        alt="Eat UNC Logo"
-                        fill
-                        className="object-cover"
-                        unoptimized
-                    />
-                </div>
-                <h1 className="text-3xl font-bold tracking-tight">Feedback</h1>
-            </div>
-
-            <p className="text-muted-foreground mb-6">
-                Help us improve Eat UNC! Select a feedback type and share your thoughts.
-            </p>
+            <div className="max-w-2xl">
 
             {!feedbackEnabled && (
                 <div className="mb-6 p-4 rounded-xl bg-amber-100 dark:bg-amber-500/20 border border-amber-200 dark:border-amber-500/30">
@@ -244,8 +231,9 @@ export default function FeedbackPage() {
             </form>
 
             <p className="mt-6 text-sm text-muted-foreground text-center">
-                Thank you for helping us make Eat UNC better! 💙
+                Thank you for helping us make Eat UNC better.
             </p>
-        </div>
+            </div>
+        </CampusPage>
     );
 }

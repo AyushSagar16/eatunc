@@ -1,16 +1,19 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Clock, UtensilsCrossed } from "lucide-react";
+import { ArrowRight, CalendarDays, Clock, UtensilsCrossed } from "lucide-react";
 import { getFullMenuByDateAndHall } from "@/lib/api";
 import {
     campusToday,
     getHoursForLocations,
     getLocationsBySlug,
+    HALLS,
+    type HallInfo,
     type LocationHours,
 } from "@/lib/campus";
 import { groupByPeriodAndStation, type OutlineEntry } from "@/components/MenuOutline";
 import { breadcrumbList, canonical, jsonLd } from "@/lib/seo";
 import { compareMealPeriods } from "@/lib/utils";
+import { Breadcrumbs, CampusPage, PageHeading } from "@/components/campus/CampusChrome";
 
 // This page is entirely about "today". Without a revalidate it is prerendered once at build
 // time and then frozen — the deployed build was six days old and still announcing
@@ -41,25 +44,6 @@ export const metadata: Metadata = {
         canonical: canonical("/today"),
     },
 };
-
-const HALLS = [
-    {
-        slug: "chase",
-        locationSlug: "chase",
-        diningHall: "Chase",
-        name: "Chase Dining Hall",
-        campus: "South Campus",
-        accent: "blue",
-    },
-    {
-        slug: "lenoir",
-        locationSlug: "top-of-lenoir",
-        diningHall: "Top of Lenoir",
-        name: "Top of Lenoir",
-        campus: "North Campus",
-        accent: "teal",
-    },
-] as const;
 
 type HallToday = {
     slug: string;
@@ -98,10 +82,10 @@ function sampleAcrossStations(
 }
 
 /** Today's menu and hours for one hall. Failures degrade to an empty card, never a 500. */
-async function loadHall(hall: (typeof HALLS)[number], date: string): Promise<HallToday> {
+async function loadHall(hall: HallInfo, date: string): Promise<HallToday> {
     const empty: HallToday = {
-        slug: hall.slug,
-        name: hall.name,
+        slug: hall.routeSlug,
+        name: hall.shortName,
         campus: hall.campus,
         accent: hall.accent,
         itemCount: 0,
@@ -173,17 +157,22 @@ export default async function TodayPage() {
                     ),
                 }}
             />
-            <main className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 md:py-16">
-                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-3">
-                        What&apos;s on the UNC dining menu today
-                    </h1>
-                    <p className="text-xl text-zinc-500 dark:text-zinc-400 mb-2">{formattedDate}</p>
-                    <p className="text-zinc-600 dark:text-zinc-300 max-w-2xl mb-10 leading-relaxed">
-                        Both UNC Chapel Hill dining halls, with the stations serving right now and
-                        the calories for every dish. Menus come from Carolina Dining Services and
-                        refresh nightly.
-                    </p>
+            <CampusPage>
+                    <Breadcrumbs crumbs={[{ name: "Eat UNC", path: "/" }, { name: "Today's menu", path: "/today" }]} />
+                    <PageHeading
+                        icon={<CalendarDays className="w-6 h-6" />}
+                        iconClassName="bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                        title="What's on the UNC dining menu today"
+                        description={
+                            <>
+                                <span className="block text-base font-medium text-zinc-700 dark:text-zinc-300">{formattedDate}</span>
+                                <span className="mt-1 block max-w-2xl">
+                                    Both UNC Chapel Hill dining halls, with the stations serving right now and
+                                    calories for every dish. Menus come from Carolina Dining Services and refresh nightly.
+                                </span>
+                            </>
+                        }
+                    />
 
                     {!anyMenu && (
                         <div className="mb-10 p-6 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40">
@@ -293,8 +282,7 @@ export default async function TodayPage() {
                             Every campus dining location →
                         </Link>
                     </div>
-                </div>
-            </main>
+            </CampusPage>
         </>
     );
 }

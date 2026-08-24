@@ -33,21 +33,42 @@ function FooterContent() {
                     : "bg-background border-t border-border mt-auto"
             )}
         >
-            <div className="container mx-auto px-6 py-6 md:py-8">
+            <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 md:py-10">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-8">
                     {/* Brand & Description Column */}
                     <div className="col-span-2 space-y-4">
-                        <div className="flex items-center gap-2">
-                            {/* Simple text logo or icon if available */}
-                            <span className="text-xl font-bold tracking-tight">Eat UNC</span>
-                        </div>
+                        <Link
+                            href="/"
+                            aria-label="Eat UNC home"
+                            className="inline-flex rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B9CD3] focus-visible:ring-offset-4"
+                        >
+                            {isLanding ? (
+                                <Image
+                                    src="/eat_unc_wordmark_white.png"
+                                    alt="Eat UNC"
+                                    width={837}
+                                    height={221}
+                                    className="h-10 w-auto sm:h-12"
+                                />
+                            ) : (
+                                <span
+                                    role="img"
+                                    aria-label="Eat UNC"
+                                    className="block h-10 w-[152px] bg-[#4B9CD3] sm:h-12 sm:w-[182px]"
+                                    style={{
+                                        WebkitMask: "url('/eat_unc_wordmark_white.png') center / contain no-repeat",
+                                        mask: "url('/eat_unc_wordmark_white.png') center / contain no-repeat",
+                                    }}
+                                />
+                            )}
+                        </Link>
                         <p className={cn(
                             "text-sm leading-relaxed max-w-md",
                             isLanding ? "text-blue-100/70" : "text-muted-foreground"
                         )}>
                             {isLanding
-                                ? "View today's dining menu at UNC Chapel Hill. Eat UNC provides real-time menus for Chase Dining Hall on South Campus and Top of Lenoir on North Campus."
-                                : "Making UNC dining menus eager to explore. Real-time updates, nutrition facts, and dietary filters for Chapel Hill students."
+                                ? "See what UNC Chapel Hill is serving now: dining-hall menus, live hours, and every campus food counter in one place."
+                                : "Making UNC dining easier to explore, with live hours, campus-wide locations, nutrition facts, and dietary filters."
                             }
                         </p>
                         {/* The landing hero carries its own badge, so showing one here
@@ -61,13 +82,13 @@ function FooterContent() {
 
                     {/* Dining Halls Column */}
                     <div className="space-y-4">
-                        <h4 className="text-xs font-semibold uppercase tracking-wider opacity-80">
+                        <h4 className="text-sm font-semibold opacity-80">
                             Where to Eat
                         </h4>
                         <ul className="space-y-1.5 text-sm">
                             <li>
                                 <Link
-                                    href="/chase-menu"
+                                    href="/chase"
                                     className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
                                 >
                                     Chase Dining Hall
@@ -75,7 +96,7 @@ function FooterContent() {
                             </li>
                             <li>
                                 <Link
-                                    href="/lenoir-menu"
+                                    href="/lenoir"
                                     className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
                                 >
                                     Top of Lenoir
@@ -86,7 +107,7 @@ function FooterContent() {
                                     href="/today"
                                     className={cn("transition-colors", isLanding ? "text-blue-100/60 hover:text-white" : "text-muted-foreground hover:text-foreground")}
                                 >
-                                    Today's Menu
+                                    Today&apos;s Menu
                                 </Link>
                             </li>
                             <li>
@@ -126,7 +147,7 @@ function FooterContent() {
 
                     {/* Resources Column */}
                     <div className="space-y-4">
-                        <h4 className="text-xs font-semibold uppercase tracking-wider opacity-80">
+                        <h4 className="text-sm font-semibold opacity-80">
                             Resources
                         </h4>
                         <ul className="space-y-1.5 text-sm">

@@ -205,7 +205,7 @@ function buildGroups(date: string, locations: Location[], hours: LocationHours[]
                       )}. "Lenoir dining hall" almost always means Top of Lenoir, the all-you-care-to-eat hall upstairs in Lenoir Hall. The counters downstairs in Bottom of Lenoir keep completely separate hours and are listed individually on the hours page.`
                     : `UNC Dining has published no hours for Top of Lenoir on ${dateText}, so the upstairs hall is not scheduled to open. The Bottom of Lenoir counters downstairs — Chick-fil-A, Bento Sushi and the rest — file their own hours and can be open on days the hall above them is not, so check them separately.`,
             links: [
-                { label: "Top of Lenoir's menu", href: '/lenoir-menu' },
+                { label: "Top of Lenoir's menu", href: '/lenoir' },
                 { label: 'All UNC dining hours today', href: '/hours' },
             ],
         },
@@ -225,8 +225,8 @@ function buildGroups(date: string, locations: Location[], hours: LocationHours[]
             question: "What's on the menu today at UNC?",
             answer: `Chase and Top of Lenoir publish a full recipe-level menu every day, broken down by meal period and station, with calories, protein, fat, carbohydrates, allergens and dietary flags on every item — those are the menus Eat UNC is built around, and you can search, sort and filter them. Many smaller UNC-run counters publish a daily menu too. Third-party brands on campus do not: their menu comes from the brand and stays the same day to day.`,
             links: [
-                { label: "Today's Chase menu", href: '/chase-menu' },
-                { label: "Today's Top of Lenoir menu", href: '/lenoir-menu' },
+                { label: "Today's Chase menu", href: '/chase' },
+                { label: "Today's Top of Lenoir menu", href: '/lenoir' },
                 { label: 'Both halls at a glance', href: '/today' },
             ],
         },
@@ -250,8 +250,8 @@ function buildGroups(date: string, locations: Location[], hours: LocationHours[]
             question: 'Where do I find the CDS menu for a specific day?',
             answer: 'Every stored day for both dining halls has its own page, and you can move between dates from the menu itself. Menus normally appear the night before a service day, and no menu is published for a day a venue is closed — during breaks that can run for weeks, so an empty day is usually a closure rather than a missing file.',
             links: [
-                { label: 'Chase menu', href: '/chase-menu' },
-                { label: 'Top of Lenoir menu', href: '/lenoir-menu' },
+                { label: 'Chase menu', href: '/chase' },
+                { label: 'Top of Lenoir menu', href: '/lenoir' },
             ],
         },
     ]
@@ -288,7 +288,7 @@ function buildGroups(date: string, locations: Location[], hours: LocationHours[]
             question: 'Is Rams Head Dining Hall still open?',
             answer: 'Rams Head Dining Hall was renamed Chase Dining Hall in 2017. It is the same building in the same place on South Campus — nothing moved and nothing closed, the name simply changed. If you were sent to "Rams Head" for a meal, go to Chase. The name does survive elsewhere on campus in Rams Market, the convenience store in the same building, and in the Rams Head Recreation Center, which is why the phrase still turns up.',
             links: [
-                { label: 'Chase dining hall menu', href: '/chase-menu' },
+                { label: 'Chase dining hall menu', href: '/chase' },
                 { label: 'Chase hours today', href: '/hours' },
             ],
         },
@@ -312,7 +312,7 @@ function buildGroups(date: string, locations: Location[], hours: LocationHours[]
             question: "What's the difference between Bottom of Lenoir and Top of Lenoir?",
             answer: 'They are two different operations in one building. Top of Lenoir is the all-you-care-to-eat dining hall upstairs: you swipe in once, eat as much as you like, and UNC publishes a full menu for every meal period. Bottom of Lenoir is the food court on the ground floor, where you pay counter by counter — Chick-fil-A, Bento Sushi, Mediterranean Deli, The Scoop, Bandido\'s, Zayka Indian Grill, La Farm Bakery and Alpaca Peruvian Chicken. They keep separate hours, so the downstairs counters can be serving when the hall upstairs is closed, and vice versa.',
             links: [
-                { label: 'Top of Lenoir menu', href: '/lenoir-menu' },
+                { label: 'Top of Lenoir menu', href: '/lenoir' },
                 { label: 'Every Lenoir Hall venue', href: '/locations' },
             ],
         },
@@ -556,7 +556,7 @@ export default async function FaqPage() {
                     </p>
                 </Link>
                 <Link
-                    href="/chase-menu"
+                    href="/chase"
                     className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm p-4 hover:border-[#4B9CD3]/50 transition-colors"
                 >
                     <div className="font-semibold text-zinc-900 dark:text-zinc-50 flex items-center gap-1.5">

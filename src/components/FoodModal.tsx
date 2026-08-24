@@ -117,21 +117,21 @@ export default function FoodModal({
                         >
                             <div>
                                 <div className="flex flex-wrap gap-2 mb-3">
-                                    <span className="rounded-full bg-blue-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                                    <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                                         Nutritional Details
                                     </span>
                                     {isHighProtein && (
-                                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
                                             High Protein
                                         </span>
                                     )}
                                     {isLowCal && (
-                                        <span className="rounded-full bg-amber-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                                        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
                                             Low Cal
                                         </span>
                                     )}
                                     {isLowFat && (
-                                        <span className="rounded-full bg-rose-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
+                                        <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
                                             Low Fat
                                         </span>
                                     )}
@@ -139,7 +139,7 @@ export default function FoodModal({
                                 <h2 id="modal-title" className="text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">
                                     {food_name || 'Unknown Item'}
                                 </h2>
-                                <p className="mt-2 text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.1em]">
+                                <p className="mt-2 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
                                     {getMealPeriodLabel(mealPeriod)} • {station}
                                 </p>
                             </div>
@@ -148,7 +148,7 @@ export default function FoodModal({
                                 className="grid grid-cols-2 gap-6 py-6 border-y border-zinc-100 dark:border-zinc-800"
                             >
                                 <div className="flex flex-col">
-                                    <span className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-1">Total Calories</span>
+                                    <span className="text-xs text-zinc-400 font-bold mb-1">Total calories</span>
                                     <span
                                         className="text-5xl font-black text-blue-600 dark:text-blue-400"
                                     >
@@ -157,7 +157,7 @@ export default function FoodModal({
                                     </span>
                                     {amount_per_serving && (
                                         <div className="mt-2">
-                                            <span className="text-xs uppercase tracking-widest text-zinc-400 font-bold">Serving: </span>
+                                            <span className="text-xs text-zinc-400 font-bold">Serving: </span>
                                             <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{amount_per_serving}</span>
                                         </div>
                                     )}
@@ -165,7 +165,7 @@ export default function FoodModal({
                                 {/* Dietary Preferences - inline on mobile */}
                                 {dietaryPrefs.length > 0 && (
                                     <div className="flex flex-col justify-center sm:hidden">
-                                        <span className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-2">Dietary</span>
+                                        <span className="text-xs text-zinc-400 font-bold mb-2">Dietary</span>
                                         <div className="flex flex-wrap gap-1.5">
                                             {dietaryPrefs.map((pref) => {
                                                 const IconComponent = DIETARY_ICON_MAP[pref]
@@ -249,7 +249,7 @@ function NutrientHighlight({ label, value, unit, color, bgColor }: { label: stri
             transition={{ duration: 0.2 }}
             className={`flex flex-col items-center gap-1 rounded-2xl p-4 ${bgColor}`}
         >
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{label}</span>
+            <span className="text-xs font-bold text-zinc-400">{label}</span>
             <div className={`flex items-baseline gap-0.5 ${color}`}>
                 <span className="text-xl font-black">{value ?? 0}</span>
                 <span className="text-xs font-bold opacity-70">{unit}</span>

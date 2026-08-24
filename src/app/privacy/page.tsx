@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { ShieldCheck } from 'lucide-react'
+import { Breadcrumbs, CampusPage, PageHeading } from '@/components/campus/CampusChrome'
 
 export default function PrivacyPage() {
     const [cleared, setCleared] = useState(false)
@@ -33,19 +35,15 @@ export default function PrivacyPage() {
     }
 
     return (
-        <main className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
-            <div className="container mx-auto px-6 py-12 max-w-3xl">
-                <Link
-                    href="/"
-                    className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 mb-8"
-                >
-                    ← Back to Home
-                </Link>
-
-                <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50 mb-8">
-                    Privacy Policy
-                </h1>
-
+        <CampusPage>
+                <Breadcrumbs crumbs={[{ name: 'Eat UNC', path: '/' }, { name: 'Privacy', path: '/privacy' }]} />
+                <PageHeading
+                    icon={<ShieldCheck className="h-6 w-6" />}
+                    iconClassName="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                    title="Privacy Policy"
+                    description="What the Eat UNC website stores, what it does not collect, and the controls available to you."
+                />
+                <div className="max-w-3xl">
                 <div className="prose prose-zinc dark:prose-invert max-w-none space-y-8">
                     <p className="text-zinc-600 dark:text-zinc-400 text-sm">
                         Last updated: January 11, 2026
@@ -159,7 +157,7 @@ export default function PrivacyPage() {
                         </p>
                     </section>
                 </div>
-            </div>
-        </main>
+                </div>
+        </CampusPage>
     )
 }

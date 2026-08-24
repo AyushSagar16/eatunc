@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowLeft, Linkedin, MessageSquare } from "lucide-react";
+import { Linkedin, MessageSquare, UserRound } from "lucide-react";
 import { breadcrumbList, canonical, jsonLd } from "@/lib/seo";
 import AboutAvatar from "@/components/AboutAvatar";
+import { Breadcrumbs, CampusPage, PageHeading } from "@/components/campus/CampusChrome";
 
 /** One node id for the person, shared by the `author` and `founder` references below. */
 const AUTHOR_ID = `${canonical("/about")}#ayush-sagar`;
@@ -64,17 +65,16 @@ export default function AboutPage() {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }}
             />
-            <div className="container mx-auto px-4 py-8 max-w-2xl min-h-screen">
-                <Link
-                    href="/"
-                    className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
-                >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Menu
-                </Link>
+            <CampusPage>
+                <Breadcrumbs crumbs={[{ name: "Eat UNC", path: "/" }, { name: "About", path: "/about" }]} />
+                <PageHeading
+                    icon={<UserRound className="h-6 w-6" />}
+                    iconClassName="bg-[#4B9CD3]/10 text-[#2c6f9e] dark:text-[#7cc0ec]"
+                    title="About Eat UNC"
+                    description="The student behind the campus dining guide."
+                />
 
-                <h1 className="text-3xl font-bold tracking-tight mb-8">About</h1>
-
+                <div className="max-w-2xl">
                 <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/40 p-6">
                     <div className="flex items-center gap-5">
                         <div className="relative h-28 w-28 sm:h-32 sm:w-32 shrink-0 overflow-hidden rounded-2xl">
@@ -138,7 +138,8 @@ export default function AboutPage() {
                         Send feedback
                     </Link>
                 </section>
-            </div>
+                </div>
+            </CampusPage>
         </>
     );
 }

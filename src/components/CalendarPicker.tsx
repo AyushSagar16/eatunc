@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion } from 'motion/react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { campusToday } from '@/lib/campus'
 
 interface CalendarPickerProps {
     selectedDate: string          // ISO format (YYYY-MM-DD)
@@ -28,13 +29,12 @@ export default function CalendarPicker({
     maxDate
 }: CalendarPickerProps) {
     // Parse selected date to get initial month/year
-    const selected = new Date(selectedDate)
+    const selected = new Date(`${selectedDate}T12:00:00`)
     const [viewMonth, setViewMonth] = useState(selected.getMonth())
     const [viewYear, setViewYear] = useState(selected.getFullYear())
 
     // Get today's date for highlighting
-    const today = new Date()
-    const todayStr = today.toISOString().split('T')[0]
+    const todayStr = campusToday()
 
     // Convert availableDates to a Set for O(1) lookup
     const availableDatesSet = useMemo(() => new Set(availableDates), [availableDates])
@@ -84,6 +84,7 @@ export default function CalendarPicker({
 
     const handleDateClick = (dateStr: string) => {
         onDateSelect(dateStr)
+        onClose()
     }
 
     // Check if a date is selectable
@@ -91,7 +92,7 @@ export default function CalendarPicker({
         if (!date || !dateStr) return false
         if (minDate && date < minDate) return false
         if (maxDate && date > maxDate) return false
-        return true
+        return dateStr === selectedDate || availableDatesSet.has(dateStr)
     }
 
     return (
@@ -102,10 +103,13 @@ export default function CalendarPicker({
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className="absolute top-full mt-2 right-0 z-50 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800 rounded-2xl shadow-2xl shadow-zinc-900/10 dark:shadow-black/50 p-4 min-w-[320px]"
             onClick={(e) => e.stopPropagation()} // Prevent clicks inside from closing
+            role="dialog"
+            aria-label="Choose a menu date"
         >
             {/* Header: Month/Year with navigation */}
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-zinc-200 dark:border-zinc-800">
                 <motion.button
+                    type="button"
                     onClick={handlePrevMonth}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
@@ -120,6 +124,7 @@ export default function CalendarPicker({
                 </h3>
 
                 <motion.button
+                    type="button"
                     onClick={handleNextMonth}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
@@ -159,6 +164,7 @@ export default function CalendarPicker({
 
                     return (
                         <motion.button
+                            type="button"
                             key={dateStr}
                             onClick={() => isSelectable && handleDateClick(dateStr)}
                             disabled={!isSelectable}
