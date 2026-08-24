@@ -37,6 +37,14 @@ const FORCE_PAGE_PARAM = 'view'
 const FORCE_PAGE_VALUE = 'page'
 
 /**
+ * How long the Mac page waits before continuing to the site on its own — the same five seconds
+ * `AppDownloadPrompt` gives its popup, and counted the same way: foreground time only. A Mac
+ * visitor has nothing to install here, so the page is a notice rather than a destination, and
+ * making them click past a notice they have already read is a toll for nothing.
+ */
+const MAC_REDIRECT_MS = 5000
+
+/**
  * eatunc.com/app -> the App Store on iOS, or a "not yet" page everywhere else, counting the
  * click on the way through either way.
  *
@@ -139,6 +147,8 @@ function htmlResponse(html: string, cacheControl: string): NextResponse {
 }
 
 interface PageOptions {
+    /** Absolute origin, so the logo resolves for a crawler rendering this markup off-site. */
+    origin: string
     title: string
     heading: string
     /** Extra `<head>` markup — the preview page's Open Graph block, and nothing else so far. */
@@ -154,7 +164,7 @@ interface PageOptions {
  * The one document all three responses here are cut from — same Carolina-navy centered card,
  * same typography, same `<head>` boilerplate. Only the words and the destination differ.
  */
-function htmlPage({ title, heading, head = '', body, cta, footer = '' }: PageOptions): string {
+function htmlPage({ origin, title, heading, head = '', body, cta, footer = '' }: PageOptions): string {
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -166,6 +176,7 @@ function htmlPage({ title, heading, head = '', body, cta, footer = '' }: PageOpt
 </head>
 <body style="margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#13294B;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-align:center;padding:1.5rem;box-sizing:border-box">
 <main style="max-width:26rem">
+<img src="${origin}/eat_unc_wordmark_white.png" alt="Eat UNC" width="837" height="221" style="display:block;width:9.5rem;height:auto;margin:0 auto 1.75rem">
 <h1 style="font-size:1.5rem;margin:0 0 ${body ? '.75rem' : '1rem'}">${heading}</h1>
 ${body ? `<p style="margin:0 0 1.5rem;color:#c9d9ea;line-height:1.5">${body}</p>` : ''}
 <a${cta.id ? ` id="${cta.id}"` : ''} href="${cta.href}" style="display:inline-block;padding:.75rem 1.5rem;border-radius:999px;background:#4B9CD3;color:#fff;font-weight:700;text-decoration:none">${cta.label}</a>
@@ -199,6 +210,7 @@ function previewHtml(origin: string, isIOS: boolean): string {
     const cta = isIOS ? 'Open in the App Store' : 'Continue'
 
     return htmlPage({
+        origin,
         title: TITLE,
         heading: TITLE,
         head: `
@@ -236,13 +248,68 @@ function previewHtml(origin: string, isIOS: boolean): string {
  */
 function openOnIPhoneHtml(origin: string): string {
     return htmlPage({
+        origin,
         title: 'Open this on your iPhone — Eat UNC',
         heading: 'Grab your phone',
         body: 'Eat UNC is an iPhone app, and this is a Mac. Open eatunc.com/app on your iPhone to install it, or keep using the full site right here.',
-        cta: { href: `${origin}/`, label: 'Continue to eatunc.com' },
+        cta: { href: `${origin}/`, label: 'Continue to eatunc.com', id: 'continue' },
         footer: `<p style="margin:1.25rem 0 0"><a href="${APP_STORE_URL}" style="color:#8fb8de;font-size:.875rem;text-decoration:underline">View the listing on the App Store</a></p>
-`,
+<p id="countdown" hidden style="margin:1.25rem 0 0;color:#8fb8de;font-size:.8125rem">Continuing in <span id="count">${MAC_REDIRECT_MS / 1000}</span>s</p>
+${countdownScript(MAC_REDIRECT_MS)}`,
     })
+}
+
+/**
+ * The countdown behind the Mac page's automatic continue.
+ *
+ * Three things it deliberately does. It measures foreground time, not wall clock: the browser
+ * stops firing `requestAnimationFrame` in a hidden tab, so a page opened in a background tab is
+ * still sitting there whenever it is finally looked at. It cancels outright on the first click,
+ * tap or keypress, because someone reaching for "View the listing on the App Store" must not
+ * have the page navigate out from under their cursor. And it starts hidden and is revealed by
+ * this script, so a visitor without JavaScript is never promised a redirect that cannot happen.
+ *
+ * The destination is read back off the link rather than interpolated in, so no value is ever
+ * injected into a script sink — the same rule the preview page's redirect follows.
+ */
+function countdownScript(durationMs: number): string {
+    return `<script>
+(function () {
+  var link = document.getElementById('continue')
+  var label = document.getElementById('countdown')
+  var out = document.getElementById('count')
+  if (!link || !label || !out || !window.requestAnimationFrame) return
+
+  var remaining = ${durationMs}
+  var last = null
+  var cancelled = false
+  label.hidden = false
+
+  function cancel() {
+    cancelled = true
+    label.hidden = true
+  }
+  document.addEventListener('pointerdown', cancel, { once: true })
+  document.addEventListener('keydown', cancel, { once: true })
+  // rAF does not run while hidden, so time away is never counted; the stale timestamp it
+  // leaves behind is what this drops.
+  document.addEventListener('visibilitychange', function () { last = null })
+
+  function tick(now) {
+    if (cancelled) return
+    if (last !== null) remaining -= now - last
+    last = now
+    if (remaining <= 0) {
+      window.location.replace(link.href)
+      return
+    }
+    out.textContent = Math.ceil(remaining / 1000)
+    window.requestAnimationFrame(tick)
+  }
+  window.requestAnimationFrame(tick)
+})()
+</script>
+`
 }
 
 /**
@@ -254,6 +321,7 @@ function openOnIPhoneHtml(origin: string): string {
  */
 function comingSoonHtml(origin: string): string {
     return htmlPage({
+        origin,
         title: "The Android app isn't out yet — Eat UNC",
         heading: 'The Android app is being built',
         body: 'Eat UNC is iPhone-only for now. In the meantime, the website has the same menus, nutrition facts and filters — just open it in your browser.',
