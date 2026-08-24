@@ -37,12 +37,16 @@ const FORCE_PAGE_PARAM = 'view'
 const FORCE_PAGE_VALUE = 'page'
 
 /**
- * How long the Mac page waits before continuing to the site on its own — the same five seconds
- * `AppDownloadPrompt` gives its popup, and counted the same way: foreground time only. A Mac
- * visitor has nothing to install here, so the page is a notice rather than a destination, and
- * making them click past a notice they have already read is a toll for nothing.
+ * How long each dead-end page waits before continuing to the site on its own, counted as
+ * foreground time only — the same way `AppDownloadPrompt` counts its five seconds.
+ *
+ * Neither visitor can install anything here, so both pages are notices rather than
+ * destinations, and making someone click past a notice they have already read is a toll for
+ * nothing. Android waits a beat less because its page has nothing else on it: the Mac page
+ * offers the App Store listing underneath, which is worth a moment to notice.
  */
 const MAC_REDIRECT_MS = 5000
+const ANDROID_REDIRECT_MS = 4000
 
 /**
  * eatunc.com/app -> the App Store on iOS, or a "not yet" page everywhere else, counting the
@@ -254,20 +258,25 @@ function openOnIPhoneHtml(origin: string): string {
         body: 'Eat UNC is an iPhone app, and this is a Mac. Open eatunc.com/app on your iPhone to install it, or keep using the full site right here.',
         cta: { href: `${origin}/`, label: 'Continue to eatunc.com', id: 'continue' },
         footer: `<p style="margin:1.25rem 0 0"><a href="${APP_STORE_URL}" style="color:#8fb8de;font-size:.875rem;text-decoration:underline">View the listing on the App Store</a></p>
-<p id="countdown" hidden style="margin:1.25rem 0 0;color:#8fb8de;font-size:.8125rem">Continuing in <span id="count">${MAC_REDIRECT_MS / 1000}</span>s</p>
-${countdownScript(MAC_REDIRECT_MS)}`,
+${countdown(MAC_REDIRECT_MS)}`,
     })
 }
 
+/** The visible count plus the script that drives it, for a page whose CTA carries `id="continue"`. */
+function countdown(durationMs: number): string {
+    return `<p id="countdown" hidden style="margin:1.25rem 0 0;color:#8fb8de;font-size:.8125rem">Continuing in <span id="count">${durationMs / 1000}</span>s</p>
+${countdownScript(durationMs)}`
+}
+
 /**
- * The countdown behind the Mac page's automatic continue.
+ * The countdown behind a dead-end page's automatic continue.
  *
  * Three things it deliberately does. It measures foreground time, not wall clock: the browser
  * stops firing `requestAnimationFrame` in a hidden tab, so a page opened in a background tab is
  * still sitting there whenever it is finally looked at. It cancels outright on the first click,
- * tap or keypress, because someone reaching for "View the listing on the App Store" must not
- * have the page navigate out from under their cursor. And it starts hidden and is revealed by
- * this script, so a visitor without JavaScript is never promised a redirect that cannot happen.
+ * tap or keypress, because someone reaching for a link on the page must not have it navigate
+ * out from under their cursor. And it starts hidden and is revealed by this script, so a
+ * visitor without JavaScript is never promised a redirect that cannot happen.
  *
  * The destination is read back off the link rather than interpolated in, so no value is ever
  * injected into a script sink — the same rule the preview page's redirect follows.
@@ -325,6 +334,7 @@ function comingSoonHtml(origin: string): string {
         title: "The Android app isn't out yet — Eat UNC",
         heading: 'The Android app is being built',
         body: 'Eat UNC is iPhone-only for now. In the meantime, the website has the same menus, nutrition facts and filters — just open it in your browser.',
-        cta: { href: `${origin}/`, label: 'Continue to eatunc.com' },
+        cta: { href: `${origin}/`, label: 'Continue to eatunc.com', id: 'continue' },
+        footer: countdown(ANDROID_REDIRECT_MS),
     })
 }
