@@ -19,8 +19,19 @@ const TITLE = 'Download the Eat UNC app today'
 const DESCRIPTION =
     'UNC dining menus, filters, and nutrition facts for Chase and Top of Lenoir — free on iPhone.'
 
+/** Same UA test `MenuTutorial` uses client-side; here there is no `navigator`, only the header. */
+const IOS_USER_AGENT = /iPhone|iPad|iPod/i
+
 /**
- * eatunc.com/app -> the App Store, counting the click on the way through.
+ * A real Mac, or an iPad in desktop-site mode reporting as one — the header alone can't tell
+ * those apart (that distinction needs `navigator.maxTouchPoints`, client-side only). Both are
+ * Apple hardware, so both get the "open this on your iPhone" page rather than the Android one.
+ */
+const MAC_USER_AGENT = /Macintosh/i
+
+/**
+ * eatunc.com/app -> the App Store on iOS, or a "not yet" page everywhere else, counting the
+ * click on the way through either way.
  *
  * This is a route handler rather than a page because a page that calls
  * `redirect()` after an await streams a soft, client-side redirect (HTTP 200)
@@ -35,6 +46,11 @@ export async function GET(request: NextRequest) {
     const source = searchParams.get('src') ?? 'direct'
     const userAgent = request.headers.get('user-agent') ?? ''
     const isKnownBot = PREVIEW_BOTS.test(userAgent)
+    // The one link everyone gets — the branch below is what makes it "dynamic": the same
+    // eatunc.com/app URL resolves differently per visitor instead of needing an iOS link and
+    // a separate Android one.
+    const isIOS = IOS_USER_AGENT.test(userAgent)
+    const isMac = !isIOS && MAC_USER_AGENT.test(userAgent)
 
     // Every current browser sends `Sec-Fetch-Dest: document` when navigating;
     // preview fetchers send no Sec-Fetch headers at all. This catches crawlers
@@ -64,6 +80,7 @@ export async function GET(request: NextRequest) {
                         utm_source: searchParams.get('utm_source') ?? undefined,
                         utm_medium: searchParams.get('utm_medium') ?? undefined,
                         utm_campaign: searchParams.get('utm_campaign') ?? undefined,
+                        destination: isIOS ? 'app_store' : isMac ? 'mac_open_on_iphone' : 'android_coming_soon',
                     },
                 })
             } catch (error) {
@@ -73,7 +90,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (servePreview) {
-        return new NextResponse(previewHtml(origin), {
+        return new NextResponse(previewHtml(origin, isIOS), {
             status: 200,
             headers: {
                 'Content-Type': 'text/html; charset=utf-8',
@@ -81,6 +98,32 @@ export async function GET(request: NextRequest) {
                 // out of search results.
                 'X-Robots-Tag': 'noindex',
                 'Cache-Control': 'public, max-age=300',
+            },
+        })
+    }
+
+    if (isMac) {
+        // A MacBook can't install an iPhone app either, but its owner very likely has an
+        // iPhone nearby — worth pointing them at it instead of lumping them in with Android.
+        return new NextResponse(openOnIPhoneHtml(origin), {
+            status: 200,
+            headers: {
+                'Content-Type': 'text/html; charset=utf-8',
+                'X-Robots-Tag': 'noindex',
+                'Cache-Control': 'no-store',
+            },
+        })
+    }
+
+    if (!isIOS) {
+        // Android and everyone else: no app to send them to yet, so don't send them to
+        // Apple's store for one. A real page, not a redirect — there is nowhere better to go.
+        return new NextResponse(comingSoonHtml(origin), {
+            status: 200,
+            headers: {
+                'Content-Type': 'text/html; charset=utf-8',
+                'X-Robots-Tag': 'noindex',
+                'Cache-Control': 'no-store',
             },
         })
     }
@@ -102,10 +145,14 @@ export async function GET(request: NextRequest) {
  * full-width banner.
  *
  * It also redirects, so that a real browser misclassified as a bot still reaches
- * the App Store rather than dead-ending here.
+ * the App Store — or the Android page — rather than dead-ending here. The UA that decided
+ * `servePreview` is the same one behind `isIOS`, so a misclassified real visitor still lands
+ * in the right place even though this markup is shared with actual crawlers.
  */
-function previewHtml(origin: string): string {
+function previewHtml(origin: string, isIOS: boolean): string {
     const image = `${origin}/app/opengraph-image`
+    const destination = isIOS ? APP_STORE_URL : `${origin}/`
+    const cta = isIOS ? 'Open in the App Store' : 'Continue to eatunc.com'
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -135,12 +182,67 @@ function previewHtml(origin: string): string {
 <body style="margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#13294B;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-align:center">
 <main>
 <h1 style="font-size:1.5rem;margin:0 0 1rem">${TITLE}</h1>
-<a id="store" href="${APP_STORE_URL}" style="display:inline-block;padding:.75rem 1.5rem;border-radius:999px;background:#4B9CD3;color:#fff;font-weight:700;text-decoration:none">Open in the App Store</a>
+<a id="store" href="${destination}" style="display:inline-block;padding:.75rem 1.5rem;border-radius:999px;background:#4B9CD3;color:#fff;font-weight:700;text-decoration:none">${cta}</a>
 </main>
 <!-- The destination is read back off the link rather than interpolated into
      this script, so no value is ever injected into a script sink. replace()
      rather than assign() keeps the back button working. -->
 <script>window.location.replace(document.getElementById('store').href)</script>
+</body>
+</html>`
+}
+
+/**
+ * What a Mac visitor to eatunc.com/app sees instead of Apple's App Store.
+ *
+ * A desktop browser can't install an iPhone app no matter where it's pointed, so redirecting
+ * to Apple's listing would just strand them on a page with no working "Get" button. The App
+ * Store link is still offered, underneath, for anyone who wants to preview the listing anyway.
+ */
+function openOnIPhoneHtml(origin: string): string {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open this on your iPhone — Eat UNC</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://eatunc.com/app">
+</head>
+<body style="margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#13294B;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-align:center;padding:1.5rem;box-sizing:border-box">
+<main style="max-width:26rem">
+<h1 style="font-size:1.5rem;margin:0 0 .75rem">Grab your phone</h1>
+<p style="margin:0 0 1.5rem;color:#c9d9ea;line-height:1.5">Eat UNC is an iPhone app, and this is a Mac. Open eatunc.com/app on your iPhone to install it, or keep using the full site right here.</p>
+<a href="${origin}/" style="display:inline-block;padding:.75rem 1.5rem;border-radius:999px;background:#4B9CD3;color:#fff;font-weight:700;text-decoration:none">Continue to eatunc.com</a>
+<p style="margin:1.25rem 0 0"><a href="${APP_STORE_URL}" style="color:#8fb8de;font-size:.875rem;text-decoration:underline">View the listing on the App Store</a></p>
+</main>
+</body>
+</html>`
+}
+
+/**
+ * What a non-iOS visitor to eatunc.com/app sees instead of Apple's App Store.
+ *
+ * There is no Android build yet, so redirecting there would either 404 or point at the iPhone
+ * listing — worse than telling them plainly and sending them back to the site that already has
+ * everything the app does.
+ */
+function comingSoonHtml(origin: string): string {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Android app isn't out yet — Eat UNC</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://eatunc.com/app">
+</head>
+<body style="margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#13294B;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-align:center;padding:1.5rem;box-sizing:border-box">
+<main style="max-width:26rem">
+<h1 style="font-size:1.5rem;margin:0 0 .75rem">The Android app is being built</h1>
+<p style="margin:0 0 1.5rem;color:#c9d9ea;line-height:1.5">Eat UNC is iPhone-only for now. In the meantime, the website has the same menus, nutrition facts and filters — just open it in your browser.</p>
+<a href="${origin}/" style="display:inline-block;padding:.75rem 1.5rem;border-radius:999px;background:#4B9CD3;color:#fff;font-weight:700;text-decoration:none">Continue to eatunc.com</a>
+</main>
 </body>
 </html>`
 }
