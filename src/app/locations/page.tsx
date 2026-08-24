@@ -5,7 +5,7 @@ import { Building2, MapPin, Soup, Truck, Utensils } from 'lucide-react'
 import { getOpenNow, locationPath } from '@/lib/campus'
 import type { Location, OpenPeriod } from '@/lib/campus'
 import { breadcrumbList, canonical } from '@/lib/seo'
-import { Breadcrumbs, CampusPage, Card, IconTile } from '@/components/campus/CampusChrome'
+import { Breadcrumbs, CampusPage, Card, IconTile, PageHeading } from '@/components/campus/CampusChrome'
 import { JsonLd } from '@/components/campus/JsonLd'
 import { VenueCard } from '@/components/campus/VenueCard'
 import { groupByBuilding } from '@/components/campus/campusDisplay'
@@ -103,21 +103,12 @@ export default async function LocationsIndexPage() {
 
             <Breadcrumbs crumbs={CRUMBS} />
 
-            <header className="mb-8">
-                <div className="flex items-start gap-4">
-                    <IconTile className="w-12 h-12 bg-[#4B9CD3]/10 text-[#2c6f9e] dark:text-[#7cc0ec]">
-                        <MapPin className="w-6 h-6" />
-                    </IconTile>
-                    <div>
-                        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                            UNC Campus Dining Locations
-                        </h1>
-                        <p className="mt-2 text-zinc-500 dark:text-zinc-400">
-                            Every place UNC Chapel Hill currently serves food, grouped by where it is.
-                        </p>
-                    </div>
-                </div>
-            </header>
+            <PageHeading
+                icon={<MapPin className="w-6 h-6" />}
+                iconClassName="bg-[#4B9CD3]/10 text-[#2c6f9e] dark:text-[#7cc0ec]"
+                title="UNC Campus Dining Locations"
+                description="Every place UNC Chapel Hill currently serves food, grouped by where it is."
+            />
 
             {failed ? (
                 <Card className="p-6">

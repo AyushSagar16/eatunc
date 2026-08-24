@@ -2,14 +2,13 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo, useTransition } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Tabs } from '@/components/ui/tabs'
 import { ChevronLeft, ChevronRight, ArrowLeftRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 
 import SearchAndSort, { SortOption } from '@/components/SearchAndSort'
 import CalendarPicker from '@/components/CalendarPicker'
-import type { FilterOption } from '@/lib/types'
 
 // PERFORMANCE: Move pure function outside component to prevent recreation on every render
 // Capitalize first letter of each word in meal period
@@ -52,10 +51,6 @@ interface FoodDisplayLayoutProps {
     availablePeriods: string[]
     onPeriodChange: (period: string) => void
     onDateChange?: (date: string) => void
-    activeFilters?: FilterOption[]
-    onRemoveFilter?: (filter: FilterOption) => void
-    onClearFilters?: () => void
-    itemCount?: number
     searchQuery?: string
     onSearchChange?: (query: string) => void
     sortBy?: SortOption
@@ -95,16 +90,18 @@ function MealTabsWithScrollIndicators({
     }, [])
 
     useEffect(() => {
-        checkScroll()
+        const frame = requestAnimationFrame(checkScroll)
         const el = scrollRef.current
         if (el) {
             el.addEventListener('scroll', checkScroll, { passive: true })
             window.addEventListener('resize', checkScroll)
             return () => {
+                cancelAnimationFrame(frame)
                 el.removeEventListener('scroll', checkScroll)
                 window.removeEventListener('resize', checkScroll)
             }
         }
+        return () => cancelAnimationFrame(frame)
     }, [checkScroll, availablePeriods])
 
     return (
@@ -120,14 +117,19 @@ function MealTabsWithScrollIndicators({
 
             <div
                 ref={scrollRef}
+                role="tablist"
+                aria-label="Meal period"
                 className="inline-flex gap-1 p-1 bg-zinc-100 rounded-2xl border border-zinc-200/50 overflow-x-auto no-visible-scrollbar max-w-full"
             >
                 {availablePeriods.map((period) => {
                     const isActive = selectedPeriod === period
                     return (
                         <motion.button
+                            type="button"
                             key={period}
                             onClick={() => onPeriodChange(period)}
+                            role="tab"
+                            aria-selected={isActive}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             className={`
@@ -167,10 +169,6 @@ export default function FoodDisplayLayout({
     availablePeriods,
     onPeriodChange,
     onDateChange,
-    activeFilters = [],
-    onRemoveFilter,
-    onClearFilters,
-    itemCount,
     searchQuery = '',
     onSearchChange,
     sortBy = 'recommended',
@@ -288,20 +286,6 @@ export default function FoodDisplayLayout({
         startNavigation(() => router.push(`/${oppositeSlug}/${selectedDate}`))
     }
 
-    // Meal tabs configuration for Aceternity Tabs
-    const mealTabs = availablePeriods.map((period, index) => ({
-        title: getMealLabel(period),
-        value: period.toLowerCase().replace(/\s+/g, '-'),
-        content: (
-            <div key={period} className="w-full min-h-[200px]">
-                {selectedPeriod === period && children}
-            </div>
-        ),
-    }))
-
-    // Find active tab based on selected period
-    const activeTabValue = selectedPeriod.toLowerCase().replace(/\s+/g, '-')
-
     // A one-item tab strip is dead chrome: nearly every campus venue outside the two halls
     // stores `Open` as its only service period. Gated on the count, never on whether the page
     // is a hall — Beach Grille keeps its real Breakfast/Lunch tabs.
@@ -321,8 +305,23 @@ export default function FoodDisplayLayout({
                 )}
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        {/* Left: Back Button & Dining Hall Name */}
-                        <div className="flex items-center gap-4 justify-start flex-1">
+                        {/* Left: Eat UNC brand & Dining Hall Name */}
+                        <div className="flex min-w-0 items-center gap-3 justify-start flex-1 sm:gap-4">
+                            <Link
+                                href="/"
+                                aria-label="Eat UNC home"
+                                className="shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B9CD3] focus-visible:ring-offset-4"
+                            >
+                                <Image
+                                    src="/eat_unc_text_logo_nw.png"
+                                    alt="Eat UNC"
+                                    width={1200}
+                                    height={895}
+                                    className="h-10 w-auto sm:h-12"
+                                    priority
+                                />
+                            </Link>
+                            <span aria-hidden className="h-9 w-px shrink-0 bg-zinc-200 sm:h-10" />
                             <h1 className="text-3xl sm:text-4xl font-black text-zinc-800">
                                 {diningHall}
                             </h1>
@@ -332,7 +331,9 @@ export default function FoodDisplayLayout({
                         <div className="flex flex-row items-center justify-between sm:justify-center gap-3 sm:gap-4">
                             {/* Dining Hall Switcher Button */}
                             <motion.button
+                                type="button"
                                 data-tutorial-target="hall-switcher"
+                                aria-label={switchLink ? switchLink.label : `Switch to ${getOppositeDiningHall()}`}
                                 onClick={() =>
                                     switchLink
                                         ? startNavigation(() => router.push(switchLink.href))
@@ -365,17 +366,22 @@ export default function FoodDisplayLayout({
                             ) : (
                             <div ref={datePickerRef} className="relative flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-zinc-100 rounded-xl border border-zinc-200/50 min-h-[52px] shrink-0" data-tutorial-target="date-nav">
                                 <motion.button
+                                    type="button"
                                     onClick={handlePrevDate}
+                                    aria-label="Previous date"
                                     disabled={!canGoBack}
                                     whileHover={{ scale: 1.1 }}
                                     whileTap={{ scale: 0.9 }}
                                     className="p-3 min-w-[44px] min-h-[44px] rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-white active:bg-zinc-200 disabled:opacity-30 disabled:pointer-events-none transition-all touch-manipulation flex items-center justify-center"
                                 >
-                                    <ChevronLeft className="w-5 h-5" />
+                                    <ChevronLeft className="w-5 h-5" aria-hidden="true" />
                                 </motion.button>
 
                                 <motion.button
+                                    type="button"
                                     onClick={handleCalendarToggle}
+                                    aria-label={`Choose date. Current date: ${formattedDate}`}
+                                    aria-expanded={isCalendarOpen}
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                     className="px-2 sm:px-4 min-w-[80px] sm:min-w-[120px] text-center font-bold text-md sm:text-base text-zinc-900 hover:text-blue-600 transition-colors cursor-pointer"
@@ -384,13 +390,15 @@ export default function FoodDisplayLayout({
                                 </motion.button>
 
                                 <motion.button
+                                    type="button"
                                     onClick={handleNextDate}
+                                    aria-label="Next date"
                                     disabled={!canGoForward}
                                     whileHover={{ scale: 1.1 }}
                                     whileTap={{ scale: 0.9 }}
                                     className="p-3 min-w-[44px] min-h-[44px] rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-white active:bg-zinc-200 disabled:opacity-30 disabled:pointer-events-none transition-all touch-manipulation flex items-center justify-center"
                                 >
-                                    <ChevronRight className="w-5 h-5" />
+                                    <ChevronRight className="w-5 h-5" aria-hidden="true" />
                                 </motion.button>
 
                                 {/* Calendar Popup */}
@@ -427,6 +435,7 @@ export default function FoodDisplayLayout({
                     {showPeriodTabs && (
                         <div className="relative flex-1" data-tutorial-target="meal-dropdown">
                             <select
+                                aria-label="Meal period"
                                 value={selectedPeriod}
                                 onChange={(e) => onPeriodChange(e.target.value)}
                                 className="w-full h-14 px-4 bg-blue-600 border border-blue-500 rounded-2xl text-base font-bold text-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all appearance-none cursor-pointer pr-12 shadow-lg shadow-blue-500/20"

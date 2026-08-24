@@ -46,7 +46,15 @@ export function isImplausibleServing(item: { calories_kcal?: number | null; prot
     return (item.calories_kcal ?? 0) > 1000 || (item.protein_g ?? 0) > 100;
 }
 
-export function calculateHealthyScore(item: any, preset: string): number {
+export function calculateHealthyScore(
+    item: {
+        calories_kcal?: number | null
+        protein_g?: number | null
+        fat_g?: number | null
+        carbohydrates_g?: number | null
+    },
+    preset: string,
+): number {
     const cal = item.calories_kcal ?? 0;
     const protein = item.protein_g ?? 0;
     const fat = item.fat_g ?? 0;

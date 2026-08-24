@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { ArrowLeft, Linkedin, MessageSquare } from "lucide-react";
+import { Linkedin, MessageSquare, UserRound } from "lucide-react";
 import { breadcrumbList, canonical, jsonLd } from "@/lib/seo";
+import AboutAvatar from "@/components/AboutAvatar";
+import { Breadcrumbs, CampusPage, PageHeading } from "@/components/campus/CampusChrome";
 
 /** One node id for the person, shared by the `author` and `founder` references below. */
 const AUTHOR_ID = `${canonical("/about")}#ayush-sagar`;
@@ -63,29 +65,46 @@ export default function AboutPage() {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }}
             />
-            <div className="container mx-auto px-4 py-8 max-w-2xl min-h-screen">
-                <Link
-                    href="/"
-                    className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
-                >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Menu
-                </Link>
+            <CampusPage>
+                <Breadcrumbs crumbs={[{ name: "Eat UNC", path: "/" }, { name: "About", path: "/about" }]} />
+                <PageHeading
+                    icon={<UserRound className="h-6 w-6" />}
+                    iconClassName="bg-[#4B9CD3]/10 text-[#2c6f9e] dark:text-[#7cc0ec]"
+                    title="About Eat UNC"
+                    description="The student behind the campus dining guide."
+                />
 
-                <h1 className="text-3xl font-bold tracking-tight mb-8">About</h1>
-
+                <div className="max-w-2xl">
                 <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/40 p-6">
-                    <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                        Ayush Sagar
-                    </p>
-                    <p className="text-zinc-600 dark:text-zinc-400 mt-1">UNC student</p>
+                    <div className="flex items-center gap-5">
+                        <div className="relative h-28 w-28 sm:h-32 sm:w-32 shrink-0 overflow-hidden rounded-2xl">
+                            <AboutAvatar className="h-full w-full" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                                Ayush Sagar
+                            </p>
+                            <p className="text-zinc-600 dark:text-zinc-400 mt-1">UNC student</p>
+                        </div>
+                    </div>
                     {/*
-                        One line of context inside the card rather than a paragraph under it. A
-                        name and a link with nothing between them leaves the reader to guess what
-                        this person has to do with the site they are standing on.
+                        The origin story, not just a credit line. A name and a link with nothing
+                        between them leaves the reader to guess what this person has to do with
+                        the site they are standing on, and short beats long here since it sits
+                        right under a photo, not in a full write-up.
                     */}
                     <p className="mt-4 leading-relaxed text-zinc-700 dark:text-zinc-300">
-                        I built Eat UNC and I keep it running.
+                        UNC&apos;s dining hall menus used to drive me insane. Cluttered, nutrition
+                        buried, and finding a high protein option felt like a scavenger hunt.
+                    </p>
+                    <p className="mt-3 leading-relaxed text-zinc-700 dark:text-zinc-300">
+                        So I built Eat UNC: real time menus for every dining hall, one click
+                        filters for calories, protein, fat and carbs, and search and sort by
+                        macros.
+                    </p>
+                    <p className="mt-3 leading-relaxed text-zinc-700 dark:text-zinc-300">
+                        No more guessing, no more clicking through menus. Just find what you need
+                        and go.
                     </p>
                     <a
                         href="https://www.linkedin.com/in/ayush-sagar/"
@@ -104,12 +123,12 @@ export default function AboutPage() {
                 */}
                 <section className="mt-10 rounded-2xl border border-[#4B9CD3]/25 bg-[#4B9CD3]/[0.06] p-6">
                     <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-                        Found something wrong?
+                        Suggestions or feature requests?
                     </h2>
                     <p className="mt-2 text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                        A wrong menu, a missing venue, a number that looks off, or something you
-                        wish this did — tell me. It goes straight to me, and it is how most of what
-                        is here got fixed.
+                        Got an idea, a feature you wish existed, or something that could be
+                        better? I&apos;d love to hear it. Most of what&apos;s here exists because
+                        someone told me what they wanted.
                     </p>
                     <Link
                         href="/feedback"
@@ -119,7 +138,8 @@ export default function AboutPage() {
                         Send feedback
                     </Link>
                 </section>
-            </div>
+                </div>
+            </CampusPage>
         </>
     );
 }

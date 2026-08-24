@@ -14,6 +14,8 @@ interface AppStoreBadgeProps {
      */
     variant?: 'black' | 'white'
     className?: string
+    /** Runs alongside the badge's own click event, for placements that also need to react. */
+    onClick?: () => void
 }
 
 /**
@@ -31,6 +33,7 @@ export default function AppStoreBadge({
     source,
     variant = 'black',
     className,
+    onClick,
 }: AppStoreBadgeProps) {
     const posthog = usePostHog()
 
@@ -39,7 +42,10 @@ export default function AppStoreBadge({
         // it would fire phantom hits.
         <a
             href={appLink(source)}
-            onClick={() => posthog?.capture('app_badge_clicked', { source })}
+            onClick={() => {
+                posthog?.capture('app_badge_clicked', { source })
+                onClick?.()
+            }}
             aria-label="Download Eat UNC on the App Store"
             className={cn(
                 'inline-block p-1 transition-transform duration-200',

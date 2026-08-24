@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 
-import { HALL_SLUG_BY_LOCATION_SLUG } from '@/lib/campus'
+import { HALL_SLUG_BY_LOCATION_SLUG, isValidIsoDate } from '@/lib/campus'
 import { loadVenue, venueMetadata, VenueView } from '../venueView'
 
 /**
@@ -16,17 +16,6 @@ export const revalidate = 900
 
 interface PageProps {
     params: Promise<{ slug: string; date: string }>
-}
-
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
-
-// The regex alone admits calendar-invalid strings like 2026-02-30. A NaN check is not
-// enough either: V8 rolls that over to March 2 instead of rejecting it, so the date must
-// round-trip — parse it, format it back, and demand the same string.
-function isValidIsoDate(date: string): boolean {
-    if (!ISO_DATE.test(date)) return false
-    const parsed = new Date(`${date}T12:00:00Z`)
-    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -49,6 +38,9 @@ export default async function VenueDatePage({ params }: PageProps) {
 
     const data = await loadVenue(slug, date)
     if (!data) notFound()
+
+    // Brand and hours-only pages do not change by date; keep one canonical public URL.
+    if (!data.primary.has_menu) redirect(`/locations/${slug}`)
 
     return <VenueView data={data} />
 }

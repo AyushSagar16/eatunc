@@ -30,6 +30,13 @@ export function campusToday(now: Date = new Date()): string {
     }).format(now)
 }
 
+/** Strict YYYY-MM-DD validation. JavaScript otherwise rolls 2026-02-30 into March. */
+export function isValidIsoDate(date: string): boolean {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false
+    const parsed = new Date(`${date}T12:00:00Z`)
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date
+}
+
 /**
  * The single frontend registry of the two residential halls.
  *
@@ -52,7 +59,7 @@ export type HallInfo = {
     campus: string
     /** Brand accent for the homepage bento card. */
     accent: 'blue' | 'teal'
-    /** The hall's evergreen landing page. */
+    /** Stable entry URL, which resolves to the current usable dated menu. */
     landingPath: string
 }
 
@@ -66,7 +73,7 @@ export const HALLS: HallInfo[] = [
         shortName: 'Chase',
         campus: 'South Campus',
         accent: 'blue',
-        landingPath: '/chase-menu',
+        landingPath: '/chase',
     },
     {
         routeSlug: 'lenoir',
@@ -76,7 +83,7 @@ export const HALLS: HallInfo[] = [
         shortName: 'Top of Lenoir',
         campus: 'North Campus',
         accent: 'teal',
-        landingPath: '/lenoir-menu',
+        landingPath: '/lenoir',
     },
 ]
 

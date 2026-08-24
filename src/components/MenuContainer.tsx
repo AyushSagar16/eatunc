@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useEffect, useCallback, useRef, Suspense } from 'react'
+import React, { useState, useMemo, useEffect, useCallback, useRef, useId, Suspense } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import Link from 'next/link'
 import { usePostHog } from 'posthog-js/react'
@@ -9,15 +9,10 @@ import FoodCard from '@/components/FoodCard'
 import FoodModal from '@/components/FoodModal'
 import FoodDisplayLayout from '@/components/FoodDisplayLayout'
 import FilterSidebar from '@/components/FilterSidebar'
-import { FoodGridSkeleton, ContentLoader } from '@/components/LoadingStates'
 import { FilterOption, DietaryPreferenceOption, AllergenOption } from '@/lib/types'
 import { calculateHealthyScore, getMealPeriodLabel, getActiveMealPeriod, isImplausibleServing } from '@/lib/utils'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { parseDietaryPreferences, parseAllergens } from '@/components/icons/DietaryIcons'
-
-// Debug flag: enable via NEXT_PUBLIC_DEBUG_MENU_PAGE=true in .env.local
-const DEBUG_MENU = process.env.NODE_ENV === 'development' ||
-    process.env.NEXT_PUBLIC_DEBUG_MENU_PAGE === 'true';
 
 interface MenuEntry {
     meal_period: string
@@ -25,6 +20,9 @@ interface MenuEntry {
     recipe_number: number
     master_food_items: MasterFoodItem | null
 }
+
+type SortableFood = MasterFoodItem | { item: MasterFoodItem }
+const foodOf = (value: SortableFood): MasterFoodItem => ('item' in value ? value.item : value)
 
 interface MenuContainerProps {
     allEntries: MenuEntry[]
@@ -74,6 +72,27 @@ const BEVERAGE_KEYWORDS = ['beverage', 'drink', 'coffee', 'tea', 'soda', 'juice'
 const FOOD_KEYWORDS = ['mustard', 'ketchup', 'mayo', 'relish', 'hot sauce', 'soy sauce', 'syrup', 'salt', 'pepper', 'sugar', 'creamer', 'dressing', 'vinaigrette', 'jam', 'jelly', 'honey', 'water', 'juice', 'milk', 'coffee', 'tea', 'coke', 'sprite']
 const TOPPING_KEYWORDS = ['lettuce', 'tomato', 'tomatoes', 'onion', 'onions', 'pickle', 'pickles', 'banana pepper', 'banana peppers', 'jalapeno', 'jalapenos', 'pepperoncini', 'sauerkraut']
 
+const VALID_FILTERS: FilterOption[] = ['protein', 'calories', 'fat', 'carbs']
+const VALID_DIETARY_PREFS: DietaryPreferenceOption[] = [
+    'vegan', 'vegetarian', 'gluten-free', 'halal', 'local',
+    'organic', 'smart-choice', 'sustainable-seafood', 'coolfood'
+]
+const VALID_ALLERGENS: AllergenOption[] = [
+    'milk', 'egg', 'fish', 'shellfish', 'tree nuts',
+    'peanut', 'wheat', 'soy', 'sesame'
+]
+const PREF_ID_TO_DB: Record<DietaryPreferenceOption, string> = {
+    vegan: 'vegan',
+    vegetarian: 'vegetarian',
+    'gluten-free': 'made without gluten',
+    halal: 'halal',
+    local: 'local',
+    organic: 'organic',
+    'smart-choice': 'smart choice',
+    'sustainable-seafood': 'sustainable seafood',
+    coolfood: 'coolfood',
+}
+
 const isCondimentOrDrink = (item: MasterFoodItem, station: string) => {
     const s = station.toLowerCase()
     const name = item.food_name?.toLowerCase() || ''
@@ -111,13 +130,14 @@ const isCondimentOrDrink = (item: MasterFoodItem, station: string) => {
 // PERFORMANCE: Memoize MiniFoodCard to prevent re-renders when props haven't changed
 const MiniFoodCard = React.memo(({ item, onClick, containsAllergen = false }: { item: MasterFoodItem; onClick: () => void; containsAllergen?: boolean }) => {
     return (
-        <motion.div
+        <motion.button
+            type="button"
             onClick={onClick}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             whileHover={containsAllergen ? {} : { backgroundColor: "rgba(250, 250, 250, 1)" }}
             whileTap={{ scale: 0.99 }}
-            className={`flex items-center justify-between p-3 rounded-xl border bg-white/50 dark:bg-zinc-900/30 cursor-pointer transition-all group h-full min-h-[42px] ${containsAllergen
+            className={`flex w-full items-center justify-between p-3 text-left rounded-xl border bg-white/50 dark:bg-zinc-900/30 cursor-pointer transition-all group h-full min-h-[42px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B9CD3] focus-visible:ring-offset-2 ${containsAllergen
                 ? 'border-2 border-dashed border-zinc-300 dark:border-zinc-700 opacity-60'
                 : 'border-zinc-200/50 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
                 }`}
@@ -128,9 +148,10 @@ const MiniFoodCard = React.memo(({ item, onClick, containsAllergen = false }: { 
                 }`}>
                 {item.food_name}
             </span>
-        </motion.div>
+        </motion.button>
     )
 })
+MiniFoodCard.displayName = 'MiniFoodCard'
 
 // PERFORMANCE: Memoize StationSection to prevent re-renders of large sections
 // This component renders many FoodCards, so preventing unnecessary re-renders is critical
@@ -148,6 +169,7 @@ const StationSection = React.memo((({
 }: StationSectionProps) => {
     const [isCollapsed, setIsCollapsed] = useState(false)
     const parentRef = useRef<HTMLDivElement>(null)
+    const contentId = useId()
 
     // Helper to check if item contains allergens to avoid
     const itemContainsAllergens = useCallback((item: MasterFoodItem): boolean => {
@@ -159,19 +181,6 @@ const StationSection = React.memo((({
             )
         )
     }, [activeAllergens])
-
-    // Map preference IDs to database values
-    const PREF_ID_TO_DB: Record<string, string> = {
-        'vegan': 'vegan',
-        'vegetarian': 'vegetarian',
-        'gluten-free': 'made without gluten',
-        'halal': 'halal',
-        'local': 'local',
-        'organic': 'organic',
-        'smart-choice': 'smart choice',
-        'sustainable-seafood': 'sustainable seafood',
-        'coolfood': 'coolfood',
-    }
 
     // Helper to check if item matches ALL selected dietary preferences
     const itemMatchesDietaryFilter = useCallback((item: MasterFoodItem): boolean => {
@@ -252,28 +261,35 @@ const StationSection = React.memo((({
 
     // VIRTUAL SCROLLING: Setup virtualizer for large lists
     // Virtualizes rows instead of individual items to maintain grid layout
-    const rowVirtualizer = shouldVirtualize ? useVirtualizer({
-        count: Math.ceil(sortedItems.length / itemsPerRow),
+    // TanStack Virtual intentionally returns imperative functions; React Compiler skips only
+    // this station component while the rest of the menu remains eligible for compilation.
+    // eslint-disable-next-line react-hooks/incompatible-library
+    const rowVirtualizer = useVirtualizer({
+        count: shouldVirtualize ? Math.ceil(sortedItems.length / itemsPerRow) : 0,
         getScrollElement: () => parentRef.current,
         estimateSize: () => 240, // Estimated row height in pixels
         overscan: 5, // Render 5 extra rows above/below viewport for smooth scrolling
-    }) : null
+    })
 
     return (
         <section className="flex flex-col gap-6">
             <button
+                type="button"
                 onClick={toggle}
+                aria-expanded={!isCollapsed}
+                aria-controls={contentId}
                 className="flex items-center gap-4 group w-full outline-none"
             >
                 <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800 group-hover:bg-zinc-300 dark:group-hover:bg-zinc-700 transition-colors" />
                 <div className="flex items-center gap-2">
-                    <h2 className="text-sm font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600 dark:group-hover:text-zinc-400 transition-colors">
+                    <h2 className="text-sm font-bold text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors">
                         {station}
                     </h2>
                     <span className="text-xs font-medium text-zinc-300 dark:text-zinc-600">
                         ({items.length})
                     </span>
                     <motion.div
+                        id={contentId}
                         animate={{ rotate: isCollapsed ? 0 : 180 }}
                         transition={{ duration: 0.2, ease: 'easeInOut' }}
                         className="text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400"
@@ -406,6 +422,7 @@ const StationSection = React.memo((({
         </section>
     )
 }))
+StationSection.displayName = 'StationSection'
 
 export default function MenuContainer({
     allEntries,
@@ -484,7 +501,6 @@ export default function MenuContainer({
     // Testing: localStorage.removeItem("eatunc_active_filters") to reset
 
     const FILTERS_STORAGE_KEY = 'eatunc_active_filters'
-    const VALID_FILTERS: FilterOption[] = ['protein', 'calories', 'fat', 'carbs']
 
     /**
      * Load filters from localStorage
@@ -584,10 +600,6 @@ export default function MenuContainer({
     // DIETARY PREFERENCES (localStorage)
     // ========================================
     const DIETARY_PREFS_STORAGE_KEY = 'eatunc_dietary_prefs'
-    const VALID_DIETARY_PREFS: DietaryPreferenceOption[] = [
-        'vegan', 'vegetarian', 'gluten-free', 'halal', 'local',
-        'organic', 'smart-choice', 'sustainable-seafood', 'coolfood'
-    ]
 
     const loadDietaryPrefsFromStorage = useCallback((): DietaryPreferenceOption[] => {
         try {
@@ -645,10 +657,6 @@ export default function MenuContainer({
     // ALLERGEN FILTERS (localStorage)
     // ========================================
     const ALLERGENS_STORAGE_KEY = 'eatunc_allergens'
-    const VALID_ALLERGENS: AllergenOption[] = [
-        'milk', 'egg', 'fish', 'shellfish', 'tree nuts',
-        'peanut', 'wheat', 'soy', 'sesame'
-    ]
 
     const loadAllergensFromStorage = useCallback((): AllergenOption[] => {
         try {
@@ -705,21 +713,6 @@ export default function MenuContainer({
     // ========================================
     // HELPER FUNCTIONS FOR FILTERING
     // ========================================
-
-    /**
-     * Map preference IDs to database values
-     */
-    const PREF_ID_TO_DB: Record<DietaryPreferenceOption, string> = {
-        'vegan': 'vegan',
-        'vegetarian': 'vegetarian',
-        'gluten-free': 'made without gluten',
-        'halal': 'halal',
-        'local': 'local',
-        'organic': 'organic',
-        'smart-choice': 'smart choice',
-        'sustainable-seafood': 'sustainable seafood',
-        'coolfood': 'coolfood',
-    }
 
     /**
      * Check if item matches selected dietary preferences
@@ -798,12 +791,12 @@ export default function MenuContainer({
         return items
     }, [allEntries, selectedPeriod, debouncedSearchQuery])
 
-    const applyGlobalSort = (items: any[]) => {
+    const applyGlobalSort = useCallback(<T extends SortableFood,>(items: T[]): T[] => {
         if (sortBy === 'recommended') return items;
 
         return [...items].sort((a, b) => {
-            const itemA = a.item || a;
-            const itemB = b.item || b;
+            const itemA = foodOf(a);
+            const itemB = foodOf(b);
 
             switch (sortBy) {
                 case 'calories':
@@ -818,7 +811,7 @@ export default function MenuContainer({
                     return 0;
             }
         });
-    };
+    }, [sortBy]);
 
     const healthyPicks = useMemo(() => {
         // Show Top Picks if any macro filters or dietary preferences are active
@@ -910,7 +903,7 @@ export default function MenuContainer({
             .slice(0, 8)
 
         return applyGlobalSort(picks);
-    }, [baseFilteredItems, activeFilters, activeDietaryPreferences, activeAllergens, sortBy, itemMatchesDietaryPreferences, itemContainsSelectedAllergens])
+    }, [baseFilteredItems, activeFilters, activeDietaryPreferences, activeAllergens, applyGlobalSort, itemMatchesDietaryPreferences, itemContainsSelectedAllergens])
 
     /**
      * stationsMap: Groups food items by their station for display
@@ -979,7 +972,7 @@ export default function MenuContainer({
         });
 
         return map
-    }, [allEntries, selectedPeriod, debouncedSearchQuery, sortBy])
+    }, [allEntries, selectedPeriod, debouncedSearchQuery, applyGlobalSort])
 
     // Initial visibility for stations (show first 3 immediately)
     const [visibleStationsCount, setVisibleStationsCount] = useState(3)
@@ -1129,10 +1122,6 @@ export default function MenuContainer({
             selectedPeriod={selectedPeriod}
             availablePeriods={availablePeriods}
             onPeriodChange={setSelectedPeriod}
-            activeFilters={activeFilters}
-            onRemoveFilter={toggleFilter}
-            onClearFilters={clearAllFilters}
-            itemCount={Object.values(stationsMap).reduce((sum, items) => sum + items.length, 0)}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             sortBy={sortBy}

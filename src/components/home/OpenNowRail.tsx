@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ChevronRight } from 'lucide-react'
 
 import { CAMPUS_TIMEZONE } from '@/lib/campus'
 import type { NextVenue, OpenVenue } from '@/lib/home'
@@ -30,11 +31,7 @@ function where(venue: OpenVenue) {
 }
 
 function Chevron() {
-    return (
-        <svg aria-hidden className="size-3.5 shrink-0 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-        </svg>
-    )
+    return <ChevronRight aria-hidden className="size-3.5 shrink-0 text-white/30" strokeWidth={2.5} />
 }
 
 function Row({ children, index }: { children: React.ReactNode; index: number }) {

@@ -58,7 +58,7 @@ export default function NotFound() {
                                 />
                             </motion.div>
                             <motion.span
-                                className="inline-block px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-300 text-sm font-bold tracking-widest uppercase"
+                                className="inline-block px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-300 text-sm font-bold"
                             >
                                 404 Error
                             </motion.span>
@@ -69,7 +69,7 @@ export default function NotFound() {
                         </h1>
 
                         <p className="text-zinc-400 text-lg md:text-xl font-medium max-w-md mx-auto leading-relaxed">
-                            It looks like this page has been cleared from the line. Let's get you back to the dining hall.
+                            It looks like this page has been cleared from the line. Let&apos;s get you back to the dining hall.
                         </p>
 
                         <motion.div

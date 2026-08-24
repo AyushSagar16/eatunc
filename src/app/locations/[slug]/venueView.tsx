@@ -31,6 +31,7 @@ import BrandItemsTable from '@/components/brands/BrandItemsTable'
 import NutritionSourceLegend from '@/components/brands/NutritionSourceLegend'
 import {
     buildingMeta,
+    displayGroup,
     formatCampusDate,
     formatCampusDateShort,
     formatClock,
@@ -127,7 +128,7 @@ function toEntries(raw: unknown): VenueMenuEntry[] {
 
         entries.push({
             meal_period: period,
-            meal_station: typeof entry.meal_station === 'string' ? entry.meal_station : 'MENU',
+            meal_station: typeof entry.meal_station === 'string' ? entry.meal_station : 'Menu',
             recipe_number: typeof entry.recipe_number === 'number' ? entry.recipe_number : item.recipe_number,
             master_food_items: item,
         })
@@ -275,7 +276,7 @@ export const loadVenue = cache(async (slug: string, requestedDate?: string): Pro
 
 function venueTitle(locations: Location[]): string {
     const name = locations[0].name
-    const buildings = Array.from(new Set(locations.map((l) => buildingMeta(l.venue_group).short)))
+    const buildings = Array.from(new Set(locations.map((l) => buildingMeta(displayGroup(l)).short)))
     if (buildings.length > 1) {
         return `${name} at UNC — Menu & Hours at ${sentenceList(buildings)}`
     }
@@ -297,7 +298,7 @@ function venueTitle(locations: Location[]): string {
 function venueDescription(data: VenueData): string {
     const { locations, entries, brand, selectedDate, today } = data
     const name = locations[0].name
-    const buildings = Array.from(new Set(locations.map((l) => buildingMeta(l.venue_group).short)))
+    const buildings = Array.from(new Set(locations.map((l) => buildingMeta(displayGroup(l)).short)))
     const isTruck = locations.some((l) => l.venue_group === 'Food Trucks')
 
     const where = isTruck
@@ -465,7 +466,7 @@ function StatusLine({
             </span>
             {showBuilding && (
                 <span className="text-zinc-500 dark:text-zinc-400">
-                    {buildingMeta(location.venue_group).short}
+                    {buildingMeta(displayGroup(location)).short}
                 </span>
             )}
             <span className="text-zinc-400 dark:text-zinc-500">
@@ -632,7 +633,7 @@ export function VenueView({ data }: { data: VenueData }) {
     const { locations, primary, hours, today, selectedDate, availableDates, resumesOn, everServes, entries, brand } =
         data
     const multi = locations.length > 1
-    const menuTitle = multi ? `${primary.name} · ${buildingMeta(primary.venue_group).short}` : primary.name
+    const menuTitle = multi ? `${primary.name} · ${buildingMeta(displayGroup(primary)).short}` : primary.name
 
     const crumbs = [
         { name: 'Eat UNC', path: '/' },
@@ -713,10 +714,10 @@ export function VenueView({ data }: { data: VenueData }) {
     // Server-rendered and handed down as a node, never rebuilt inside the client container:
     // breadcrumbs only work as real `<a>` elements in the HTML.
     const header = (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-3">
-            <Breadcrumbs crumbs={crumbs} />
-            <VenueStatusBar data={data} />
-            {entries.length > 0 && <MenuDateNote selectedDate={selectedDate} today={today} />}
+        <div key="venue-menu-context" className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-3">
+            <Breadcrumbs key="breadcrumbs" crumbs={crumbs} />
+            <VenueStatusBar key="status" data={data} />
+            {entries.length > 0 && <MenuDateNote key="date-note" selectedDate={selectedDate} today={today} />}
         </div>
     )
 
@@ -777,10 +778,10 @@ export function VenueView({ data }: { data: VenueData }) {
         const brandItems = brand.external_food_items
         const brandEntries = brandMenuEntries(brandItems)
         const brandHeader = (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-3">
-                <Breadcrumbs crumbs={crumbs} />
-                <VenueStatusBar data={data} />
-                <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400 max-w-3xl">
+            <div key="brand-menu-context" className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-3">
+                <Breadcrumbs key="breadcrumbs" crumbs={crumbs} />
+                <VenueStatusBar key="status" data={data} />
+                <p key="brand-note" className="mt-2 text-sm text-zinc-500 dark:text-zinc-400 max-w-3xl">
                     {primary.name} serves a brand menu rather than a UNC-published daily one, so it
                     does not change day to day and its nutrition is the same at every campus counter
                     that carries it.
@@ -820,7 +821,7 @@ export function VenueView({ data }: { data: VenueData }) {
         <MenuPageShell>
             {structuredData}
             {header}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
                 <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mt-4 mb-3">
                     {primary.name}
                 </h1>
@@ -835,7 +836,7 @@ export function VenueView({ data }: { data: VenueData }) {
                 >
                     All campus dining locations
                 </Link>
-            </div>
+            </main>
         </MenuPageShell>
     )
 }

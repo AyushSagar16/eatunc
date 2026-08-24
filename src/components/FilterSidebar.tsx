@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { cn } from '@/lib/utils'
 import { Filter, X, Check, Trash2, ChevronDown } from 'lucide-react'
@@ -22,7 +22,6 @@ interface FilterSidebarProps {
     activeFilters: FilterOption[]
     onToggleFilter: (filter: FilterOption) => void
     onClearAll: () => void
-    className?: string
     // Dietary preferences
     activeDietaryPreferences: DietaryPreferenceOption[]
     onToggleDietaryPreference: (pref: DietaryPreferenceOption) => void
@@ -130,22 +129,30 @@ export default function FilterSidebar({
     activeFilters,
     onToggleFilter,
     onClearAll,
-    className,
     activeDietaryPreferences,
     onToggleDietaryPreference,
     activeAllergens,
     onToggleAllergen,
 }: FilterSidebarProps) {
     const searchParams = useSearchParams()
-    const [isModalOpen, setIsModalOpen] = useState(false)
+    const [isModalOpen, setIsModalOpen] = useState(() => searchParams.get('openFilter') === 'true')
     const [announcement, setAnnouncement] = useState('')
+    const triggerRef = useRef<HTMLButtonElement>(null)
 
-    // Auto-open filter modal if openFilter=true query param is present
+    const closeModal = useCallback(() => {
+        setIsModalOpen(false)
+        requestAnimationFrame(() => triggerRef.current?.focus())
+    }, [])
+
+    // Escape closes the modal just like the visible close controls.
     useEffect(() => {
-        if (searchParams.get('openFilter') === 'true') {
-            setIsModalOpen(true)
+        if (!isModalOpen) return
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') closeModal()
         }
-    }, [searchParams])
+        document.addEventListener('keydown', handleKeyDown)
+        return () => document.removeEventListener('keydown', handleKeyDown)
+    }, [closeModal, isModalOpen])
 
     // ========================================
     // COLLAPSIBLE SECTIONS (localStorage)
@@ -180,17 +187,7 @@ export default function FilterSidebar({
     }, [])
 
     // All sections open by default (false = not collapsed)
-    const [collapsedSections, setCollapsedSections] = useState<Record<SectionKey, boolean>>({
-        macro: false,
-        dietary: false,
-        allergens: false,
-    })
-
-    // Load collapsed state from localStorage on mount
-    useEffect(() => {
-        const savedCollapsed = loadCollapsedFromStorage()
-        setCollapsedSections(savedCollapsed)
-    }, [loadCollapsedFromStorage])
+    const [collapsedSections, setCollapsedSections] = useState<Record<SectionKey, boolean>>(loadCollapsedFromStorage)
 
     // Save when collapsed state changes
     const toggleSection = (section: SectionKey) => {
@@ -249,11 +246,14 @@ export default function FilterSidebar({
 
             {/* Floating Filter Button - Visible on all screen sizes */}
             <motion.button
+                ref={triggerRef}
+                type="button"
                 data-tutorial-target="filter-button"
                 onClick={() => setIsModalOpen(true)}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 aria-label="Open filters"
+                aria-expanded={isModalOpen}
                 className="fixed bottom-6 right-6 z-50 w-14 h-14 min-w-[56px] min-h-[56px] bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center hover:bg-blue-700 active:bg-blue-800 transition-all touch-manipulation"
             >
                 <Filter className="w-6 h-6" />
@@ -277,7 +277,7 @@ export default function FilterSidebar({
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            onClick={() => setIsModalOpen(false)}
+                            onClick={closeModal}
                             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
                         />
 
@@ -288,6 +288,9 @@ export default function FilterSidebar({
                             exit={{ x: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                             className="fixed top-0 right-0 bottom-0 w-full sm:w-96 sm:max-w-md bg-white dark:bg-zinc-900 z-[101] overflow-auto shadow-2xl"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="filter-dialog-title"
                         >
                             {/* Header */}
                             <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 sticky top-0 z-10">
@@ -296,7 +299,7 @@ export default function FilterSidebar({
                                         <Filter className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                     </div>
                                     <div>
-                                        <h2 className="font-bold text-xl text-zinc-900 dark:text-zinc-100">
+                                        <h2 id="filter-dialog-title" className="font-bold text-xl text-zinc-900 dark:text-zinc-100">
                                             Filters
                                         </h2>
                                         {activeCount > 0 && (
@@ -307,7 +310,8 @@ export default function FilterSidebar({
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => setIsModalOpen(false)}
+                                    type="button"
+                                    onClick={closeModal}
                                     className="min-h-[44px] min-w-[44px] p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:bg-zinc-200 dark:active:bg-zinc-700 rounded-xl transition-colors touch-manipulation"
                                     aria-label="Close filters"
                                 >
@@ -324,7 +328,7 @@ export default function FilterSidebar({
                                         className="w-full flex items-center justify-between py-2 group"
                                         aria-expanded={!collapsedSections.macro}
                                     >
-                                        <h3 className="text-sm font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
+                                        <h3 className="text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
                                             Macro Filters
                                         </h3>
                                         <motion.div
@@ -351,12 +355,6 @@ export default function FilterSidebar({
                                                             <motion.button
                                                                 key={filter.id}
                                                                 onClick={() => handleToggleMacroFilter(filter)}
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Enter' || e.key === ' ') {
-                                                                        e.preventDefault()
-                                                                        handleToggleMacroFilter(filter)
-                                                                    }
-                                                                }}
                                                                 whileHover={{ scale: 1.02 }}
                                                                 whileTap={{ scale: 0.98 }}
                                                                 role="checkbox"
@@ -407,7 +405,7 @@ export default function FilterSidebar({
                                         className="w-full flex items-center justify-between py-2 group"
                                         aria-expanded={!collapsedSections.dietary}
                                     >
-                                        <h3 className="text-sm font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
+                                        <h3 className="text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
                                             Dietary Preferences
                                         </h3>
                                         <motion.div
@@ -435,12 +433,6 @@ export default function FilterSidebar({
                                                             <motion.button
                                                                 key={pref.id}
                                                                 onClick={() => handleToggleDietaryPreference(pref)}
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Enter' || e.key === ' ') {
-                                                                        e.preventDefault()
-                                                                        handleToggleDietaryPreference(pref)
-                                                                    }
-                                                                }}
                                                                 whileHover={{ scale: 1.02 }}
                                                                 whileTap={{ scale: 0.98 }}
                                                                 role="checkbox"
@@ -492,7 +484,7 @@ export default function FilterSidebar({
                                         className="w-full flex items-center justify-between py-2 group"
                                         aria-expanded={!collapsedSections.allergens}
                                     >
-                                        <h3 className="text-sm font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
+                                        <h3 className="text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
                                             Avoid Allergens
                                         </h3>
                                         <motion.div
@@ -522,12 +514,6 @@ export default function FilterSidebar({
                                                             <motion.button
                                                                 key={allergen.id}
                                                                 onClick={() => handleToggleAllergen(allergen)}
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Enter' || e.key === ' ') {
-                                                                        e.preventDefault()
-                                                                        handleToggleAllergen(allergen)
-                                                                    }
-                                                                }}
                                                                 whileHover={{ scale: 1.02 }}
                                                                 whileTap={{ scale: 0.98 }}
                                                                 role="checkbox"
@@ -569,7 +555,8 @@ export default function FilterSidebar({
                                     </button>
                                 )}
                                 <button
-                                    onClick={() => setIsModalOpen(false)}
+                                    type="button"
+                                    onClick={closeModal}
                                     className="w-full py-4 min-h-[52px] bg-blue-600 text-white font-bold text-lg rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation shadow-lg"
                                 >
                                     Apply Filters

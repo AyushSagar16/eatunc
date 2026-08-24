@@ -7,6 +7,9 @@ import { usePostHog } from 'posthog-js/react'
 import { X } from 'lucide-react'
 import { AppleLogo } from './icons/AppleLogo'
 import { appLink } from '@/lib/app-store'
+import { isAppDownloadPromptEligible } from '@/lib/app-download-prompt'
+import { claimSessionFlag, readStoredNumber } from '@/lib/browser-storage'
+import { useOnboarding } from '@/providers/OnboardingProvider'
 
 const DISMISSED_KEY = 'eatunc_app_banner_dismissed'
 const IMPRESSION_KEY = 'eatunc_app_banner_seen'
@@ -33,12 +36,11 @@ let visitNumber: number | null = null
 /** Returns the visitor's visit number, counting this session if it has not been counted yet. */
 function countVisit(): number {
     try {
-        const stored = Number(localStorage.getItem(VISIT_COUNT_KEY) ?? '0')
-        const previous = Number.isFinite(stored) && stored > 0 ? stored : 0
-        if (sessionStorage.getItem(VISIT_COUNTED_KEY) !== null) return previous
+        const stored = readStoredNumber(VISIT_COUNT_KEY) ?? 0
+        const previous = stored > 0 ? stored : 0
+        if (!claimSessionFlag(VISIT_COUNTED_KEY)) return previous
 
         const current = previous + 1
-        sessionStorage.setItem(VISIT_COUNTED_KEY, 'true')
         localStorage.setItem(VISIT_COUNT_KEY, String(current))
         return current
     } catch {
@@ -73,6 +75,7 @@ const readWithinVisitLimit = () => {
 export default function AppInstallBanner({ className = '' }: AppInstallBannerProps) {
     const posthog = usePostHog()
     const pathname = usePathname()
+    const { reportAppPromotionVisibility } = useOnboarding()
     // localStorage is client-only, so the server snapshot hides the banner and
     // hydration reveals it. Reading it through useSyncExternalStore keeps the
     // markup consistent without a setState-in-effect cascade.
@@ -88,7 +91,18 @@ export default function AppInstallBanner({ className = '' }: AppInstallBannerPro
     // initialiser would disagree with the server HTML and trip a hydration mismatch.
     const withinVisitLimit = useSyncExternalStore(neverChanges, readWithinVisitLimit, () => false)
 
-    const isHidden = wasDismissed || dismissedNow || isLanding || !withinVisitLimit
+    // The download prompt already covers this same funnel for the visitor it targets
+    // (new, or lapsed five-plus days) — stacking a modal on top of this banner on the
+    // same page load would be the exact clutter this pairing is meant to avoid. This is
+    // eligibility, not live visibility: the banner stays down for the whole page load even
+    // after the prompt auto-dismisses, so the two never trade places under the visitor.
+    const promptEligible = useSyncExternalStore(neverChanges, isAppDownloadPromptEligible, () => false)
+
+    const isHidden = wasDismissed || dismissedNow || isLanding || !withinVisitLimit || promptEligible
+
+    useEffect(() => {
+        reportAppPromotionVisibility('install-banner', isHidden ? 'hidden' : 'visible')
+    }, [isHidden, reportAppPromotionVisibility])
 
     useEffect(() => {
         if (isHidden) return

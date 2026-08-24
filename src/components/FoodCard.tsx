@@ -217,7 +217,7 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                             <span
                                 key={r.trim()}
                                 className={cn(
-                                    'px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider',
+                                    'px-2 py-0.5 rounded-full text-[10px] font-bold',
                                     getReasonStyle(r.trim())
                                 )}
                             >
@@ -345,7 +345,7 @@ const FoodCard = React.memo(function FoodCard({ item, station, reason, mealPerio
                                         className="absolute bottom-full right-0 mb-2 w-48 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-zinc-200 dark:border-zinc-700 p-3 z-50"
                                         onClick={(e) => e.stopPropagation()}
                                     >
-                                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2">
+                                        <h4 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 mb-2">
                                             Dietary Preferences
                                         </h4>
                                         <div className="flex flex-col gap-2">

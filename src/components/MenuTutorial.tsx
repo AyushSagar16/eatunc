@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react'
 import Joyride, { CallBackProps, STATUS, ACTIONS, Step, Styles } from 'react-joyride'
 import { usePostHog } from 'posthog-js/react'
+import { isIOSDevice } from '@/lib/platform'
+import { useOnboarding } from '@/providers/OnboardingProvider'
 
 // UNC Brand Colors
 const UNC_NAVY = '#13294B'
@@ -10,6 +12,8 @@ const UNC_BLUE = '#4B9CD3'
 
 // Tutorial storage key
 const TUTORIAL_STORAGE_KEY = 'eatunc_tutorial_completed'
+const neverChanges = () => () => { }
+const readIsClient = () => true
 
 // Desktop Tutorial Steps (6 steps - removed search bar as it was unreliable)
 const DESKTOP_STEPS: Step[] = [
@@ -215,51 +219,69 @@ const joyrideStyles: Partial<Styles> = {
  */
 export default function MenuTutorial() {
     const posthog = usePostHog()
+    const { appPromotionStatus, reportTutorialStatus } = useOnboarding()
     const [run, setRun] = useState(false)
     const [steps, setSteps] = useState<Step[]>([])
-    const [isClient, setIsClient] = useState(false)
+    const restartPendingRef = useRef(false)
+    const isClient = useSyncExternalStore(neverChanges, readIsClient, () => false)
+    const isIOS = useSyncExternalStore(neverChanges, isIOSDevice, () => false)
 
-    // iOS CRASH DEBUG: Disable react-joyride on iOS to test if it's causing crashes
+    // iOS CRASH DEBUG: Disable react-joyride on iOS to test if it's causing crashes.
+    // `isIOSDevice` also catches iPadOS, whose user agent identifies itself as Macintosh.
     // This overlay library is known to cause memory issues on iOS Safari
     // TODO: Remove this after confirming the crash cause
-    if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
-        console.log('[MenuTutorial] Disabled on iOS for crash debugging');
-        return null;
-    }
+    const startTutorial = useCallback(() => {
+        restartPendingRef.current = false
+        const mounted = stepsOnScreen()
+        setSteps(mounted)
+        setRun(mounted.length > 0)
+        reportTutorialStatus(mounted.length > 0 ? 'running' : 'idle')
+    }, [reportTutorialStatus])
 
-    // Detect client-side rendering
+    // Register an incomplete automatic tutorial before any of the delayed surfaces can open.
+    // Cookie consent uses `waiting` as a blocker too, so it cannot win a one-second timer race.
     useEffect(() => {
-        setIsClient(true)
-    }, [])
+        if (!isClient || isIOS) {
+            reportTutorialStatus('idle')
+            return
+        }
 
-    // Check if tutorial should run on mount
+        const hasCompletedTutorial = localStorage.getItem(TUTORIAL_STORAGE_KEY) === 'true'
+        reportTutorialStatus(hasCompletedTutorial ? 'idle' : 'waiting')
+
+        return () => reportTutorialStatus('idle')
+    }, [isClient, isIOS, reportTutorialStatus])
+
+    // The two app CTAs hydrate independently. Wait until both have explicitly resolved and are
+    // hidden before arming the tutorial, so Joyride never measures targets while a banner is
+    // entering or opens its overlay on top of the app-download prompt.
     useEffect(() => {
-        if (!isClient) return
+        if (!isClient || isIOS || appPromotionStatus !== 'clear') return
 
         const hasCompletedTutorial = localStorage.getItem(TUTORIAL_STORAGE_KEY) === 'true'
 
-        if (!hasCompletedTutorial) {
+        if (!hasCompletedTutorial || restartPendingRef.current) {
             // Delay start to ensure all elements are rendered
-            const timer = setTimeout(() => {
-                const mounted = stepsOnScreen()
-                setSteps(mounted)
-                setRun(mounted.length > 0)
-            }, 1000)
+            const timer = setTimeout(startTutorial, 1000)
             return () => clearTimeout(timer)
         }
-    }, [isClient])
+    }, [appPromotionStatus, isClient, isIOS, startTutorial])
 
     // Listen for restart event from footer help button
     useEffect(() => {
         const handleRestart = () => {
-            const mounted = stepsOnScreen()
-            setSteps(mounted)
-            setRun(mounted.length > 0)
+            if (isIOS) return
+            if (appPromotionStatus !== 'clear') {
+                restartPendingRef.current = true
+                reportTutorialStatus('waiting')
+                return
+            }
+            startTutorial()
         }
 
         window.addEventListener('restartTutorial', handleRestart)
         return () => window.removeEventListener('restartTutorial', handleRestart)
-    }, [])
+    }, [appPromotionStatus, isIOS, reportTutorialStatus, startTutorial])
 
     // Handle Joyride callbacks
     const handleJoyrideCallback = useCallback((data: CallBackProps) => {
@@ -291,6 +313,7 @@ export default function MenuTutorial() {
                 })
             }
             setRun(false)
+            reportTutorialStatus('idle')
             localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true')
         }
 
@@ -301,12 +324,13 @@ export default function MenuTutorial() {
                 device_type: deviceType,
             })
             setRun(false)
+            reportTutorialStatus('idle')
             localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true')
         }
-    }, [steps, posthog])
+    }, [steps, posthog, reportTutorialStatus])
 
     // Don't render on server
-    if (!isClient) return null
+    if (!isClient || isIOS) return null
 
     return (
         <Joyride
@@ -340,5 +364,3 @@ export default function MenuTutorial() {
         />
     )
 }
-
-

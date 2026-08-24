@@ -7,6 +7,7 @@ import { breadcrumbList, canonical, jsonLd } from '@/lib/seo'
 import BrandCard from '@/components/brands/BrandCard'
 import NutritionSourceLegend from '@/components/brands/NutritionSourceLegend'
 import { sourceSplit, type SourceSplit } from '@/components/brands/nutrition'
+import { Breadcrumbs, PageHeading } from '@/components/campus/CampusChrome'
 
 /**
  * Brand nutrition changes when an operator republishes a PDF, which is a matter of months, not
@@ -164,27 +165,13 @@ export default async function BrandsPage() {
 
             <main className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 md:py-16">
-                    <nav aria-label="Breadcrumb" className="mb-8 text-sm text-zinc-500">
-                        <Link href="/" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-                            Home
-                        </Link>
-                        <span className="mx-2 text-zinc-300">/</span>
-                        <span className="text-zinc-700 dark:text-zinc-300">Campus restaurants</span>
-                    </nav>
-
-                    <div className="flex items-start gap-5 mb-6">
-                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#4B9CD3]/10 border border-[#4B9CD3]/20 flex items-center justify-center shrink-0">
-                            <Store className="w-7 h-7 md:w-8 md:h-8 text-[#4B9CD3]" aria-hidden="true" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2">
-                                Nutrition for Campus Restaurants at UNC
-                            </h1>
-                            <p className="text-lg text-zinc-500 dark:text-zinc-400">
-                                Chapel Hill · the chains, cafés and food trucks outside the dining halls
-                            </p>
-                        </div>
-                    </div>
+                    <Breadcrumbs crumbs={[{ name: 'Eat UNC', path: '/' }, { name: 'Campus restaurants', path: PATH }]} />
+                    <PageHeading
+                        icon={<Store className="w-6 h-6" aria-hidden="true" />}
+                        iconClassName="bg-[#4B9CD3]/10 text-[#2c6f9e] dark:text-[#7cc0ec]"
+                        title="Nutrition for Campus Restaurants at UNC"
+                        description="Chapel Hill · the chains, cafés and food trucks outside the dining halls"
+                    />
 
                     <p className="text-lg text-zinc-600 dark:text-zinc-300 max-w-3xl leading-relaxed mb-4">
                         Chase and Top of Lenoir publish nutrition for every recipe they serve. The rest
@@ -284,11 +271,11 @@ export default async function BrandsPage() {
                             <p className="text-zinc-600 dark:text-zinc-400">
                                 We could not load the brand list just now. The dining hall menus are
                                 unaffected —{' '}
-                                <Link href="/chase-menu" className="text-[#4B9CD3] hover:underline">
+                                <Link href="/chase" className="text-[#4B9CD3] hover:underline">
                                     Chase
                                 </Link>{' '}
                                 and{' '}
-                                <Link href="/lenoir-menu" className="text-[#4B9CD3] hover:underline">
+                                <Link href="/lenoir" className="text-[#4B9CD3] hover:underline">
                                     Top of Lenoir
                                 </Link>{' '}
                                 are still there.
@@ -298,7 +285,7 @@ export default async function BrandsPage() {
 
                     <section className="mt-12 grid sm:grid-cols-3 gap-4">
                         <CrossLink
-                            href="/chase-menu"
+                            href="/chase"
                             icon={<Utensils className="w-5 h-5 text-blue-500" aria-hidden="true" />}
                             title="Dining hall menus"
                             body="Chase and Top of Lenoir, by meal period and station, with nutrition on every item."

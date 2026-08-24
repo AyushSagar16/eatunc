@@ -19,6 +19,7 @@ import {
     groupByCategory,
     sourceSplit,
 } from '@/components/brands/nutrition'
+import { Breadcrumbs, PageHeading } from '@/components/campus/CampusChrome'
 
 /** A brand republishes its nutrition sheet once or twice a year. A day is plenty. */
 export const revalidate = 86400
@@ -195,41 +196,22 @@ export default async function BrandPage({ params }: PageProps) {
 
             <main className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 md:py-16">
-                    <nav aria-label="Breadcrumb" className="mb-8 text-sm text-zinc-500">
-                        <Link href="/" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-                            Home
-                        </Link>
-                        <span className="mx-2 text-zinc-300">/</span>
-                        <Link
-                            href="/brands"
-                            className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                        >
-                            Campus restaurants
-                        </Link>
-                        <span className="mx-2 text-zinc-300">/</span>
-                        <span className="text-zinc-700 dark:text-zinc-300">{brand.name}</span>
-                    </nav>
-
-                    <div className="flex items-start gap-5 mb-6">
-                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#4B9CD3]/10 border border-[#4B9CD3]/20 flex items-center justify-center shrink-0">
-                            <Store className="w-7 h-7 md:w-8 md:h-8 text-[#4B9CD3]" aria-hidden="true" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2">
-                                {brand.name} at UNC: Menu &amp; Nutrition
-                            </h1>
-                            {venueLinks.size > 0 && (
-                                <p className="text-lg text-zinc-500 dark:text-zinc-400 flex items-start gap-2">
-                                    <MapPin className="w-4 h-4 mt-1.5 shrink-0" aria-hidden="true" />
-                                    <span>
-                                        {Array.from(venueLinks.values())
-                                            .flatMap((entry) => entry.labels)
-                                            .join(' · ')}
-                                    </span>
-                                </p>
-                            )}
-                        </div>
-                    </div>
+                    <Breadcrumbs crumbs={[
+                        { name: 'Eat UNC', path: '/' },
+                        { name: 'Campus restaurants', path: '/brands' },
+                        { name: brand.name, path: `/brands/${brand.slug}` },
+                    ]} />
+                    <PageHeading
+                        icon={<Store className="w-6 h-6" aria-hidden="true" />}
+                        iconClassName="bg-[#4B9CD3]/10 text-[#2c6f9e] dark:text-[#7cc0ec]"
+                        title={<>{brand.name} at UNC: Menu &amp; Nutrition</>}
+                        description={venueLinks.size > 0 ? (
+                            <span className="flex items-start gap-2">
+                                <MapPin className="w-4 h-4 mt-1 shrink-0" aria-hidden="true" />
+                                <span>{Array.from(venueLinks.values()).flatMap((entry) => entry.labels).join(' · ')}</span>
+                            </span>
+                        ) : undefined}
+                    />
 
                     <p className="text-lg text-zinc-600 dark:text-zinc-300 max-w-3xl leading-relaxed mb-8">
                         {split.total > 0 ? (
@@ -299,7 +281,7 @@ export default async function BrandPage({ params }: PageProps) {
 
                         {brand.coverage_note && (
                             <div>
-                                <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 mb-2">
+                                <h3 className="text-sm font-semibold text-zinc-500 mb-2">
                                     Coverage note
                                 </h3>
                                 {/* Verbatim. This is the record of what was and was not covered, and
