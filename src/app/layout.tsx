@@ -9,6 +9,7 @@ import CookieConsent from "@/components/CookieConsent";
 import { Analytics } from "@vercel/analytics/next";
 import CDSBanner from "@/components/CDSBanner";
 import AppInstallBanner from "@/components/AppInstallBanner";
+import AppDownloadPrompt from "@/components/AppDownloadPrompt";
 import { APP_STORE_ID } from "@/lib/app-store";
 
 const inter = Inter({
@@ -140,6 +141,7 @@ export default function RootLayout({
             {children}
             <Footer />
           </ThemeProvider>
+          <AppDownloadPrompt />
           <CookieConsent />
         </PostHogProvider>
         <Analytics />

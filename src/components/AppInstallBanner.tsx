@@ -7,6 +7,7 @@ import { usePostHog } from 'posthog-js/react'
 import { X } from 'lucide-react'
 import { AppleLogo } from './icons/AppleLogo'
 import { appLink } from '@/lib/app-store'
+import { checkAppDownloadPromptEligible } from '@/lib/app-download-prompt'
 
 const DISMISSED_KEY = 'eatunc_app_banner_dismissed'
 const IMPRESSION_KEY = 'eatunc_app_banner_seen'
@@ -88,7 +89,12 @@ export default function AppInstallBanner({ className = '' }: AppInstallBannerPro
     // initialiser would disagree with the server HTML and trip a hydration mismatch.
     const withinVisitLimit = useSyncExternalStore(neverChanges, readWithinVisitLimit, () => false)
 
-    const isHidden = wasDismissed || dismissedNow || isLanding || !withinVisitLimit
+    // The download prompt already covers this same funnel for the visitor it targets
+    // (new, or lapsed five-plus days) — stacking a modal on top of this banner on the
+    // same page load would be the exact clutter this pairing is meant to avoid.
+    const promptShowing = useSyncExternalStore(neverChanges, checkAppDownloadPromptEligible, () => false)
+
+    const isHidden = wasDismissed || dismissedNow || isLanding || !withinVisitLimit || promptShowing
 
     useEffect(() => {
         if (isHidden) return

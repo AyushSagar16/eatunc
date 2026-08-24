@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
+import { checkAppDownloadPromptEligible } from '@/lib/app-download-prompt'
+
+// The usual delay before showing the cookie banner. When the app download prompt is
+// also showing this load, cookie consent waits behind it instead — surfacing two
+// unrelated popups within the same second reads as a wall of dialogs, not a homepage.
+const DEFAULT_DELAY_MS = 1000
+const DELAY_BEHIND_APP_PROMPT_MS = 8000
 
 export default function CookieConsent() {
     const [showBanner, setShowBanner] = useState(false)
@@ -15,7 +22,8 @@ export default function CookieConsent() {
         const consent = localStorage.getItem('cookie_consent')
 
         if (!consent) {
-            const timer = setTimeout(() => setShowBanner(true), 1000)
+            const delay = checkAppDownloadPromptEligible() ? DELAY_BEHIND_APP_PROMPT_MS : DEFAULT_DELAY_MS
+            const timer = setTimeout(() => setShowBanner(true), delay)
             return () => clearTimeout(timer)
         } else if (consent === 'accepted') {
             posthog.opt_in_capturing()
