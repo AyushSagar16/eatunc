@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Linkedin, MessageSquare, UserRound } from "lucide-react";
+import { ArrowRight, Linkedin, MessageSquare } from "lucide-react";
 import { breadcrumbList, canonical, jsonLd } from "@/lib/seo";
 import AboutAvatar from "@/components/AboutAvatar";
-import { Breadcrumbs, CampusPage, PageHeading } from "@/components/campus/CampusChrome";
+import DitherShader from "@/components/ui/dither-shader";
+import { Breadcrumbs, CampusPage } from "@/components/campus/CampusChrome";
 
 /** One node id for the person, shared by the `author` and `founder` references below. */
 const AUTHOR_ID = `${canonical("/about")}#ayush-sagar`;
@@ -67,78 +68,130 @@ export default function AboutPage() {
             />
             <CampusPage>
                 <Breadcrumbs crumbs={[{ name: "Eat UNC", path: "/" }, { name: "About", path: "/about" }]} />
-                <PageHeading
-                    icon={<UserRound className="h-6 w-6" />}
-                    iconClassName="bg-[#4B9CD3]/10 text-[#2c6f9e] dark:text-[#7cc0ec]"
-                    title="About Eat UNC"
-                    description="The student behind the campus dining guide."
-                />
 
-                <div className="max-w-2xl">
-                <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/40 p-6">
-                    <div className="flex items-center gap-5">
-                        <div className="relative h-28 w-28 sm:h-32 sm:w-32 shrink-0 overflow-hidden rounded-2xl">
-                            <AboutAvatar className="h-full w-full" />
+                {/*
+                    The hero is the page's one piece of art, and it is the homepage's treatment
+                    rather than a new one: the Old Well under the same navy/blue Bayer duotone,
+                    a gradient wordline over it. A bordered grey card here read as a settings
+                    panel — this is the only page on the site whose subject is a person, so it
+                    is the only one that can afford a full-bleed portrait.
+                */}
+                <section
+                    className="relative isolate overflow-hidden rounded-3xl shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-500"
+                    style={{ backgroundColor: "#13294B" }}
+                >
+                    <div aria-hidden className="pointer-events-none absolute inset-0">
+                        <DitherShader
+                            src="/old-well-optimized.jpg"
+                            ditherMode="bayer"
+                            colorMode="duotone"
+                            primaryColor="#13294B" // UNC Navy
+                            secondaryColor="#4B9CD3" // UNC Blue
+                            threshold={0.7}
+                            pixelRatio={1}
+                            className="h-full w-full opacity-50"
+                        />
+                        {/*
+                            Diagonal rather than vertical: the copy sits bottom-left and the
+                            portrait top-left, so the image is only allowed to stay legible in
+                            the corner nothing is written into.
+                        */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#13294B]/95 via-[#13294B]/85 to-[#13294B]/45" />
+                        {/*
+                            A second scrim along the bottom, for the phone. There the panel is
+                            one narrow column, so the last paragraph lands in the corner the
+                            diagonal deliberately left bright and the dither reads through it.
+                        */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#13294B]/85 via-transparent to-transparent" />
+                    </div>
+
+                    <div className="relative p-6 sm:p-10">
+                        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
+                            {/*
+                                A pale Carolina tile behind the portrait, not the navy panel.
+                                `AboutAvatar` inks the photo in a five-stop ramp whose darkest
+                                stop *is* #13294B and whose transparent background shows the
+                                card through — dropped straight onto navy, the hair and the
+                                shaded side of the face would dissolve into it.
+                            */}
+                            <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-[#DCEEF9] to-[#8FCBEB] shadow-lg ring-1 ring-white/25 sm:h-32 sm:w-32">
+                                <AboutAvatar className="h-full w-full" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8FCBEB]">
+                                    Built by
+                                </p>
+                                <p className="mt-1.5 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                                    Ayush Sagar
+                                </p>
+                                <p className="mt-0.5 text-sm text-blue-100/70">UNC student</p>
+                                <a
+                                    href="https://www.linkedin.com/in/ayush-sagar/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="focus-ring mt-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20"
+                                >
+                                    <Linkedin className="h-4 w-4" aria-hidden />
+                                    LinkedIn
+                                </a>
+                            </div>
                         </div>
-                        <div className="min-w-0">
-                            <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                                Ayush Sagar
+
+                        <h1 className="mt-8 bg-gradient-to-r from-blue-200 via-white to-blue-200 bg-clip-text pb-[0.1em] text-4xl font-black leading-[1.12] tracking-tighter text-transparent drop-shadow-2xl sm:mt-10 sm:text-5xl [@media(forced-colors:active)]:text-white">
+                            About Eat UNC
+                        </h1>
+
+                        {/*
+                            The origin story, not a credit line. A name and a link with nothing
+                            between them leaves the reader guessing what this person has to do
+                            with the site they are standing on.
+                        */}
+                        <div className="mt-5 max-w-2xl space-y-3 text-[15px] leading-relaxed text-blue-50/85 sm:text-base">
+                            <p>
+                                UNC&apos;s dining menus drove me insane. Cluttered pages, nutrition buried
+                                three clicks deep, and finding a high-protein option was a scavenger hunt.
                             </p>
-                            <p className="text-zinc-600 dark:text-zinc-400 mt-1">UNC student</p>
+                            <p>
+                                So I built Eat UNC: live menus for every dining hall, one-click filters for
+                                calories, protein, fat and carbs, and search and sort by macros.
+                            </p>
+                            <p className="font-semibold text-white">Find what you need, go eat.</p>
                         </div>
                     </div>
-                    {/*
-                        The origin story, not just a credit line. A name and a link with nothing
-                        between them leaves the reader to guess what this person has to do with
-                        the site they are standing on, and short beats long here since it sits
-                        right under a photo, not in a full write-up.
-                    */}
-                    <p className="mt-4 leading-relaxed text-zinc-700 dark:text-zinc-300">
-                        UNC&apos;s dining hall menus used to drive me insane. Cluttered, nutrition
-                        buried, and finding a high protein option felt like a scavenger hunt.
-                    </p>
-                    <p className="mt-3 leading-relaxed text-zinc-700 dark:text-zinc-300">
-                        So I built Eat UNC: real time menus for every dining hall, one click
-                        filters for calories, protein, fat and carbs, and search and sort by
-                        macros.
-                    </p>
-                    <p className="mt-3 leading-relaxed text-zinc-700 dark:text-zinc-300">
-                        No more guessing, no more clicking through menus. Just find what you need
-                        and go.
-                    </p>
-                    <a
-                        href="https://www.linkedin.com/in/ayush-sagar/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 mt-5 text-sm font-semibold text-[#4B9CD3] hover:underline"
-                    >
-                        <Linkedin className="h-4 w-4" aria-hidden />
-                        LinkedIn
-                    </a>
-                </div>
+                </section>
 
                 {/*
                     The prompt is a real control rather than a sentence with a link buried in it,
                     because it is the only thing this page asks the reader to do.
                 */}
-                <section className="mt-10 rounded-2xl border border-[#4B9CD3]/25 bg-[#4B9CD3]/[0.06] p-6">
-                    <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-                        Suggestions or feature requests?
-                    </h2>
-                    <p className="mt-2 text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                        Got an idea, a feature you wish existed, or something that could be
-                        better? I&apos;d love to hear it. Most of what&apos;s here exists because
-                        someone told me what they wanted.
-                    </p>
-                    <Link
-                        href="/feedback"
-                        className="inline-flex items-center gap-2 mt-5 px-4 py-2.5 rounded-xl bg-[#4B9CD3] hover:bg-[#4B9CD3]/90 text-white font-semibold transition shadow-md active:scale-95"
-                    >
-                        <MessageSquare className="h-4 w-4" aria-hidden />
-                        Send feedback
-                    </Link>
+                <section className="group relative mt-6 overflow-hidden rounded-3xl border border-[#4B9CD3]/25 bg-[#4B9CD3]/[0.07] p-6 sm:p-8">
+                    <div
+                        aria-hidden
+                        className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[#4B9CD3]/15 blur-3xl"
+                    />
+                    <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="max-w-xl">
+                            <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-2xl">
+                                Suggestions or feature requests?
+                            </h2>
+                            <p className="mt-2 leading-relaxed text-zinc-600 dark:text-zinc-300">
+                                Got an idea, or found something broken? Tell me. Most of what&apos;s here
+                                exists because someone asked for it.
+                            </p>
+                        </div>
+                        <Link
+                            href="/feedback"
+                            className="focus-ring inline-flex shrink-0 items-center gap-2 self-start rounded-xl bg-[#4B9CD3] px-4 py-2.5 font-semibold text-white shadow-md transition hover:bg-[#4B9CD3]/90 active:scale-95 sm:self-auto"
+                        >
+                            <MessageSquare className="h-4 w-4" aria-hidden />
+                            Send feedback
+                            <ArrowRight
+                                className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                                aria-hidden
+                            />
+                        </Link>
+                    </div>
                 </section>
-                </div>
             </CampusPage>
         </>
     );
