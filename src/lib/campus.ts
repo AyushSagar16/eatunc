@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { Database } from '@/lib/database.types'
+import { CAMPUS_TIMEZONE } from './utils'
 
 export type Location = Database['public']['Tables']['locations']['Row']
 export type LocationHours = Database['public']['Tables']['location_hours']['Row']
@@ -18,7 +19,7 @@ export type BrandWithItems = ExternalBrand & { external_food_items: ExternalFood
  * splitting the search intent across two near-identical URLs that would compete with each
  * other for "mediterranean deli unc".
  */
-export const CAMPUS_TIMEZONE = 'America/New_York'
+export { CAMPUS_TIMEZONE }
 
 /** Today's date in Chapel Hill, as YYYY-MM-DD. The dining day is always local. */
 export function campusToday(now: Date = new Date()): string {
