@@ -10,7 +10,7 @@ import {
     type HallInfo,
     type LocationHours,
 } from "@/lib/campus";
-import { groupByPeriodAndStation, type OutlineEntry } from "@/components/MenuOutline";
+import { groupByPeriodAndStation, type OutlineItem } from "@/components/MenuOutline";
 import { breadcrumbList, canonical, jsonLd } from "@/lib/seo";
 import { compareMealPeriods } from "@/lib/utils";
 import { Breadcrumbs, CampusPage, PageHeading } from "@/components/campus/CampusChrome";
@@ -57,7 +57,7 @@ type HallToday = {
 
 /** One dish per station in rotation, so a period is described by its breadth, not its first shelf. */
 function sampleAcrossStations(
-    stations: { items: OutlineEntry[] }[],
+    stations: { items: OutlineItem[] }[],
     limit: number,
 ): string[] {
     const names: string[] = []
@@ -67,7 +67,7 @@ function sampleAcrossStations(
         let advanced = false
         for (const station of stations) {
             if (names.length >= limit) break
-            const name = station.items[round]?.master_food_items?.food_name
+            const name = station.items[round]?.food.food_name
             if (!name) continue
             advanced = true
             const key = name.toLowerCase()
@@ -109,8 +109,8 @@ async function loadHall(hall: HallInfo, date: string): Promise<HallToday> {
     if (hoursResult.status === "fulfilled") empty.hours = hoursResult.value;
     if (menuResult.status !== "fulfilled" || !menuResult.value) return empty;
 
-    const entries = (menuResult.value.menu_entries ?? []) as OutlineEntry[];
-    const grouped = groupByPeriodAndStation(entries);
+    const { entries, foods } = menuResult.value;
+    const grouped = groupByPeriodAndStation(entries, foods);
 
     return {
         ...empty,

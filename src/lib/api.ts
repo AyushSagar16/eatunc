@@ -14,6 +14,40 @@ export type FullMenu = Menu & {
     menu_entries: MenuEntryWithFood[]
 }
 
+/** Supabase truncates any single result at exactly this many rows, and reports no error. */
+const PAGE_SIZE = 1000
+
+/**
+ * One serving on a menu: where and when it is served, and nothing about the food itself.
+ *
+ * The food is looked up in `FoodsByRecipe` instead of being repeated on every row. A hall
+ * serves the same recipe at six meal periods, so the nutrition used to be serialised six
+ * times — Chase publishes 1,405 entries drawn from 307 distinct recipes.
+ */
+export type MenuEntryRef = {
+    meal_period: string
+    meal_station: string | null
+    recipe_number: number
+}
+
+/**
+ * `recipe_number` -> the food, resolved once per menu rather than once per serving.
+ *
+ * Partial because a lookup can miss: a recipe UNC has not ingested yet has no
+ * `master_food_items` row, which is the same gap the nested join used to report as a null
+ * `master_food_items` on the entry. Every consumer must keep dropping those entries.
+ */
+export type FoodsByRecipe = Partial<Record<number, MasterFoodItem>>
+
+/** A hall's whole day, normalised: the servings, and the foods they point at. */
+export type FullDayMenu = {
+    id: string
+    menu_date: string
+    dining_hall: string
+    entries: MenuEntryRef[]
+    foods: FoodsByRecipe
+}
+
 /**
  * Fetch all menus, optionally filtered by date and dining hall.
  */
@@ -65,122 +99,150 @@ export async function getMenuByDateAndHall(date: string, diningHall: string) {
         .maybeSingle()
 }
 
-/**
- * Fetch a full menu by date and dining hall with selective field fetching.
- * No caching - always fetches fresh data from Supabase.
- */
-export async function getFullMenuByDateAndHall(date: string, diningHall: string) {
-    const startTime = performance.now()
+/** The columns every menu surface renders — which is every column `master_food_items` has. */
+const FOOD_COLUMNS = `
+    recipe_number,
+    food_name,
+    calories_kcal,
+    protein_g,
+    fat_g,
+    carbohydrates_g,
+    amount_per_serving,
+    dietary_preferences,
+    allergens
+`
 
-    // IMPORTANT: Supabase has a default limit of 1000 rows for nested relations.
-    // We need to explicitly set a higher limit to fetch all menu entries.
-    // The menu_entries!inner syntax with limit ensures we get all items.
-    const { data, error } = await supabase
+/**
+ * Read every row a query matches, one page at a time.
+ *
+ * Two details are load-bearing. The offset is the number of rows already held rather than a
+ * multiple of `PAGE_SIZE`, and the end comes from PostgREST's own `count` rather than from a
+ * page arriving short. If the project's `db.max_rows` were ever lowered below `PAGE_SIZE`,
+ * striding by `PAGE_SIZE` would skip rows and a short-page test would mistake the first page
+ * for the last — silently truncating a hall's menu, which is the exact failure this function
+ * exists to avoid.
+ */
+async function fetchAllRows<T>(
+    page: (from: number, to: number) => PromiseLike<{
+        data: T[] | null
+        error: unknown
+        count: number | null
+    }>,
+): Promise<T[]> {
+    const all: T[] = []
+    let total = Infinity
+
+    while (all.length < total) {
+        const { data, error, count } = await page(all.length, all.length + PAGE_SIZE - 1)
+        if (error) throw error
+        if (count !== null) total = count
+        // Never trusted to end the loop — only to stop it spinning if a page comes back empty
+        // while `count` still claims there is more.
+        if (!data?.length) break
+        all.push(...data)
+    }
+
+    return all
+}
+
+/**
+ * Every serving on a menu, paginated flat because a nested select cannot page past the cap.
+ *
+ * The `.order()` is not cosmetic. Postgres makes no promise about row order between two
+ * `LIMIT/OFFSET` queries, so paginating without one can repeat a row on page two and drop
+ * another entirely. `(recipe_number, meal_period, meal_station)` is the rest of the composite
+ * primary key once `menu_id` is fixed, so it is unique and therefore a total order.
+ */
+function fetchMenuEntries(menuId: string): Promise<MenuEntryRef[]> {
+    return fetchAllRows((from, to) =>
+        supabase
+            .from('menu_entries')
+            .select('meal_period, meal_station, recipe_number', { count: 'exact' })
+            .eq('menu_id', menuId)
+            .order('recipe_number', { ascending: true })
+            .order('meal_period', { ascending: true })
+            .order('meal_station', { ascending: true })
+            .range(from, to),
+    )
+}
+
+/**
+ * The distinct foods a menu points at, keyed by recipe number.
+ *
+ * `menu_entries!inner()` is a join used purely as a filter — the empty parentheses select no
+ * columns from it, so this returns one row per *food*, not one per serving. That is what makes
+ * it independent of the entry query above and safe to run alongside it: both need only the
+ * menu id. Fetching the foods through the entries instead would mean waiting for them first
+ * and then sending 300-odd recipe numbers back up as a query string.
+ */
+async function fetchMenuFoods(menuId: string): Promise<FoodsByRecipe> {
+    const rows = await fetchAllRows((from, to) =>
+        supabase
+            .from('master_food_items')
+            .select(`${FOOD_COLUMNS}, menu_entries!inner()`, { count: 'exact' })
+            .eq('menu_entries.menu_id', menuId)
+            .order('recipe_number', { ascending: true })
+            .range(from, to),
+    )
+
+    const foods: FoodsByRecipe = {}
+    for (const food of rows) foods[food.recipe_number] = food
+    return foods
+}
+
+/**
+ * A hall's full day. No caching - always fetches fresh data from Supabase.
+ *
+ * Three queries rather than one nested select, because the nested form cannot survive this
+ * data. Supabase caps a nested relation at exactly 1000 rows and reports no error, and Chase
+ * publishes ~1,405 entries a day: the old code fetched all 1000 of them *with* their nutrition,
+ * noticed the cap, threw the whole 368KB result away and re-fetched everything by hand. Asking
+ * for the entries and the foods separately drops the round trip that was always discarded and
+ * stops the nutrition being repeated once per serving — ~880KB of JSON parsed per render
+ * becomes ~200KB, and the entries and foods queries run at the same time.
+ */
+export async function getFullMenuByDateAndHall(
+    date: string,
+    diningHall: string,
+): Promise<FullDayMenu | null> {
+    const startTime = performance.now()
+    const { data: menu, error } = await supabase
         .from('menus')
-        .select(`
-            id,
-            menu_date,
-            dining_hall,
-            menu_entries (
-                meal_period,
-                meal_station,
-                recipe_number,
-                master_food_items (
-                    recipe_number,
-                    food_name,
-                    calories_kcal,
-                    protein_g,
-                    fat_g,
-                    carbohydrates_g,
-                    amount_per_serving,
-                    dietary_preferences,
-                    allergens
-                )
-            )
-        `)
+        .select('id, menu_date, dining_hall')
         .eq('menu_date', date)
         .eq('dining_hall', diningHall)
         .maybeSingle()
 
-    // If we hit the 1000 row limit, fetch menu_entries using pagination
-    // Supabase enforces a max of 1000 rows per query, so we must paginate
-    if (data && data.menu_entries?.length === 1000) {
-        console.warn('[API] Hit 1000 row limit on menu_entries, fetching all entries with pagination...')
+    if (error) throw error
+    if (!menu) return null
 
-        const allEntries: typeof data.menu_entries = []
-        const PAGE_SIZE = 1000
-        let offset = 0
-        let hasMore = true
-
-        while (hasMore) {
-            const { data: pageData, error: pageError } = await supabase
-                .from('menu_entries')
-                .select(`
-                    meal_period,
-                    meal_station,
-                    recipe_number,
-                    master_food_items (
-                        recipe_number,
-                        food_name,
-                        calories_kcal,
-                        protein_g,
-                        fat_g,
-                        carbohydrates_g,
-                        amount_per_serving,
-                        dietary_preferences,
-                        allergens
-                    )
-                `)
-                .eq('menu_id', data.id)
-                .range(offset, offset + PAGE_SIZE - 1)
-
-            if (pageError) {
-                console.error('[API] Error fetching page:', pageError)
-                break
-            }
-
-            if (pageData && pageData.length > 0) {
-                allEntries.push(...pageData)
-                offset += PAGE_SIZE
-                hasMore = pageData.length === PAGE_SIZE
-                console.log(`[API] Fetched page: ${allEntries.length} total entries so far`)
-            } else {
-                hasMore = false
-            }
-        }
-
-        data.menu_entries = allEntries
-        console.log(`[API] Pagination complete: ${allEntries.length} total entries`)
-    }
-
-    const endTime = performance.now()
-    const duration = Math.round(endTime - startTime)
+    const [entries, foods] = await Promise.all([
+        fetchMenuEntries(menu.id),
+        fetchMenuFoods(menu.id),
+    ])
 
     if (process.env.NODE_ENV === 'development') {
-        console.log(`[API] Fetched menu for ${diningHall} on ${date} in ${duration}ms`)
-        console.log(`[API] Total menu_entries returned:`, data?.menu_entries?.length || 0)
-
-        // Log any entries with null master_food_items
-        const nullItems = data?.menu_entries?.filter(e => !e.master_food_items) || []
-        if (nullItems.length > 0) {
-            console.warn(`[API] ${nullItems.length} entries have null master_food_items:`,
-                nullItems.map(e => ({ recipe_number: e.recipe_number, station: e.meal_station, period: e.meal_period })))
+        const duration = Math.round(performance.now() - startTime)
+        const orphans = entries.filter((entry) => !foods[entry.recipe_number])
+        console.log(
+            `[API] ${diningHall} ${date}: ${entries.length} entries, ` +
+                `${Object.keys(foods).length} distinct foods in ${duration}ms`,
+        )
+        if (orphans.length > 0) {
+            console.warn(
+                `[API] ${orphans.length} entries reference a recipe with no master_food_items row:`,
+                orphans.map((entry) => entry.recipe_number),
+            )
         }
-
-        // Log recipe numbers by station for each period
-        const byPeriodAndStation: Record<string, Record<string, number[]>> = {}
-        data?.menu_entries?.forEach(e => {
-            const period = e.meal_period || 'Unknown'
-            const station = e.meal_station || 'Unknown'
-            if (!byPeriodAndStation[period]) byPeriodAndStation[period] = {}
-            if (!byPeriodAndStation[period][station]) byPeriodAndStation[period][station] = []
-            byPeriodAndStation[period][station].push(e.recipe_number)
-        })
-        console.log('[API] Recipe numbers by period and station:', byPeriodAndStation)
     }
 
-    if (error) throw error
-    return data
+    return {
+        id: menu.id,
+        menu_date: menu.menu_date,
+        dining_hall: menu.dining_hall,
+        entries,
+        foods,
+    }
 }
 
 /**

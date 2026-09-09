@@ -15,7 +15,7 @@ import {
     shiftDate,
 } from '@/lib/campus'
 import type { BrandWithItems, ExternalBrand, Location, LocationHours } from '@/lib/campus'
-import type { MasterFoodItem } from '@/lib/api'
+import type { FoodsByRecipe, MasterFoodItem, MenuEntryRef } from '@/lib/api'
 import { BRAND_MEAL_PERIOD, brandMenuEntries } from '@/lib/brandMenu'
 import { breadcrumbList, canonical, menuSchema, toOpeningHoursSpecification } from '@/lib/seo'
 import type { MenuSectionInput } from '@/lib/seo'
@@ -134,6 +134,27 @@ function toEntries(raw: unknown): VenueMenuEntry[] {
         })
     }
     return entries
+}
+
+/**
+ * The `(entries, foods)` pair the shared menu components take, from rows that carry their food.
+ *
+ * A venue publishes a few dozen items a day rather than a hall's 1,400, so this is about
+ * matching one component API and not about payload — `MenuContainer` takes the normalised
+ * shape because that is what stops a hall's nutrition being serialised once per serving.
+ */
+function splitEntries(rows: {
+    meal_period: string
+    meal_station: string
+    recipe_number: number
+    master_food_items: MasterFoodItem | null
+}[]): { entries: MenuEntryRef[]; foods: FoodsByRecipe } {
+    const foods: FoodsByRecipe = {}
+    const entries = rows.map(({ meal_period, meal_station, recipe_number, master_food_items }) => {
+        if (master_food_items) foods[recipe_number] = master_food_items
+        return { meal_period, meal_station, recipe_number }
+    })
+    return { entries, foods }
 }
 
 function isOpenAt(row: LocationHours, atMs: number): boolean {
@@ -711,6 +732,8 @@ export function VenueView({ data }: { data: VenueData }) {
     const availablePeriods = Array.from(new Set(entries.map((e) => e.meal_period)))
     availablePeriods.sort(compareMealPeriods)
 
+    const { entries: menuEntries, foods: menuFoods } = splitEntries(entries)
+
     // Server-rendered and handed down as a node, never rebuilt inside the client container:
     // breadcrumbs only work as real `<a>` elements in the HTML.
     const header = (
@@ -740,7 +763,8 @@ export function VenueView({ data }: { data: VenueData }) {
                 <MenuTutorial />
                 <MenuContainer
                     key={`${selectedDate}-${primary.id}`}
-                    allEntries={entries}
+                    allEntries={menuEntries}
+                    foods={menuFoods}
                     availablePeriods={availablePeriods}
                     availableDates={availableDates}
                     selectedDate={selectedDate}
@@ -763,7 +787,8 @@ export function VenueView({ data }: { data: VenueData }) {
                     </section>
                 )}
                 <MenuOutline
-                    entries={entries}
+                    entries={menuEntries}
+                    foods={menuFoods}
                     hallName={menuTitle}
                     formattedDate={formatCampusDate(selectedDate)}
                 />
@@ -776,7 +801,7 @@ export function VenueView({ data }: { data: VenueData }) {
     // container the halls use, undated, and /brands/<slug> stays the page that owns the brand.
     if (brand) {
         const brandItems = brand.external_food_items
-        const brandEntries = brandMenuEntries(brandItems)
+        const { entries: brandEntries, foods: brandFoods } = splitEntries(brandMenuEntries(brandItems))
         const brandHeader = (
             <div key="brand-menu-context" className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-3">
                 <Breadcrumbs key="breadcrumbs" crumbs={crumbs} />
@@ -795,6 +820,7 @@ export function VenueView({ data }: { data: VenueData }) {
                 <MenuTutorial />
                 <MenuContainer
                     allEntries={brandEntries}
+                    foods={brandFoods}
                     availablePeriods={brandEntries.length > 0 ? [BRAND_MEAL_PERIOD] : []}
                     availableDates={[]}
                     selectedDate={today}
