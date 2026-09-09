@@ -1,6 +1,13 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
+/**
+ * Chapel Hill. Defined here rather than in `campus.ts` so that reading it costs nothing:
+ * `campus.ts` constructs the Supabase client at module scope, and the timezone is needed by
+ * pure client-side helpers. `campus.ts` re-exports it, so callers still find it where they did.
+ */
+export const CAMPUS_TIMEZONE = 'America/New_York'
+
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
 }
@@ -167,14 +174,42 @@ export function compareMealPeriods(a: string, b: string): number {
 }
 
 /**
+ * Minutes since midnight in Chapel Hill, for an instant.
+ *
+ * `Date.getHours()` reads the *server's* clock, which is not Chapel Hill's: Vercel functions run
+ * UTC, four or five hours ahead depending on the season. Anything comparing an instant against a
+ * meal period has to convert first, because the periods are campus wall-clock by definition —
+ * "lunch (11AM-3PM)" is 11am in Chapel Hill whatever the machine thinks the time is.
+ *
+ * `hourCycle: 'h23'` rather than `hour12: false`, which renders midnight as "24" in some engines.
+ */
+export function campusMinutesSinceMidnight(at: Date): number {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: CAMPUS_TIMEZONE,
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+    }).formatToParts(at)
+
+    const hour = Number(parts.find((part) => part.type === 'hour')?.value)
+    const minute = Number(parts.find((part) => part.type === 'minute')?.value)
+    if (Number.isNaN(hour) || Number.isNaN(minute)) return 0
+
+    return hour * 60 + minute
+}
+
+/**
  * Finds which meal period is currently active based on the given time.
  * Falls back to the first available period if no match is found.
+ *
+ * The instant is read in Chapel Hill's timezone, never the server's — see
+ * `campusMinutesSinceMidnight`. Rendered server-side this decides which meal tab a visitor
+ * lands on, and on a UTC server it used to open Chase on Late-night all evening.
  */
 export function getActiveMealPeriod(periods: string[], currentTime: Date): string {
     if (periods.length === 0) return ''
 
-    // Get current time as minutes since midnight
-    const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes()
+    const currentMinutes = campusMinutesSinceMidnight(currentTime)
 
     for (const period of periods) {
         const times = parseMealPeriodTimes(period)
