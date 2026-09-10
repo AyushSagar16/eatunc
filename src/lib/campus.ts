@@ -361,8 +361,13 @@ export async function getVenueMenu(locationId: string, date: string) {
 
     // Supabase caps a nested relation at 1000 rows and returns exactly 1000 when it truncates,
     // with no error. Satellite venues publish a few dozen items a day and never come close, but
-    // the cap is a property of the query rather than of the venue — so this repeats the explicit
-    // pagination `getFullMenuByDateAndHall` uses rather than assuming the venue stays small.
+    // the cap is a property of the query rather than of the venue, so the fallback stays rather
+    // than assuming the venue stays small.
+    //
+    // `getFullMenuByDateAndHall` no longer works this way: a hall clears the cap every day, so it
+    // paginates unconditionally and looks the foods up once per menu instead of once per serving.
+    // Detect-then-refetch is kept here because for a venue the first nested read is almost always
+    // the only read, and throwing it away would cost more than it saves.
     if (data && data.menu_entries?.length === MAX_NESTED_ROWS) {
         const all: typeof data.menu_entries = []
 

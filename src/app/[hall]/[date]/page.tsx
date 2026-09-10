@@ -226,7 +226,12 @@ export default async function Page({ params }: PageProps) {
     // Passed straight through. Each entry used to be rebuilt with a `meal_period_raw` copy of
     // `meal_period` and the hall name repeated on it; nothing reads either, and at ~1,360
     // entries a day the two dead fields were around 90KB of RSC payload per request.
-    const hallFilteredEntries = menu.menu_entries || [];
+    //
+    // `entries` and `foods` travel as two values rather than one nested array for the same
+    // reason: Chase draws 1,405 servings from 307 distinct recipes, so a nested shape sends
+    // each recipe's nutrition through the RSC payload about six times over.
+    const hallFilteredEntries = menu.entries;
+    const foods = menu.foods;
 
     const availablePeriods = Array.from(new Set(hallFilteredEntries.map(e => e.meal_period)));
     availablePeriods.sort(compareMealPeriods);
@@ -247,6 +252,7 @@ export default async function Page({ params }: PageProps) {
             <MenuContainer
                 key={`${date}-${selectedHall}`}
                 allEntries={hallFilteredEntries}
+                foods={foods}
                 availablePeriods={availablePeriods}
                 availableDates={availableDates}
                 selectedDate={date}
@@ -256,6 +262,7 @@ export default async function Page({ params }: PageProps) {
 
             <MenuOutline
                 entries={hallFilteredEntries}
+                foods={foods}
                 hallName={hallDisplayName}
                 formattedDate={formattedDate}
             />
@@ -265,6 +272,7 @@ export default async function Page({ params }: PageProps) {
             date={date}
             formattedDate={formattedDate}
             entries={hallFilteredEntries}
+            foods={foods}
             hours={hours}
         />
     );

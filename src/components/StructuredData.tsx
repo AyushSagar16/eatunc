@@ -1,4 +1,5 @@
-import { groupByPeriodAndStation, type OutlineEntry } from './MenuOutline'
+import { groupByPeriodAndStation } from './MenuOutline'
+import type { FoodsByRecipe, MenuEntryRef } from '@/lib/api'
 import { breadcrumbList, jsonLd, menuSchema, canonical } from '@/lib/seo'
 import { HALL_BY_ROUTE_SLUG, type LocationHours } from '@/lib/campus'
 import { HALL_PROFILES, hallRestaurantNode } from './hall/hallSchema'
@@ -19,27 +20,30 @@ export default function StructuredData({
     date,
     formattedDate,
     entries = [],
+    foods,
     hours = [],
 }: {
     hall: string
     date: string
     formattedDate: string
-    entries?: OutlineEntry[]
+    entries?: MenuEntryRef[]
+    /** Required even though `entries` is not: defaulting it would emit an empty menu, silently. */
+    foods: FoodsByRecipe
     hours?: LocationHours[]
 }) {
     const profile = HALL_PROFILES[hall]
     if (!profile) return null
 
     const url = canonical(`/${hall}/${date}`)
-    const grouped = groupByPeriodAndStation(entries)
+    const grouped = groupByPeriodAndStation(entries, foods)
 
     const sections = grouped.flatMap(({ period, stations }) =>
         stations.map((station) => ({
             name: `${period} — ${station.station}`,
             items: station.items.map((item) => ({
-                name: item.master_food_items?.food_name ?? '',
-                calories_kcal: item.master_food_items?.calories_kcal,
-                protein_g: item.master_food_items?.protein_g,
+                name: item.food.food_name ?? '',
+                calories_kcal: item.food.calories_kcal,
+                protein_g: item.food.protein_g,
             })),
         })),
     )

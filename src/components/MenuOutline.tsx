@@ -1,24 +1,41 @@
 import { compareMealPeriods } from '@/lib/utils'
+import type { FoodsByRecipe, MasterFoodItem, MenuEntryRef } from '@/lib/api'
 
-export type OutlineEntry = {
-    meal_period: string
-    meal_station: string
+/**
+ * A serving with its food already resolved.
+ *
+ * Entries arrive carrying only a `recipe_number` — the nutrition lives once per menu in
+ * `FoodsByRecipe` rather than once per serving — so grouping is also where the two are
+ * joined back together. An entry whose recipe has no food row, or whose food has no name,
+ * is dropped here exactly as it was when the join came back empty from PostgREST.
+ */
+export type OutlineItem = {
     recipe_number: number
-    master_food_items: {
-        food_name: string | null
-        calories_kcal: number | null
-        protein_g: number | null
-    } | null
+    food: MasterFoodItem
 }
 
-export function groupByPeriodAndStation(entries: OutlineEntry[]) {
-    const periods = new Map<string, Map<string, OutlineEntry[]>>()
+/**
+ * Stations are never null or blank in the data — the fallback only keeps a stray one out of the
+ * headings. It matches `MenuContainer`'s word *and* its falsy test (`||`, not `??`) because the
+ * two render on the same page: a station that fell back would otherwise be headed 'Other' in the
+ * grid and blank in this list, and the blank heading would reach JSON-LD as well.
+ * Venue entries never arrive null: `venueView` has already defaulted them, but it defaults on
+ * type alone, so an empty string from the database survives that pass and lands here.
+ */
+const FALLBACK_STATION = 'Other'
+
+export function groupByPeriodAndStation(entries: MenuEntryRef[], foods: FoodsByRecipe) {
+    const periods = new Map<string, Map<string, OutlineItem[]>>()
 
     for (const entry of entries) {
-        const stations = periods.get(entry.meal_period) ?? new Map<string, OutlineEntry[]>()
-        const items = stations.get(entry.meal_station) ?? []
-        items.push(entry)
-        stations.set(entry.meal_station, items)
+        const food = foods[entry.recipe_number]
+        if (!food?.food_name) continue
+
+        const station = entry.meal_station || FALLBACK_STATION
+        const stations = periods.get(entry.meal_period) ?? new Map<string, OutlineItem[]>()
+        const items = stations.get(station) ?? []
+        items.push({ recipe_number: entry.recipe_number, food })
+        stations.set(station, items)
         periods.set(entry.meal_period, stations)
     }
 
@@ -30,13 +47,9 @@ export function groupByPeriodAndStation(entries: OutlineEntry[]) {
                 .sort(([a], [b]) => a.localeCompare(b))
                 .map(([station, items]) => ({
                     station,
-                    items: items
-                        .filter((i) => i.master_food_items?.food_name)
-                        .sort((a, b) =>
-                            (a.master_food_items?.food_name ?? '').localeCompare(
-                                b.master_food_items?.food_name ?? '',
-                            ),
-                        ),
+                    items: items.sort((a, b) =>
+                        (a.food.food_name ?? '').localeCompare(b.food.food_name ?? ''),
+                    ),
                 }))
                 .filter((s) => s.items.length > 0),
         }))
@@ -58,14 +71,16 @@ export function groupByPeriodAndStation(entries: OutlineEntry[]) {
  */
 export default function MenuOutline({
     entries,
+    foods,
     hallName,
     formattedDate,
 }: {
-    entries: OutlineEntry[]
+    entries: MenuEntryRef[]
+    foods: FoodsByRecipe
     hallName: string
     formattedDate: string
 }) {
-    const grouped = groupByPeriodAndStation(entries)
+    const grouped = groupByPeriodAndStation(entries, foods)
     if (grouped.length === 0) return null
 
     const itemCount = grouped.reduce(
@@ -109,12 +124,12 @@ export default function MenuOutline({
                                                     key={`${station}-${item.recipe_number}`}
                                                     className="text-sm text-zinc-700 dark:text-zinc-300 flex flex-wrap gap-x-2"
                                                 >
-                                                    <span>{item.master_food_items?.food_name}</span>
-                                                    {item.master_food_items?.calories_kcal != null && (
+                                                    <span>{item.food.food_name}</span>
+                                                    {item.food.calories_kcal != null && (
                                                         <span className="text-zinc-500 dark:text-zinc-500">
-                                                            {item.master_food_items.calories_kcal} cal
-                                                            {item.master_food_items.protein_g != null &&
-                                                                ` · ${item.master_food_items.protein_g}g protein`}
+                                                            {item.food.calories_kcal} cal
+                                                            {item.food.protein_g != null &&
+                                                                ` · ${item.food.protein_g}g protein`}
                                                         </span>
                                                     )}
                                                 </li>

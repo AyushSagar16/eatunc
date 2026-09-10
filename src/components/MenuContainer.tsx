@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef, useId, Suspen
 import { motion, AnimatePresence } from 'motion/react'
 import Link from 'next/link'
 import { usePostHog } from 'posthog-js/react'
-import { MasterFoodItem } from '@/lib/api'
+import { MasterFoodItem, type FoodsByRecipe, type MenuEntryRef } from '@/lib/api'
 import FoodCard from '@/components/FoodCard'
 import FoodModal from '@/components/FoodModal'
 import FoodDisplayLayout from '@/components/FoodDisplayLayout'
@@ -14,18 +14,19 @@ import { calculateHealthyScore, getMealPeriodLabel, getActiveMealPeriod, isImpla
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { parseDietaryPreferences, parseAllergens } from '@/components/icons/DietaryIcons'
 
-interface MenuEntry {
-    meal_period: string
-    meal_station: string | null
-    recipe_number: number
-    master_food_items: MasterFoodItem | null
-}
-
 type SortableFood = MasterFoodItem | { item: MasterFoodItem }
 const foodOf = (value: SortableFood): MasterFoodItem => ('item' in value ? value.item : value)
 
 interface MenuContainerProps {
-    allEntries: MenuEntry[]
+    allEntries: MenuEntryRef[]
+    /**
+     * `recipe_number` -> food, for the entries above.
+     *
+     * A hall serves the same recipe at several meal periods, so carrying the nutrition on each
+     * entry meant serialising it once per serving: 1,405 entries for 307 distinct foods at
+     * Chase, and about a megabyte of duplicated RSC payload on every render.
+     */
+    foods: FoodsByRecipe
     availablePeriods: string[]
     availableDates: string[]
     selectedDate: string
@@ -426,6 +427,7 @@ StationSection.displayName = 'StationSection'
 
 export default function MenuContainer({
     allEntries,
+    foods,
     availablePeriods,
     availableDates,
     selectedDate,
@@ -767,8 +769,8 @@ export default function MenuContainer({
         const items: { item: MasterFoodItem; station: string }[] = []
 
         allEntries.forEach(entry => {
-            if (entry.meal_period === selectedPeriod && entry.master_food_items) {
-                const item = entry.master_food_items
+            const item = foods[entry.recipe_number]
+            if (entry.meal_period === selectedPeriod && item) {
                 const station = entry.meal_station || 'Other'
 
                 // Search Filter (using debounced query)
@@ -789,7 +791,7 @@ export default function MenuContainer({
             }
         })
         return items
-    }, [allEntries, selectedPeriod, debouncedSearchQuery])
+    }, [allEntries, foods, selectedPeriod, debouncedSearchQuery])
 
     const applyGlobalSort = useCallback(<T extends SortableFood,>(items: T[]): T[] => {
         if (sortBy === 'recommended') return items;
@@ -915,7 +917,7 @@ export default function MenuContainer({
      * 
      * Items are ONLY skipped if:
      * 1. They don't match the selected meal period
-     * 2. They have null master_food_items (no nutrition data in database)
+     * 2. Their recipe has no row in `foods` (no nutrition data in database)
      * 3. They don't match the search query
      * 4. They are a duplicate (same recipe_number at the same station)
      */
@@ -925,8 +927,8 @@ export default function MenuContainer({
         const processedIds = new Set<string>()
 
         allEntries.forEach(entry => {
-            if (entry.meal_period === selectedPeriod && entry.master_food_items) {
-                const item = entry.master_food_items
+            const item = foods[entry.recipe_number]
+            if (entry.meal_period === selectedPeriod && item) {
                 const station = entry.meal_station || 'Other'
 
                 // Search Filter (using debounced query)
@@ -972,7 +974,7 @@ export default function MenuContainer({
         });
 
         return map
-    }, [allEntries, selectedPeriod, debouncedSearchQuery, applyGlobalSort])
+    }, [allEntries, foods, selectedPeriod, debouncedSearchQuery, applyGlobalSort])
 
     // Initial visibility for stations (show first 3 immediately)
     const [visibleStationsCount, setVisibleStationsCount] = useState(3)
