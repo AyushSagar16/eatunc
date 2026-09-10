@@ -15,10 +15,12 @@ export type OutlineItem = {
 }
 
 /**
- * Stations are never null in the data — the fallback only keeps a stray one out of the headings.
- * It matches `MenuContainer`'s word because the two render on the same page, so a station that
- * fell back would otherwise be headed 'Other' in the grid and something else in this list.
- * Venue entries never arrive null: `venueView` has already defaulted them.
+ * Stations are never null or blank in the data — the fallback only keeps a stray one out of the
+ * headings. It matches `MenuContainer`'s word *and* its falsy test (`||`, not `??`) because the
+ * two render on the same page: a station that fell back would otherwise be headed 'Other' in the
+ * grid and blank in this list, and the blank heading would reach JSON-LD as well.
+ * Venue entries never arrive null: `venueView` has already defaulted them, but it defaults on
+ * type alone, so an empty string from the database survives that pass and lands here.
  */
 const FALLBACK_STATION = 'Other'
 
@@ -29,7 +31,7 @@ export function groupByPeriodAndStation(entries: MenuEntryRef[], foods: FoodsByR
         const food = foods[entry.recipe_number]
         if (!food?.food_name) continue
 
-        const station = entry.meal_station ?? FALLBACK_STATION
+        const station = entry.meal_station || FALLBACK_STATION
         const stations = periods.get(entry.meal_period) ?? new Map<string, OutlineItem[]>()
         const items = stations.get(station) ?? []
         items.push({ recipe_number: entry.recipe_number, food })
