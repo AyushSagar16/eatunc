@@ -1,0 +1,36 @@
+name: IndexNow
+
+# Runs an hour and a quarter after the backend's nightly sweep (05:00 UTC in
+# eat-unc-backend/.github/workflows/daily_locations.yml), so the day's menus and hours are
+# already in Supabase and the sitemap's ISR window has turned over at least once.
+#
+# It lives here rather than on Vercel deliberately: this is one outbound POST a day with no
+# reason to burn the Hobby plan's function budget, and the key file it authenticates with is
+# checked into this repo, so there is no secret to hand a serverless route.
+on:
+  schedule:
+    - cron: '15 6 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Print the URLs instead of submitting them'
+        type: boolean
+        default: false
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # No `npm ci` — the script is dependency-free on purpose, so a daily cron cannot start
+      # failing because of an unrelated dependency change.
+      - name: Submit sitemap URLs to IndexNow
+        run: node scripts/indexnow.mjs ${{ inputs.dry_run && '--dry-run' || '' }}
