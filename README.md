@@ -54,6 +54,35 @@ These variables are exposed to the browser by design. Only use public client-sid
 - `npm run typecheck` runs TypeScript without emitting files
 - `npm run build` creates a production build
 - `npm run start` starts the production server
+- `npm run indexnow` submits the live sitemap's URLs to IndexNow (`--dry-run` to preview)
+
+## Search and AI indexing
+
+Discovery is split across three files, all generated or served from this repo:
+
+- `src/app/sitemap.ts` — the crawlable URL set, windowed to menus from seven days back to
+  fourteen days ahead so the crawl budget is not spent on January.
+- `src/app/robots.ts` — names the AI assistants' crawlers explicitly alongside the wildcard.
+- `public/llms.txt` — the plain-language brief an assistant reads instead of guessing from markup.
+
+**IndexNow** pushes on top of that pull. A sitemap waits for a crawler to come back; IndexNow
+tells the engine a URL changed, and one submission reaches every participating engine (Bing,
+Yandex, Seznam, Naver — not Google, which does not participate). It matters here because Bing's
+index is what Copilot and ChatGPT search read: how fast Bing sees today's menu decides whether an
+assistant asked "what's for dinner at Chase" quotes today's page or last Tuesday's.
+
+Submission is manual, and deliberately so: run `npm run indexnow`, or trigger
+`.github/workflows/indexnow.yml` from the Actions tab. It is worth doing after a deploy that adds
+or reshapes pages — a new route, a change to the sitemap's window. The daily menu churn
+underneath the existing URLs needs no announcing, because `/chase/2026-09-14` is a URL the
+engines already hold and re-crawl on their own.
+
+Ownership is proved by a key file at the site root: `public/<key>.txt`, containing exactly the
+key and nothing else. The key is public by design — it authorises submitting *your own* URLs for
+crawling, nothing more — so it is checked in, and the script finds it by shape rather than by a
+hardcoded name. **To rotate it**, drop in a new `public/<key>.txt`, delete the old one, and
+deploy; nothing in the script or the workflow needs editing. The file must be live at
+`https://eatunc.com/<key>.txt` before the first submission verifies.
 
 ## Project structure
 
@@ -61,7 +90,8 @@ These variables are exposed to the browser by design. Only use public client-sid
 - `src/components` contains the main UI surfaces, including the menu experience
 - `src/lib` contains Supabase setup, API helpers, shared types, and utilities
 - `src/providers` contains app-level providers such as PostHog
-- `public` contains static assets
+- `public` contains static assets, `llms.txt`, and the IndexNow key file
+- `scripts` contains standalone maintenance scripts run from CI, not from the app
 
 ## Open-source notes
 

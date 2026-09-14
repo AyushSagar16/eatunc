@@ -1,0 +1,36 @@
+name: IndexNow
+
+# Run by hand from the Actions tab: pick the branch, optionally tick "dry run", go.
+#
+# There is deliberately no schedule. Submitting is worth doing after a deploy that adds or
+# reshapes pages — a new route, a change to the sitemap's window — and the daily menu churn
+# underneath the existing URLs does not need announcing, because `/chase/2026-09-14` is a URL
+# the engines already know and re-crawl. A cron would mostly resubmit the same hundred URLs.
+#
+# The same script runs locally as `npm run indexnow`; this exists so a submission can be
+# triggered from a phone, and so the runs are logged somewhere shared.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Print the URLs instead of submitting them'
+        type: boolean
+        default: false
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # No `npm ci` — the script is dependency-free on purpose, so it cannot start failing
+      # because of an unrelated dependency change.
+      - name: Submit sitemap URLs to IndexNow
+        run: node scripts/indexnow.mjs ${{ inputs.dry_run && '--dry-run' || '' }}
