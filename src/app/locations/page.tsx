@@ -12,10 +12,15 @@ import { groupByBuilding } from '@/components/campus/campusDisplay'
 
 /**
  * Open-now badges make this page's output depend on the clock, so it can never be a frozen
- * static build. Five minutes is short enough that a badge is not meaningfully wrong and long
- * enough that a crawl does not hit Supabase 42 times a minute; `/open-now` is the live answer.
+ * static build — but the clock is also why every regeneration bills a full ISR write: the
+ * badges differ from the previous copy every single time, and Vercel only writes for free when
+ * the output is byte-identical. At five minutes that was 288 paid writes a day for rows the
+ * nightly sweep touches once. An hour is the interim compromise; the badge can now trail the
+ * clock by up to that long, which is why `/open-now` stays uncached and is linked as the live
+ * answer. The real fix is moving the open/closed computation client-side so the cached HTML
+ * stops depending on the clock at all — see `venueStatus` in locations/[slug]/venueView.tsx.
  */
-export const revalidate = 300
+export const revalidate = 3600
 
 const PATH = '/locations'
 const TITLE = 'UNC Campus Dining Locations — Every Venue & Building'
