@@ -47,6 +47,22 @@ The app expects the following public environment variables:
 
 These variables are exposed to the browser by design. Only use public client-side keys here.
 
+And exactly one that is **not** public and must never be prefixed `NEXT_PUBLIC_`:
+
+- `REVALIDATE_TOKEN` — the bearer token `POST /api/revalidate` requires. `eat-unc-backend`'s
+  nightly sweep calls that route once it has finished writing, which is what rebuilds
+  `/locations`, the 38 venue pages and `/brands` instead of a timer guessing at when the data
+  changed. Read only inside a route handler, so it never reaches the browser.
+
+  This is the first server-only variable in this repo, and it is the exception that proves the
+  rule rather than a new pattern: every other variable here is browser-exposed by design, which
+  is precisely why the PostHog personal key and the Supabase service-role key live in
+  `eat-unc-admin` instead. A leaked `REVALIDATE_TOKEN` lets a stranger ask Vercel to rebuild
+  public pages — it reads nothing and writes nothing to Supabase — so the blast radius is the
+  ISR write allowance, not data. Set it in Vercel's project settings for Production and Preview,
+  and in GitHub Actions secrets on `eat-unc-backend` as `REVALIDATE_TOKEN`. If it is unset the
+  route answers 503 and the fallback `revalidate` windows keep the pages fresh on their own.
+
 ## Scripts
 
 - `npm run dev` starts the local dev server

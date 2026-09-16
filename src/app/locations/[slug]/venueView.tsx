@@ -27,6 +27,8 @@ import MenuTutorial from '@/components/MenuTutorial'
 import { Breadcrumbs } from '@/components/campus/CampusChrome'
 import { JsonLd } from '@/components/campus/JsonLd'
 import { PeriodSummary } from '@/components/campus/HoursList'
+import { VenueStatus } from '@/components/campus/VenueStatus'
+import { scheduleStatus } from '@/lib/venueStatus'
 import BrandItemsTable from '@/components/brands/BrandItemsTable'
 import NutritionSourceLegend from '@/components/brands/NutritionSourceLegend'
 import {
@@ -34,7 +36,6 @@ import {
     displayGroup,
     formatCampusDate,
     formatCampusDateShort,
-    formatClock,
     kindMeta,
     periodsFor,
     prettyMealPeriod,
@@ -92,12 +93,6 @@ export type VenueData = {
     everServes: boolean
     entries: VenueMenuEntry[]
     brand: BrandWithItems | null
-    /**
-     * The instant the data was read, so the open/closed line is computed against the same
-     * moment as the hours it prints — and so nothing calls the clock during render, which
-     * would make the markup unstable across re-renders.
-     */
-    nowMs: number
 }
 
 /**
@@ -157,22 +152,24 @@ function splitEntries(rows: {
     return { entries, foods }
 }
 
-function isOpenAt(row: LocationHours, atMs: number): boolean {
-    const opens = Date.parse(row.opens_at)
-    const closes = Date.parse(row.closes_at)
-    return !Number.isNaN(opens) && !Number.isNaN(closes) && opens <= atMs && atMs < closes
-}
-
 /**
  * Which of a colliding slug's locations leads the page.
  *
  * Mediterranean Deli, Bandido's, Zayka Indian Grill and Alpaca Peruvian Chicken each run two
  * counters in two buildings, and both belong on one URL — splitting them would put two
  * near-identical pages in competition for "zayka unc". Only one menu can be on screen, so it
- * goes to the counter someone could actually walk to: open now first, then whichever has food
- * published for the day being shown, then whichever is open at all today. Alphabetical order
- * is the last resort and never the reason — Zayka's Beach Cafe counter sorts first and is shut
- * for the week, which is exactly the page nobody wants.
+ * goes to the counter someone could actually walk to: whichever has food published for the day
+ * being shown, then whichever is open at all today. Alphabetical order is the last resort and
+ * never the reason — Zayka's Beach Cafe counter sorts first and is shut for the week, which is
+ * exactly the page nobody wants.
+ *
+ * This used to lead with an "open at this exact minute" term, which was the strongest signal and
+ * is now deliberately gone: it decides which menu the server fetches, so it cannot move to the
+ * browser the way the status line did, and keeping it would keep a clock in the cached output
+ * and with it the ISR write on every regeneration. What it actually protected against — a
+ * counter shut for the week winning the page — is already covered by the "has hours today" term.
+ * The narrow case it no longer separates is two counters that both serve today and both have
+ * food, where one happens to be mid-service right now; that falls to array order.
  */
 function pickPrimary(
     locations: Location[],
@@ -180,12 +177,10 @@ function pickPrimary(
     servedDates: Map<string, string[]>,
     targetDate: string,
     today: string,
-    nowMs: number,
 ): Location {
     if (locations.length === 1) return locations[0]
 
     const score = (l: Location) =>
-        (hours.some((h) => h.location_id === l.id && isOpenAt(h, nowMs)) ? 4 : 0) +
         ((servedDates.get(l.id) ?? []).includes(targetDate) ? 2 : 0) +
         (hours.some((h) => h.location_id === l.id && h.service_date === today) ? 1 : 0)
 
@@ -220,7 +215,6 @@ export const loadVenue = cache(async (slug: string, requestedDate?: string): Pro
     if (locations.length === 0) return null
 
     const today = campusToday()
-    const nowMs = Date.now()
 
     // Yesterday is in the window because a period that opened last night can still be running
     // now; the same reason `getOpenNow` reaches back a day.
@@ -242,7 +236,7 @@ export const loadVenue = cache(async (slug: string, requestedDate?: string): Pro
     // resolver will lead with whichever of them is serving that day.
     const served = Array.from(new Set(Array.from(servedDates.values()).flat())).sort()
     const selectedDate = resolveDate(requestedDate, today, served)
-    const primary = pickPrimary(locations, hours, servedDates, selectedDate, today, nowMs)
+    const primary = pickPrimary(locations, hours, servedDates, selectedDate, today)
 
     const [availableDates, entries] = await Promise.all([
         primary.has_menu
@@ -291,7 +285,6 @@ export const loadVenue = cache(async (slug: string, requestedDate?: string): Pro
         everServes: served.length > 0,
         entries,
         brand,
-        nowMs,
     }
 })
 
@@ -439,52 +432,22 @@ function menuSections(entries: VenueMenuEntry[]): MenuSectionInput[] {
         }))
 }
 
-/**
- * Whether the doors are open, in the app's own words.
- *
- * Never a guess: the times printed are `opens_label` / `closes_label`, the strings UNC itself
- * publishes, so this line can never contradict the hours below it. The instants come from the
- * timestamptz columns, which makes an overnight period fall out for free.
- */
-function venueStatus(hours: LocationHours[], locationId: string, today: string, nowMs: number): string {
-    const rows = hours.filter((h) => h.location_id === locationId)
-    if (rows.length === 0) return 'UNC has published no hours for this venue'
-
-    const open = rows.find((row) => isOpenAt(row, nowMs))
-    if (open) return `Open · Closes at ${formatClock(open.closes_label)}`
-
-    const next = rows
-        .filter((row) => Date.parse(row.opens_at) > nowMs)
-        .sort((a, b) => Date.parse(a.opens_at) - Date.parse(b.opens_at))[0]
-
-    if (!next) return 'Closed'
-    if (next.service_date === today) return `Closed · Opens at ${formatClock(next.opens_label)}`
-    return `Closed · Opens ${formatCampusDateShort(next.service_date)} at ${formatClock(next.opens_label)}`
-}
-
 function StatusLine({
     location,
     hours,
     today,
-    nowMs,
     showBuilding,
 }: {
     location: Location
     hours: LocationHours[]
     today: string
-    nowMs: number
     showBuilding: boolean
 }) {
-    const status = venueStatus(hours, location.id, today, nowMs)
-    const isOpen = status.startsWith('Open')
+    const rows = hours.filter((h) => h.location_id === location.id)
 
     return (
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
-            <span
-                className={`font-semibold ${isOpen ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-600 dark:text-zinc-400'}`}
-            >
-                {status}
-            </span>
+            <VenueStatus rows={rows} today={today} fallback={scheduleStatus(rows, today)} />
             {showBuilding && (
                 <span className="text-zinc-500 dark:text-zinc-400">
                     {buildingMeta(displayGroup(location)).short}
@@ -506,7 +469,7 @@ function StatusLine({
  * being served and whether they can still get it; everything else is a click away at /hours.
  */
 function VenueStatusBar({ data }: { data: VenueData }) {
-    const { locations, primary, hours, today, nowMs } = data
+    const { locations, primary, hours, today } = data
     const others = locations.filter((l) => l.id !== primary.id)
 
     return (
@@ -515,7 +478,6 @@ function VenueStatusBar({ data }: { data: VenueData }) {
                 location={primary}
                 hours={hours}
                 today={today}
-                nowMs={nowMs}
                 showBuilding={locations.length > 1}
             />
             {others.map((other) => (
@@ -524,7 +486,6 @@ function VenueStatusBar({ data }: { data: VenueData }) {
                     location={other}
                     hours={hours}
                     today={today}
-                    nowMs={nowMs}
                     showBuilding
                 />
             ))}
