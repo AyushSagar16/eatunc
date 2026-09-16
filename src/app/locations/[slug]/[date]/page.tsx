@@ -11,8 +11,18 @@ import { loadVenue, venueMetadata, VenueView } from '../venueView'
  * back at `/locations/<slug>`. Google had indexed the whole back-catalogue of dated hall URLs
  * and was serving a January menu for an August query; there is no reason to repeat that across
  * 38 more venues. The dates stay reachable, they just do not compete.
+ *
+ * `revalidate` is currently inert here and is kept as a statement of intent. The segment has no
+ * `generateStaticParams`, so Next builds it as `ƒ` and Vercel renders it fresh on every request
+ * — production answers `x-vercel-cache: MISS` on three consecutive hits to the same date. That
+ * means this route spends Active CPU rather than ISR writes, which is the opposite of the two
+ * pages above. Adding `generateStaticParams` returning `[]` would flip it onto ISR; whether
+ * that is an improvement depends on which Hobby allowance is scarcer that month, and right now
+ * it is the writes. Left dynamic on purpose: the stepper that reaches these URLs is a
+ * `router.push` rather than an anchor, so no crawler walks the back-catalogue and the traffic
+ * is real people asking for one date.
  */
-export const revalidate = 900
+export const revalidate = 3600
 
 interface PageProps {
     params: Promise<{ slug: string; date: string }>

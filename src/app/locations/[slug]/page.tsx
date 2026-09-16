@@ -8,9 +8,15 @@ import { loadVenue, venueMetadata, VenueView } from './venueView'
  * The status line and today's menu both depend on the calendar, so this route can never be a
  * frozen static build. `generateStaticParams` still prerenders every venue slug; `revalidate`
  * is what keeps them honest afterwards — and the open/closed line can therefore trail the clock
- * by up to fifteen minutes, which is why it names a time rather than counting down to one.
+ * by up to an hour, which is why it names a time rather than counting down to one.
+ *
+ * An hour rather than the fifteen minutes this used to be, because this route is 38 prerendered
+ * paths and was the largest single consumer of the ISR write allowance: 38 × 96 regenerations a
+ * day, none of them free, because `loadVenue` bakes `Date.now()` into the output so no two
+ * copies are ever byte-identical. Lifting the interval is the blunt lever; de-clocking the
+ * output and revalidating on demand from the nightly sweep is the one that actually fixes it.
  */
-export const revalidate = 900
+export const revalidate = 3600
 
 interface PageProps {
     params: Promise<{ slug: string }>
