@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
-import type { Location, OpenPeriod } from '@/lib/campus'
+import type { Location } from '@/lib/campus'
 import { locationPath } from '@/lib/campus'
 import { Badge } from './CampusChrome'
-import { formatClock, kindMeta } from './campusDisplay'
+import { kindMeta } from './campusDisplay'
+import { VenueOpenBadge } from './VenueStatus'
+import type { StatusRow } from '@/lib/venueStatus'
 
 /**
  * A venue on the `/locations` index.
@@ -12,7 +14,15 @@ import { formatClock, kindMeta } from './campusDisplay'
  * router, which is why the site currently exposes no crawlable link to any menu at all; this
  * page must not repeat that.
  */
-export function VenueCard({ location, openNow }: { location: Location; openNow?: OpenPeriod }) {
+export function VenueCard({
+    location,
+    rows,
+    today,
+}: {
+    location: Location
+    rows: StatusRow[]
+    today: string
+}) {
     const kind = kindMeta(location.kind)
 
     return (
@@ -24,16 +34,7 @@ export function VenueCard({ location, openNow }: { location: Location; openNow?:
                 <div className="font-semibold text-zinc-900 dark:text-zinc-50 truncate">{location.name}</div>
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                     <Badge className={kind.badgeClass}>{kind.short}</Badge>
-                    {openNow ? (
-                        <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden />
-                            Open now · until {formatClock(openNow.period.closes_label)}
-                        </Badge>
-                    ) : (
-                        <Badge className="bg-zinc-500/10 text-zinc-500 dark:text-zinc-400 border-zinc-500/20">
-                            Closed right now
-                        </Badge>
-                    )}
+                    <VenueOpenBadge rows={rows} today={today} />
                 </div>
             </div>
             <ChevronRight className="w-4 h-4 shrink-0 text-zinc-300 dark:text-zinc-600 group-hover:text-[#4B9CD3] transition-colors" />
