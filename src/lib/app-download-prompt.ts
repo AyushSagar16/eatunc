@@ -1,4 +1,5 @@
 import { claimSessionFlag, readStoredNumber } from './browser-storage'
+import { isIOSDevice } from './platform'
 
 const LAST_SEEN_KEY = 'eatunc_last_seen_at'
 const SESSION_STAMPED_KEY = 'eatunc_app_prompt_session_stamped'
@@ -27,6 +28,10 @@ let stamped = false
  * The `LAST_SEEN_KEY` stamp itself only moves once per browser session, so a user who refreshes
  * mid-visit can't reset their own gap, and a daily visitor keeps pushing their five-day clock
  * forward every session rather than only the sessions where the prompt actually showed.
+ *
+ * Only an iPhone or iPad can ever be eligible. A laptop or an Android phone has no way to
+ * install the app, so asking it to is noise. The visit is still stamped on every device,
+ * though, so the gap logic stays the same everywhere and only the answer is narrowed.
  */
 export function stampVisit(): void {
     if (stamped) return
@@ -41,7 +46,7 @@ export function stampVisit(): void {
             localStorage.setItem(LAST_SEEN_KEY, String(Date.now()))
         }
 
-        eligible = isNewVisitor || isLapsedVisitor
+        eligible = isIOSDevice() && (isNewVisitor || isLapsedVisitor)
     } catch {
         // Safari private mode throws on storage access, which leaves no way to tell a first
         // visit from a hundredth. Stay quiet rather than showing the prompt on every page load
@@ -51,8 +56,8 @@ export function stampVisit(): void {
 }
 
 /**
- * Whether a brand-new visitor, or one who hasn't been back in five-plus days, should see the
- * app download prompt this page load. A pure read of what `stampVisit` already decided; `false`
+ * Whether a brand-new visitor, or one who hasn't been back in five-plus days, on a device that
+ * can install the app, should see the app download prompt this page load. A pure read of what `stampVisit` already decided; `false`
  * before it runs, which is also the correct server-render answer.
  */
 export function isAppDownloadPromptEligible(): boolean {
