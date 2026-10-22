@@ -9,6 +9,7 @@ import { AppleLogo } from './icons/AppleLogo'
 import { appLink } from '@/lib/app-store'
 import { isAppDownloadPromptEligible } from '@/lib/app-download-prompt'
 import { claimSessionFlag, readStoredNumber } from '@/lib/browser-storage'
+import { isIOSDevice } from '@/lib/platform'
 import { useOnboarding } from '@/providers/OnboardingProvider'
 
 const DISMISSED_KEY = 'eatunc_app_banner_dismissed'
@@ -65,7 +66,8 @@ const readWithinVisitLimit = () => {
 }
 
 /**
- * Promotes the Eat UNC iOS app at the top of every page.
+ * Promotes the Eat UNC iOS app at the top of every page, on iPhone and iPad only. A laptop or
+ * an Android phone can't install it, so there it would be an ask with no way to say yes.
  *
  * The CTA points at `/app`, not the App Store directly, so the click is counted
  * server-side even for visitors who have not accepted cookies. The PostHog
@@ -98,7 +100,11 @@ export default function AppInstallBanner({ className = '' }: AppInstallBannerPro
     // after the prompt auto-dismisses, so the two never trade places under the visitor.
     const promptEligible = useSyncExternalStore(neverChanges, isAppDownloadPromptEligible, () => false)
 
-    const isHidden = wasDismissed || dismissedNow || isLanding || !withinVisitLimit || promptEligible
+    // `isIOSDevice` also catches iPadOS, whose user agent identifies itself as Macintosh.
+    const canInstall = useSyncExternalStore(neverChanges, isIOSDevice, () => false)
+
+    const isHidden =
+        wasDismissed || dismissedNow || isLanding || !withinVisitLimit || promptEligible || !canInstall
 
     useEffect(() => {
         reportAppPromotionVisibility('install-banner', isHidden ? 'hidden' : 'visible')
